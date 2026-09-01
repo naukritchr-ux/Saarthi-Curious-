@@ -2,12 +2,13 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from apscheduler.schedulers.background import BackgroundScheduler
-from routes.bookings import router as bookings_router
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from routes.bookings import router as bookings_router
+
 
 from routes.login import router as login_router
 from routes.users import router as users_router
@@ -26,89 +27,11 @@ from routes import badges
 from routes.reports import router as reports_router
 from routes.leaderboards import router as leaderboards_router
 
-from services.notification_scheduler import (
-    send_scheduled_notifications,
-    send_daily_learning_reminders,
-    send_retention_quiz_unlock_notifications,
-    send_application_check_unlock_notifications,
-)
 from database import SessionLocal
-
-scheduler = BackgroundScheduler()
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-
-    # Admin-created notification scripts
-    scheduler.add_job(
-        send_scheduled_notifications,
-        "interval",
-        minutes=1,
-        id="notification_scheduler",
-        replace_existing=True,
-        max_instances=1,
-        coalesce=True,
-    )
-
-        # Automatic Retention Quiz unlock notification
-    scheduler.add_job(
-        send_retention_quiz_unlock_notifications,
-        "interval",
-        minutes=1,
-        id="retention_quiz_unlock_notification",
-        replace_existing=True,
-        max_instances=1,
-        coalesce=True,
-    )
-
-    # Automatic Application Check unlock notifications
-    scheduler.add_job(
-        send_application_check_unlock_notifications,
-        "interval",
-        minutes=1,
-        id="application_check_unlock_notification",
-        replace_existing=True,
-        max_instances=1,
-        coalesce=True,
-    )
-
-    # Automatic daily learning reminder
-    scheduler.add_job(
-        send_daily_learning_reminders,
-        "cron",
-        hour=10,
-        minute=0,
-        id="daily_learning_reminder",
-        replace_existing=True,
-        max_instances=1,
-        coalesce=True,
-    )
-
-    scheduler.start()
-
-    print("Notification Scheduler Started")
-    print("Daily Learning Reminder Scheduler Started")
-    print("Retention Quiz Unlock Notification Scheduler Started")
-    print("Application Check Unlock Notification Scheduler Started")
-
-    # Auto-generate booking schedules on startup
-    from routes.bookings import auto_generate_schedules_wrapper
-    try:
-        auto_generate_schedules_wrapper()
-    except Exception as e:
-        print(f"Error during startup schedule generation: {e}")
-
-    yield
-
-    scheduler.shutdown()
-
-    print("Notification Scheduler Stopped")
 
 app = FastAPI(
     title="Saarthi Curious API",
-    version="1.0.0",
-    lifespan=lifespan
+    version="1.0.0"
 )
 
 # ============================
