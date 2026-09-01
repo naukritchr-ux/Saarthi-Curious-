@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ title }}</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        color: #1e1b4b;
+        line-height: 1.6;
+        background: #f1ecf7;
+      }
+
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 40px;
+        background: white;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .header {
+        border-bottom: 3px solid #693c83;
+        padding-bottom: 20px;
+        margin-bottom: 30px;
+      }
+
+      .header h1 {
+        color: #693c83;
+        font-size: 28px;
+        margin-bottom: 10px;
+      }
+
+      .header .subtitle {
+        color: #4f4679;
+        font-size: 14px;
+      }
+
+      .header .meta {
+        color: #4f4679;
+        font-size: 12px;
+        margin-top: 10px;
+      }
+
+      .section {
+        margin-bottom: 30px;
+      }
+
+      .section h2 {
+        color: #693c83;
+        font-size: 20px;
+        margin-bottom: 15px;
+        border-left: 4px solid #10b981;
+        padding-left: 10px;
+      }
+
+      .section h3 {
+        color: #1e1b4b;
+        font-size: 16px;
+        margin-bottom: 10px;
+        margin-top: 20px;
+      }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+
+      .summary-card {
+        background: #f1ecf7;
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+      }
+
+      .summary-card .label {
+        font-size: 11px;
+        color: #4f4679;
+        margin-bottom: 5px;
+        text-transform: uppercase;
+      }
+
+      .summary-card .value {
+        font-size: 24px;
+        font-weight: bold;
+        color: #1e1b4b;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+      }
+
+      th {
+        background: #693c83;
+        color: white;
+        padding: 12px;
+        text-align: left;
+        font-size: 12px;
+        text-transform: uppercase;
+      }
+
+      td {
+        padding: 12px;
+        border-bottom: 1px solid #d9cfe8;
+        font-size: 13px;
+      }
+
+      tr:hover {
+        background: #f1ecf7;
+      }
+
+      .status-completed {
+        color: #10b981;
+        font-weight: bold;
+      }
+
+      .status-pending {
+        color: #f59e0b;
+        font-weight: bold;
+      }
+
+      .footer {
+        margin-top: 40px;
+        padding-top: 20px;
+        border-top: 1px solid #d9cfe8;
+        text-align: center;
+        color: #4f4679;
+        font-size: 11px;
+      }
+
+      .ai-section {
+        background: linear-gradient(135deg, #693c83 0%, #10b981 100%);
+        color: white;
+        padding: 25px;
+        border-radius: 8px;
+        margin-top: 30px;
+        page-break-inside: avoid;
+      }
+
+      .ai-section h2 {
+        color: white;
+        border-left-color: white;
+      }
+
+      .ai-section h3 {
+        color: white;
+        margin-top: 15px;
+        font-size: 14px;
+      }
+
+      .ai-section ul {
+        margin-left: 20px;
+        margin-top: 8px;
+      }
+
+      .ai-section li {
+        margin-bottom: 6px;
+        font-size: 13px;
+      }
+
+      .ai-section p {
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .ai-badge {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 3px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        margin-bottom: 10px;
+      }
+
+      @media print {
+        body {
+          background: white;
+        }
+        .container {
+          box-shadow: none;
+          padding: 20px;
+        }
+        .ai-section {
+          break-inside: avoid;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>{{ title }}</h1>
+        <p class="subtitle">{{ subtitle }}</p>
+        <p class="meta">
+          Generated on: {{ generated_date }} | Period: {{ period_start }} to {{
+          period_end }}
+        </p>
+      </div>
+
+      {% block content %}{% endblock %}
+
+      <div class="footer">
+        <p>
+          Saarthi Curious Learning Management System | Report ID: {{ report_id
+          }}
+        </p>
+        <p>Generated on: {{ platform }}</p>
+      </div>
+    </div>
+  </body>
+</html>

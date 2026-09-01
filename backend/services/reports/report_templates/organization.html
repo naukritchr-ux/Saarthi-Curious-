@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="section">
+    <h2>Organization Summary</h2>
+    <div class="summary-grid">
+        <div class="summary-card">
+            <div class="label">Total Learners</div>
+            <div class="value">{{ data.summary.total_learners }}</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Active Learners</div>
+            <div class="value">{{ data.summary.active_learners }}</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Total Programs</div>
+            <div class="value">{{ data.summary.total_programs }}</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Completion Rate</div>
+            <div class="value">{{ data.summary.completion_rate }}%</div>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <h2>Top Performing Programs</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Program Name</th>
+                <th>Completion Rate</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for program in data.top_programs %}
+            <tr>
+                <td>{{ program.name }}</td>
+                <td class="status-completed">{{ program.completion }}%</td>
+            </tr>
+            {% endfor %}
+            {% if not data.top_programs %}
+            <tr>
+                <td colspan="2" style="text-align: center;">No program data available</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+{% if ai_summary %}
+<div class="ai-section">
+    <h2>AI Organization Insights</h2>
+    <h3>Executive Summary</h3>
+    <p>{{ ai_summary.executive_summary }}</p>
+    
+    <h3>Key Insights</h3>
+    <ul>
+        {% for insight in ai_summary.key_insights %}
+        <li>{{ insight }}</li>
+        {% endfor %}
+    </ul>
+    
+    <h3>Strengths</h3>
+    <ul>
+        {% for strength in ai_summary.strengths %}
+        <li>{{ strength }}</li>
+        {% endfor %}
+    </ul>
+    
+    <h3>Areas Needing Attention</h3>
+    <ul>
+        {% for area in ai_summary.areas_needing_attention %}
+        <li>{{ area }}</li>
+        {% endfor %}
+    </ul>
+    
+    <h3>Recommendations</h3>
+    <ul>
+        {% for recommendation in ai_summary.recommendations %}
+        <li>{{ recommendation }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+{% endblock %}

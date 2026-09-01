@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="section">
+    <h2>Team Summary</h2>
+    <div class="summary-grid">
+        <div class="summary-card">
+            <div class="label">Total Employees</div>
+            <div class="value">{{ data.summary.total_employees }}</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Active Employees</div>
+            <div class="value">{{ data.summary.active_employees }}</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Completion Rate</div>
+            <div class="value">{{ data.summary.completion_rate }}%</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Pending Employees</div>
+            <div class="value">{{ data.summary.pending_employees }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <h2>Top Performers</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Programs Completed</th>
+                <th>Average Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for performer in data.top_performers %}
+            <tr>
+                <td>{{ performer.name }}</td>
+                <td>{{ performer.programs_completed }}</td>
+                <td class="status-completed">{{ performer.avg_score }}%</td>
+            </tr>
+            {% endfor %}
+            {% if not data.top_performers %}
+            <tr>
+                <td colspan="3" style="text-align: center;">No performance data available</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<div class="section">
+    <h2>Pending Employees</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Pending Programs</th>
+                <th>Last Activity</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for employee in data.pending_employees %}
+            <tr>
+                <td>{{ employee.name }}</td>
+                <td class="status-pending">{{ employee.pending_programs }}</td>
+                <td>{{ employee.last_activity }}</td>
+            </tr>
+            {% endfor %}
+            {% if not data.pending_employees %}
+            <tr>
+                <td colspan="3" style="text-align: center;">No pending employees</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+{% if ai_summary %}
+<div class="ai-section">
+    <h2>AI Team Insights</h2>
+    <h3>Executive Summary</h3>
+    <p>{{ ai_summary.executive_summary }}</p>
+    
+    <h3>Key Insights</h3>
+    <ul>
+        {% for insight in ai_summary.key_insights %}
+        <li>{{ insight }}</li>
+        {% endfor %}
+    </ul>
+    
+    <h3>Strengths</h3>
+    <ul>
+        {% for strength in ai_summary.strengths %}
+        <li>{{ strength }}</li>
+        {% endfor %}
+    </ul>
+    
+    <h3>Areas Needing Attention</h3>
+    <ul>
+        {% for area in ai_summary.areas_needing_attention %}
+        <li>{{ area }}</li>
+        {% endfor %}
+    </ul>
+    
+    <h3>Recommendations</h3>
+    <ul>
+        {% for recommendation in ai_summary.recommendations %}
+        <li>{{ recommendation }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+{% endblock %}

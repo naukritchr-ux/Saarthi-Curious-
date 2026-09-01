@@ -1,0 +1,28 @@
+
+# Python cache files
+__pycache__/
+*.pyc
+
+# Local environments
+venv/
+.venv/
+env/
+
+# Security / secrets
+backend/.env
+frontend/.env
+backend/token.json
+
+# Node dependencies
+node_modules/
+
+# Frontend build output
+dist/
+
+# Android / Gradle generated files
+.gradle/
+**/.gradle/
+**/build/
+
+backend/credentials.json
+backend/token.json

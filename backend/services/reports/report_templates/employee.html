@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="section">
+    <h2>Learning Summary</h2>
+    <div class="summary-grid">
+        <div class="summary-card">
+            <div class="label">Completed Programs</div>
+            <div class="value">{{ data.summary.completed_programs }}</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">In Progress</div>
+            <div class="value">{{ data.summary.in_progress_programs }}</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Total Curos</div>
+            <div class="value">{{ data.summary.total_curos }}</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Current Streak</div>
+            <div class="value">{{ data.summary.current_streak }} days</div>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <h2>Completed Programs</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Program Name</th>
+                <th>Completed Date</th>
+                <th>Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for program in data.completed_programs %}
+            <tr>
+                <td>{{ program.name }}</td>
+                <td>{{ program.completed_date }}</td>
+                <td class="status-completed">{{ program.score }}%</td>
+            </tr>
+            {% endfor %}
+            {% if not data.completed_programs %}
+            <tr>
+                <td colspan="3" style="text-align: center;">No completed programs yet</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<div class="section">
+    <h2>Quiz Performance</h2>
+    <div class="summary-grid">
+        <div class="summary-card">
+            <div class="label">Average Score</div>
+            <div class="value">{{ data.quiz_performance.average }}%</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Highest Score</div>
+            <div class="value">{{ data.quiz_performance.highest }}%</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Lowest Score</div>
+            <div class="value">{{ data.quiz_performance.lowest }}%</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Total Attempts</div>
+            <div class="value">{{ data.quiz_performance.total_attempts }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <h2>Badges Earned</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Badge Name</th>
+                <th>Earned Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for badge in data.badges %}
+            <tr>
+                <td>{{ badge.name }}</td>
+                <td>{{ badge.earned_date }}</td>
+            </tr>
+            {% endfor %}
+            {% if not data.badges %}
+            <tr>
+                <td colspan="2" style="text-align: center;">No badges earned yet</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+{% if ai_summary %}
+<div class="ai-section">
+    <h2>AI Learning Insights</h2>
+    <h3>Executive Summary</h3>
+    <p>{{ ai_summary.executive_summary }}</p>
+    
+    <h3>Key Insights</h3>
+    <ul>
+        {% for insight in ai_summary.key_insights %}
+        <li>{{ insight }}</li>
+        {% endfor %}
+    </ul>
+    
+    <h3>Strengths</h3>
+    <ul>
+        {% for strength in ai_summary.strengths %}
+        <li>{{ strength }}</li>
+        {% endfor %}
+    </ul>
+    
+    <h3>Areas Needing Attention</h3>
+    <ul>
+        {% for area in ai_summary.areas_needing_attention %}
+        <li>{{ area }}</li>
+        {% endfor %}
+    </ul>
+    
+    <h3>Recommendations</h3>
+    <ul>
+        {% for recommendation in ai_summary.recommendations %}
+        <li>{{ recommendation }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+{% endblock %}

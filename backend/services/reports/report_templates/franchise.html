@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="section">
+    <h2>Franchise Summary</h2>
+    <div class="summary-grid">
+        <div class="summary-card">
+            <div class="label">Total Franchises</div>
+            <div class="value">{{ data.summary.total_franchises }}</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Avg Completion Rate</div>
+            <div class="value">{{ data.summary.avg_completion_rate }}%</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Total Employees</div>
+            <div class="value">{{ data.summary.total_employees }}</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Active Employees</div>
+            <div class="value">{{ data.summary.active_employees }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <h2>Franchise Comparison</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Franchise Name</th>
+                <th>Completion Rate</th>
+                <th>Employees</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for franchise in data.franchise_comparison %}
+            <tr>
+                <td>{{ franchise.name }}</td>
+                <td class="status-completed">{{ franchise.completion }}%</td>
+                <td>{{ franchise.employees }}</td>
+            </tr>
+            {% endfor %}
+            {% if not data.franchise_comparison %}
+            <tr>
+                <td colspan="3" style="text-align: center;">No franchise data available</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+{% if ai_summary %}
+<div class="ai-section">
+    <h2>AI Franchise Insights</h2>
+    <h3>Executive Summary</h3>
+    <p>{{ ai_summary.executive_summary }}</p>
+    
+    <h3>Key Insights</h3>
+    <ul>
+        {% for insight in ai_summary.key_insights %}
+        <li>{{ insight }}</li>
+        {% endfor %}
+    </ul>
+    
+    <h3>Strengths</h3>
+    <ul>
+        {% for strength in ai_summary.strengths %}
+        <li>{{ strength }}</li>
+        {% endfor %}
+    </ul>
+    
+    <h3>Areas Needing Attention</h3>
+    <ul>
+        {% for area in ai_summary.areas_needing_attention %}
+        <li>{{ area }}</li>
+        {% endfor %}
+    </ul>
+    
+    <h3>Recommendations</h3>
+    <ul>
+        {% for recommendation in ai_summary.recommendations %}
+        <li>{{ recommendation }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SAARTHI CURIOUS</string>
+    <string name="title_activity_main">SAARTHI CURIOUS</string>
+    <string name="package_name">com.saarthi.curious</string>
+    <string name="custom_url_scheme">com.saarthi.curious</string>
+</resources>

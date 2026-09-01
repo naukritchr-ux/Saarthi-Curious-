@@ -1,0 +1,84 @@
+ # ============================================
+    # GET PENDING ASSIGNMENTS - COMMENTED OUT
+    # ============================================
+    
+    # pending_assignments = []
+    # 
+    # for program in all_published_programs:
+    #     # Check retention quiz
+    #     retention_quiz = db.query(RetentionQuiz).filter(
+    #         RetentionQuiz.program_id == program.id
+    #     ).first()
+    #     
+    #     if retention_quiz:
+    #         # Check if user has completed this retention quiz
+    #         attempt = db.query(RetentionQuizAttempt).filter(
+    #             RetentionQuizAttempt.user_id == learner_user_id,
+    #             RetentionQuizAttempt.retention_quiz_id == retention_quiz.id,
+    #             RetentionQuizAttempt.passed == True
+    #         ).first()
+    #         
+    #         if not attempt:
+    #             # Check if quiz is unlocked based on days
+    #             user_progress = progress_map.get(program.id)
+    #             if user_progress:
+    #                 days_since_start = (datetime.utcnow() - user_progress.created_at).days
+    #                 if days_since_start >= retention_quiz.unlock_after_days:
+    #                     questions = db.query(RetentionQuizQuestion).filter(
+    #                         RetentionQuizQuestion.retention_quiz_id == retention_quiz.id
+    #                     ).order_by(RetentionQuizQuestion.display_order).all()
+    #                     
+    #                     pending_assignments.append({
+    #                         "id": retention_quiz.id,
+    #                         "type": "retention_quiz",
+    #                         "title": f"Retention Quiz - {program.name}",
+    #                         "program_id": program.id,
+    #                         "program_name": program.name,
+    #                         "questions_count": len(questions),
+    #                         "unlock_after_days": retention_quiz.unlock_after_days,
+    #                         "days_since_start": days_since_start,
+    #                         "is_unlocked": True
+    #                     })
+    #     
+    #     # Check application checks
+    #     application_checks = db.query(ApplicationCheck).filter(
+    #         ApplicationCheck.program_id == program.id
+    #     ).order_by(ApplicationCheck.check_number).all()
+    #     
+    #     for app_check in application_checks:
+    #         # Check if user has completed this application check
+    #         attempt = db.query(ApplicationCheckAttempt).filter(
+    #             ApplicationCheckAttempt.user_id == learner_user_id,
+    #             ApplicationCheckAttempt.application_check_id == app_check.id,
+    #             ApplicationCheckAttempt.passed == True
+    #         ).first()
+    #         
+    #         if not attempt:
+    #             # Check if application check is unlocked
+    #             user_progress = progress_map.get(program.id)
+    #             if user_progress:
+    #                 days_since_start = (datetime.utcnow() - user_progress.created_at).days
+    #                 if days_since_start >= app_check.unlock_after_days:
+    #                     questions = db.query(ApplicationCheckQuestion).filter(
+    #                         ApplicationCheckQuestion.application_check_id == app_check.id
+    #                     ).order_by(ApplicationCheckQuestion.display_order).all()
+    #                     
+    #                     pending_assignments.append({
+    #                         "id": app_check.id,
+    #                         "type": "application_check",
+    #                         "title": f"Application Check {app_check.check_number} - {program.name}",
+    #                         "program_id": program.id,
+    #                         "program_name": program.name,
+    #                         "check_number": app_check.check_number,
+    #                         "questions_count": len(questions),
+    #                         "unlock_after_days": app_check.unlock_after_days,
+    #                         "days_since_start": days_since_start,
+    #                         "is_unlocked": True
+    #                     })
+    # 
+    # # Sort by days since start (oldest first) and return latest first
+    # pending_assignments.sort(key=lambda x: x['days_since_start'], reverse=True)
+    
+    # ============================================
+    # RETURN COMPLETE DASHBOARD DATA
+    # ============================================

@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+/* Remove browser scrollbar */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+/* Sidebar scroll works but scrollbar hidden */
+.sidebar-scroll {
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+
+/* Hide scrollbar but keep scrolling */
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
