@@ -3,6 +3,7 @@
   "version": 2,
   "buildCommand": "cd frontend && npm ci && npm run build",
   "outputDirectory": "frontend/dist",
+  "devCommand": "cd frontend && npm run dev",
   "rewrites": [
     {
       "source": "/api/(.*)",
