@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -45,16 +46,25 @@ async def strip_api_prefix(request, call_next):
 # ============================
 # CORS
 # ============================
+allowed_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+    "https://saarthi-curious.vercel.app",
+]
+
+extra_origins = os.getenv("CORS_ALLOWED_ORIGINS", "")
+if extra_origins:
+    for origin in extra_origins.split(","):
+        origin = origin.strip()
+        if origin:
+            allowed_origins.append(origin)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5174",
-        "https://saarthi-curious.vercel.app",
-    ],
+    allow_origins=allowed_origins,
+    allow_origin_regex=r"https://.*\.vercel\.app$|http://localhost:\d+$|http://127\.0\.0\.1:\d+$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

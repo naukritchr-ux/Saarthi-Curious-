@@ -35,8 +35,12 @@ export default function LoginPage() {
       setError("");
     }
   } catch (error) {
+    console.error("Login error:", error);
     setError(
-      error.response?.data?.detail || "Login failed"
+      error.response?.data?.detail ||
+      (error.code === "ERR_NETWORK"
+        ? "Cannot connect to backend. Check backend URL and server status."
+        : "Login failed")
     );
   } finally {
     setIsLoading(false);
