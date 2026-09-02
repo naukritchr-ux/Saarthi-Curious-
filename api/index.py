@@ -1,8 +1,24 @@
-import sys
-from pathlib import Path
+# api/index.py
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+import os
 
-# Make the existing backend directory importable.
-BACKEND_DIR = Path(__file__).resolve().parent.parent / "backend"
-sys.path.insert(0, str(BACKEND_DIR))
+app = FastAPI()
 
-from main import app  # noqa: E402,F401
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/api/health")
+async def health():
+    return {"status": "ok"}
+
+@app.get("/api/test")
+async def test():
+    return {"message": "Backend is working!"}
+
+# Remove any @app.get("/") routes as they'll conflict with frontend
