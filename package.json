@@ -1,5 +1,9 @@
 {
   "dependencies": {
     "prop-types": "^15.8.1"
+  },
+  "scripts": {
+    "dev": "echo 'Development servers: Python on :8000, Frontend on :5173' && echo 'Run: uvicorn api.index:app --reload --port 8000' && echo 'And: cd frontend && npm run dev'"
   }
+  
 }
