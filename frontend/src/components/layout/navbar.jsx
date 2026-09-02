@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   Search,
+  Menu,
   User,
   Settings,
   LogOut,
@@ -21,7 +22,7 @@ const roleNames = {
   7: "Head Office Staff",
 };
 
-const Navbar = () => {
+const Navbar = ({ onMenuToggle }) => {
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
   const userName = localStorage.getItem("user_name") || "Guest";
@@ -41,9 +42,18 @@ const Navbar = () => {
   const roleName = roleNames[roleId] || "User";
 
   return (
-    <header className="h-16 border-b border-[#D9CFE8]/20 bg-[#1E1B4B] px-4 lg:px-6 flex items-center justify-between relative z-50">
+    <header className="relative z-50 flex h-16 items-center justify-between border-b border-[#D9CFE8]/20 bg-[#1E1B4B] px-3 sm:px-4 lg:px-6">
+      <button
+        type="button"
+        onClick={onMenuToggle}
+        aria-label="Open navigation"
+        className="mr-2 rounded-lg p-2 text-[#EDE3F5] transition hover:bg-[#2F264D] md:hidden"
+      >
+        <Menu size={20} />
+      </button>
+
       {/* Logo */}
-      <div className="w-14 h-10 flex items-center flex-shrink-0">
+      <div className="flex h-10 w-14 shrink-0 items-center">
         <img
           src="/sclogonav.png"
           alt="Saarthi Curious Logo"
@@ -52,7 +62,7 @@ const Navbar = () => {
       </div>
 
       {/* Search Bar */}
-      <div className="relative w-64 sm:w-80 lg:w-96 mx-4 flex-1 max-w-96">
+      <div className="relative mx-2 hidden max-w-96 flex-1 sm:mx-4 sm:block sm:w-80 lg:w-96">
         <Search
           size={18}
           className="absolute left-3 top-1/2 -translate-y-1/2 text-[#EDE3F5] pointer-events-none"
@@ -65,13 +75,13 @@ const Navbar = () => {
       </div>
 
       {/* Right Section */}
-      <div className="flex items-center gap-4 lg:gap-6 flex-shrink-0">
+      <div className="flex shrink-0 items-center gap-1 sm:gap-4 lg:gap-6">
         <NotificationBell />
 
         {/* Profile */}
         <div className="relative">
           <div
-            className="flex items-center gap-3 cursor-pointer rounded-xl px-2 py-1.5 transition-colors duration-200 hover:bg-[#2F264D] group"
+            className="group flex cursor-pointer items-center gap-2 rounded-xl px-1 py-1.5 transition-colors duration-200 hover:bg-[#2F264D] sm:gap-3 sm:px-2"
             onClick={() => setShowMenu(!showMenu)}
           >
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#693C83] to-[#8B5FBF] flex items-center justify-center font-bold text-[#F1ECF7] shadow-lg transition-transform duration-200 group-hover:scale-105 flex-shrink-0">
@@ -83,12 +93,12 @@ const Navbar = () => {
                 .toUpperCase()}
             </div>
 
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="min-w-0">
-                <h3 className="text-[#F1ECF7] text-sm font-semibold truncate max-w-[160px]">
+            <div className="flex min-w-0 items-center gap-1 sm:gap-2">
+              <div className="hidden min-w-0 sm:block">
+                <h3 className="max-w-[160px] truncate text-sm font-semibold text-[#F1ECF7]">
                   {userName}
                 </h3>
-                <p className="text-[#D9CFE8] text-xs truncate max-w-[160px]">
+                <p className="max-w-[160px] truncate text-xs text-[#D9CFE8]">
                   {roleName}
                 </p>
               </div>

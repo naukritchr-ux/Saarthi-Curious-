@@ -1,12 +1,37 @@
 @import "tailwindcss";
 
-/* Remove browser scrollbar */
+/* Keep every page inside the viewport while its content areas handle scrolling. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 html,
 body,
 #root {
   height: 100%;
+  width: 100%;
   margin: 0;
   overflow: hidden;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }
 
 /* Sidebar scroll works but scrollbar hidden */

@@ -18,7 +18,7 @@ import {
   FileText,
 } from "lucide-react";
 
-const Sidebar = ({ isExpanded, onMouseEnter, onMouseLeave }) => {
+const Sidebar = ({ isExpanded, onMouseEnter, onMouseLeave, onNavigate }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const roleId = Number(localStorage.getItem("role_id"));
@@ -30,6 +30,7 @@ const Sidebar = ({ isExpanded, onMouseEnter, onMouseLeave }) => {
 
   const handleNavigate = (path) => {
     navigate(path);
+    onNavigate?.();
   };
 
   useEffect(() => {
@@ -282,7 +283,7 @@ const Sidebar = ({ isExpanded, onMouseEnter, onMouseLeave }) => {
     <aside
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className={`fixed left-0 top-16 z-50 h-[calc(100vh-4rem)] bg-[#1E1B4B] text-[#F1ECF7] border-r border-[#7B6A9A] overflow-y-auto overflow-x-hidden transition-all duration-300 ease-in-out ${sidebarWidthClass}`}
+      className={`fixed left-0 top-16 z-50 h-[calc(100vh-4rem)] bg-[#1E1B4B] text-[#F1ECF7] border-r border-[#7B6A9A] overflow-y-auto overflow-x-hidden transition-all duration-300 ease-in-out ${sidebarWidthClass} max-md:w-64 ${isExpanded ? "max-md:translate-x-0" : "max-md:-translate-x-full"}`}
       style={{
         scrollbarWidth: 'none', /* Firefox */
         msOverflowStyle: 'none' /* IE and Edge */
