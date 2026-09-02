@@ -10,11 +10,13 @@ import {
   Eye,
   EyeOff,
   ShieldCheck,
+  FileLock2,
   Loader2,
   AlertCircle,
   CheckCircle,
 } from "lucide-react";
 import api from "../../utils/axios";
+import { useNavigate } from "react-router-dom";
 
 // Password Input Component
 const PasswordInput = ({
@@ -148,6 +150,7 @@ const notificationConfigs = [
 ];
 
 const Settings = () => {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState("account");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
@@ -265,6 +268,14 @@ const Settings = () => {
                   >
                     <LockKeyhole size={20} />
                     <span className="font-medium">Account</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/privacy-policy")}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[#7C6A9A] hover:text-[#1E1B4B] hover:bg-[#F8F7FC] transition-all duration-200"
+                  >
+                    <FileLock2 size={20} />
+                    <span className="font-medium">Privacy Policy</span>
                   </button>
                 </nav>
               </div>

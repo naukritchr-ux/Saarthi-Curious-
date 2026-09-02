@@ -24,6 +24,7 @@ import NotificationScriptsPage from "./pages/communication/notificationScriptsPa
 import BadgeManagement from "./pages/gamification/badgeManagement";
 import Profile from "./pages/profile/profile";
 import Settings from "./pages/settings/settings";
+import PrivacyPolicy from "./pages/privacyPolicy/privacyPolicy";
 import LearnerDashboard from "./pages/learner/learnerDashboard";
 import ReportsPage from "./pages/Reports/ReportsPage";
 import OpenProgram from "./pages/learner/openProgram/openProgram";
@@ -362,6 +363,15 @@ function App() {
           element={
             <ProtectedRoute>
               <Settings />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/privacy-policy"
+          element={
+            <ProtectedRoute>
+              <PrivacyPolicy />
             </ProtectedRoute>
           }
         />
