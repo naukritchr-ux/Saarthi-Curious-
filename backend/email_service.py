@@ -66,11 +66,10 @@ def send_email(to_email, subject, html):
 
         logger.info("Email sent successfully to %s", to_email)
         return True
-    except Exception as error:
-        logger.error(
-            "Failed to send email to %s (%s)",
-            to_email,
-            type(error).__name__,
+    except Exception as e:
+        logger.exception(
+            f"Failed to send email to {to_email} "
+            f"({type(e).__name__}): {e}"
         )
         return False
     
