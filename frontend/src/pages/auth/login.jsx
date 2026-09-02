@@ -48,7 +48,7 @@ export default function LoginPage() {
 };
 
   return (
-    <main className="min-h-screen bg-[#F8F5FA] text-[#1E1B4B]">
+    <main className="min-h-screen max-h-screen overflow-y-auto bg-[#F8F5FA] text-[#1E1B4B]">
       <div className="mx-auto flex min-h-screen max-w-7xl items-center justify-center px-4 py-10 sm:px-6 lg:px-8">
         <section className="grid w-full overflow-hidden rounded-2xl border border-[#693C83]/10 bg-white shadow-xl md:grid-cols-[1.05fr_0.95fr]">
           {/* Left Panel - Branding */}
