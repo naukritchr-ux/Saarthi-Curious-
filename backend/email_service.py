@@ -1,74 +1,78 @@
 import os
-import time
+import logging
+import base64
 from dotenv import load_dotenv
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+from email.message import EmailMessage
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
 
 load_dotenv()
 
-SMTP_HOST = os.getenv("SMTP_HOST")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))
-SMTP_USERNAME = os.getenv("SMTP_USERNAME")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
-SMTP_FROM_EMAIL = os.getenv(
-    "SMTP_FROM_EMAIL",
-    SMTP_USERNAME
-)
+logger = logging.getLogger(__name__)
+
+GMAIL_SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
+GMAIL_TOKEN_URI = "https://oauth2.googleapis.com/token"
+
+
+def _gmail_credentials():
+    required_variables = (
+        "GMAIL_CLIENT_ID",
+        "GMAIL_CLIENT_SECRET",
+        "GMAIL_REFRESH_TOKEN",
+        "GMAIL_FROM_EMAIL",
+    )
+    missing_variables = [
+        name for name in required_variables if not os.getenv(name)
+    ]
+    if missing_variables:
+        raise RuntimeError(
+            "Missing Gmail environment variables: "
+            + ", ".join(missing_variables)
+        )
+
+    credentials = Credentials(
+        token=None,
+        refresh_token=os.environ["GMAIL_REFRESH_TOKEN"],
+        token_uri=GMAIL_TOKEN_URI,
+        client_id=os.environ["GMAIL_CLIENT_ID"],
+        client_secret=os.environ["GMAIL_CLIENT_SECRET"],
+        scopes=GMAIL_SCOPES,
+    )
+    credentials.refresh(Request())
+    return credentials
+
 
 def send_email(to_email, subject, html):
-    """Send an email using the company's SMTP server."""
+    """Send an HTML email through the Gmail API over HTTPS."""
+    try:
+        credentials = _gmail_credentials()
 
-    import time
+        message = EmailMessage()
+        message["From"] = os.environ["GMAIL_FROM_EMAIL"]
+        message["To"] = to_email
+        message["Subject"] = subject
+        message.set_content("This email requires an HTML-capable email client.")
+        message.add_alternative(html, subtype="html")
 
-    max_retries = 3
+        encoded_message = base64.urlsafe_b64encode(
+            message.as_bytes()
+        ).decode("ascii")
 
-    for attempt in range(1, max_retries + 1):
+        build("gmail", "v1", credentials=credentials).users().messages().send(
+            userId="me",
+            body={"raw": encoded_message},
+        ).execute()
 
-        try:
-            msg = MIMEMultipart("alternative")
-
-            msg["From"] = SMTP_FROM_EMAIL
-            msg["To"] = to_email
-            msg["Subject"] = subject
-
-            html_part = MIMEText(html, "html")
-            msg.attach(html_part)
-
-            with smtplib.SMTP_SSL(
-                SMTP_HOST,
-                SMTP_PORT,
-                timeout=30
-            ) as server:
-
-                server.login(
-                    SMTP_USERNAME,
-                    SMTP_PASSWORD
-                )
-
-                server.sendmail(
-                    SMTP_FROM_EMAIL,
-                    to_email,
-                    msg.as_string()
-                )
-
-            print(
-                f"Email sent successfully to {to_email}"
-            )
-
-            return True
-
-        except Exception as e:
-
-            print(
-                f"Failed to send email to {to_email} "
-                f"(attempt {attempt}/{max_retries}): {e}"
-            )
-
-            if attempt < max_retries:
-                time.sleep(3)
-
-    return False
+        logger.info("Email sent successfully to %s", to_email)
+        return True
+    except Exception as error:
+        logger.error(
+            "Failed to send email to %s (%s)",
+            to_email,
+            type(error).__name__,
+        )
+        return False
     
 def send_welcome_email(to_email, password):
 

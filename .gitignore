@@ -11,7 +11,12 @@ env/
 # Security / secrets
 backend/.env
 frontend/.env
-backend/token.json
+**/.env
+**/.env.*
+!.env.example
+**/token.json
+**/credentials.json
+**/client_secret*.json
 
 # Node dependencies
 node_modules/
@@ -24,6 +29,4 @@ dist/
 **/.gradle/
 **/build/
 
-backend/credentials.json
-backend/token.json
 .vercel
