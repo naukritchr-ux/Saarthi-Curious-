@@ -159,6 +159,14 @@ export default function LoginPage() {
                       {isLoading ? "Signing in…" : "Sign in"}
                     </button>
                   </form>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate("/privacy-policy")}
+                    className="mt-5 w-full text-center text-xs font-medium text-[#693C83] transition hover:text-[#1E1B4B]"
+                  >
+                    Privacy Policy
+                  </button>
                 </>
                               ) : mode === "login-otp" ? (
                 <>

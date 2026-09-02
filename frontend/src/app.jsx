@@ -369,11 +369,7 @@ function App() {
 
         <Route
           path="/privacy-policy"
-          element={
-            <ProtectedRoute>
-              <PrivacyPolicy />
-            </ProtectedRoute>
-          }
+          element={<PrivacyPolicy />}
         />
 
         <Route
