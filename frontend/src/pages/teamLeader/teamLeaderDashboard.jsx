@@ -54,7 +54,7 @@ const TeamLeaderDashboard = () => {
   }, [userId, userRoleId]);
 
   useEffect(() => {
-    if (userRoleId !== 3) {
+    if (![3, 6].includes(userRoleId)) {
       setError("You don't have permission to access this dashboard");
       setLoading(false);
       return;

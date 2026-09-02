@@ -251,7 +251,7 @@ class ComputationEngine:
         # Get franchise users (roles 4 and 6)
         if role_id in [1, 2]:
             franchise_users = self.db.query(User).filter(User.role_id.in_([4, 6])).all()
-        elif role_id == 3:
+        elif role_id in [3, 6]:
             franchise_users = self.db.query(User).filter(
                 User.Team_Leader_id == user_id,
                 User.role_id.in_([4, 6])

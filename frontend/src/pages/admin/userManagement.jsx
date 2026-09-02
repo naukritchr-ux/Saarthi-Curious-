@@ -28,12 +28,12 @@ import {
 const UserManagementPage = () => {
   // Get current user role
   const currentRoleId = parseInt(localStorage.getItem("role_id") || "1");
-  const canAddUser = [1, 2].includes(currentRoleId); // Only Admin and Master Admin can add users
+  const canAddUser = [1, 2, 6].includes(currentRoleId);
   const canEditUser = [1, 2].includes(currentRoleId); // Only Admin and Master Admin can edit users
 
   // Set page title and description based on role
   const getPageDetails = () => {
-    if (currentRoleId === 3) {
+    if (currentRoleId === 3 || currentRoleId === 6) {
       return {
         title: "Team Directory",
         description:
@@ -106,8 +106,11 @@ const UserManagementPage = () => {
     switch (roleId) {
       case 5: // Franchise Employee → show Franchise Partners
         return data.filter((user) => user.role_id === 4 && user.is_active);
-      case 4: // Franchise Partner → show Team Leaders
-        return data.filter((user) => user.role_id === 3 && user.is_active);
+      case 4: // Franchise Partner → show Team Leader or Developer
+        return data.filter(
+          (user) =>
+            user.role_id === (currentRoleId === 6 ? 6 : 3) && user.is_active,
+        );
       case 6: // Franchise Developer → show Admins
       case 7: // Head Office Staff → show Admins
       case 3: // Team Leader → show Admins
@@ -172,7 +175,7 @@ const UserManagementPage = () => {
     if ([1, 2].includes(currentRoleId)) {
       // Admin/Master Admin: Show all filters
       return roleFilters;
-    } else if (currentRoleId === 3) {
+    } else if (currentRoleId === 3 || currentRoleId === 6) {
       // Team Leader: Only show Franchise Partner and Franchise Employee
       return ["All", "Franchise Partner", "Franchise Employee"];
     } else if (currentRoleId === 4) {
@@ -187,7 +190,7 @@ const UserManagementPage = () => {
     let filtered = users;
 
     // Apply role-based visibility
-    if (currentRoleId === 3) {
+    if (currentRoleId === 3 || currentRoleId === 6) {
       // Team Leader: Show only Franchise Partners and Franchise Employees
       filtered = filtered.filter(
         (user) => user.role_id === 4 || user.role_id === 5,
@@ -264,7 +267,7 @@ const UserManagementPage = () => {
           icon: ShieldCheck,
         },
       ];
-    } else if (currentRoleId === 3) {
+    } else if (currentRoleId === 3 || currentRoleId === 6) {
       // Team Leader: Show only relevant stats
       const franchisePartners = users.filter((user) => user.role_id === 4);
       const franchiseEmployees = users.filter((user) => user.role_id === 5);
@@ -447,7 +450,7 @@ const UserManagementPage = () => {
 
   // Determine if filters should be shown
   const showFilters = [1, 2].includes(currentRoleId);
-  const showRoleFilters = [1, 2, 3].includes(currentRoleId);
+  const showRoleFilters = [1, 2, 3, 6].includes(currentRoleId);
   const availableRoleFilters = getAvailableRoleFilters();
 
   return (

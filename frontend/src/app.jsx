@@ -66,7 +66,7 @@ function App() {
         <Route
           path="/team-leader"
           element={
-            <ProtectedRoute requiredRoles={[3]}>
+            <ProtectedRoute requiredRoles={[3, 6]}>
               <TeamLeaderDashboard />
             </ProtectedRoute>
           }
@@ -76,7 +76,7 @@ function App() {
         <Route
           path="/team"
           element={
-            <ProtectedRoute requiredRoles={[3]}>
+            <ProtectedRoute requiredRoles={[3, 6]}>
               <TeamLeaderDashboard />
             </ProtectedRoute>
           }
@@ -288,17 +288,17 @@ function App() {
         <Route
           path="/admin/users"
           element={
-            <ProtectedRoute requiredRoles={[1, 2, 3, 4]}>
+            <ProtectedRoute requiredRoles={[1, 2, 3, 4, 6]}>
               <UserManagementPage />
             </ProtectedRoute>
           }
         />
 
-        {/* Team Directory - for Team Leaders */}
+        {/* Team Directory - for Team Leaders and Franchise Developers */}
         <Route
           path="/team-directory"
           element={
-            <ProtectedRoute requiredRoles={[3]}>
+            <ProtectedRoute requiredRoles={[3, 6]}>
               <UserManagementPage />
             </ProtectedRoute>
           }

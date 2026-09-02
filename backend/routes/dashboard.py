@@ -61,12 +61,12 @@ def get_team_leader_dashboard(
 ):
     """
     Team Leader dashboard.
-    Role ID: 3 (Team Leader)
+    Role IDs: 3 (Team Leader), 6 (Franchise Developer)
     """
-    if role_id != 3:
+    if role_id not in [3, 6]:
         raise HTTPException(
             status_code=403,
-            detail="Access denied. Team Leader privileges required."
+            detail="Access denied. Team Leader or Franchise Developer privileges required."
         )
 
     return get_team_leader_dashboard_data(db, user_id)
@@ -223,7 +223,7 @@ def get_dashboard_by_role(
         response["available_dashboards"] = ["admin"]
         response["admin_dashboard"] = get_admin_dashboard(user_id, role_id, db)
         
-    elif role_id == 3:  # Team Leader
+    elif role_id in [3, 6]:  # Team Leader or Franchise Developer
         response["available_dashboards"] = ["team_leader", "learner"]
         response["team_leader_dashboard"] = get_team_leader_dashboard(user_id, role_id, db)
         response["learner_dashboard"] = get_learner_dashboard_data(db, user_id)

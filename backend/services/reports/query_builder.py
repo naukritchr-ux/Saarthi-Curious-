@@ -145,7 +145,7 @@ class QueryBuilder:
             return query
         
         # Apply hierarchy-based filters
-        if role_id == 3:  # Team Leader
+        if role_id in [3, 6]:  # Team Leader or Franchise Developer
             # Can see their own data and their team members
             query = query.where(
                 or_(
@@ -167,10 +167,6 @@ class QueryBuilder:
         elif role_id == 5:  # Franchise Employee
             # Can only see their own data
             query = query.where(User.user_id == user_id)
-        elif role_id == 6:  # Franchise Developer
-            # Can see franchise partners and employees under their scope
-            # This would need additional scope logic based on business rules
-            query = query.where(User.role_id.in_([4, 5]))
         elif role_id == 7:  # Head Office Staff
             # Can only see their own learner data
             query = query.where(User.user_id == user_id)

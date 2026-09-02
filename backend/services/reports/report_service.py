@@ -290,8 +290,8 @@ class ReportService:
         if role_id in [1, 2]:
             # Admins see all reports
             pass
-        elif role_id == 3:
-            # Team leaders see their own reports + reports for their team members
+        elif role_id in [3, 6]:
+            # Team leaders and Franchise Developers see their team reports.
             team_member_ids = self.db.query(User.user_id).filter(
                 User.Team_Leader_id == user_id
             ).all()
@@ -360,7 +360,7 @@ class ReportService:
 
         all_options = base_options + conditional_options
 
-        if role_id in [1, 2, 3]:
+        if role_id in [1, 2, 3, 6]:
             all_options.append("custom")
             dynamic_schema["custom_range"] = {"type": "date_range", "enabled": True}
         else:
@@ -376,7 +376,7 @@ class ReportService:
         if role_id in [1, 2]:
             team_leaders = self.db.query(User).filter(User.role_id == 3).all()
             return [{"id": tl.user_id, "name": tl.full_name} for tl in team_leaders]
-        elif role_id == 3:
+        elif role_id in [3, 6]:
             return []
         elif role_id == 6:
             return []
@@ -387,7 +387,7 @@ class ReportService:
         if role_id in [1, 2]:
             franchise_partners = self.db.query(User).filter(User.role_id == 4).all()
             return [{"id": fp.user_id, "name": fp.full_name} for fp in franchise_partners]
-        elif role_id == 3:
+        elif role_id in [3, 6]:
             franchise_partners = self.db.query(User).filter(
                 User.Team_Leader_id == user_id,
                 User.role_id == 4
@@ -417,7 +417,7 @@ class ReportService:
             options = [{"id": None, "name": "(all learners)"}]
             options.extend([{"id": l.user_id, "name": l.full_name} for l in learners])
             return options
-        elif role_id == 3:
+        elif role_id in [3, 6]:
             learners = self.db.query(User).filter(
                 User.Team_Leader_id == user_id,
                 User.role_id.in_([4, 5])
@@ -525,7 +525,7 @@ class ReportService:
         if role_id in [1, 2]:
             return True
 
-        if role_id == 3:
+        if role_id in [3, 6]:
             if report.generated_for:
                 team_member = self.db.query(User).filter(
                     User.user_id == report.generated_for,
@@ -574,7 +574,7 @@ class ReportService:
         if report_type == "learner_engagement_report":
             if requester_role_id in [1, 2]:
                 return target_role_id in [3, 4, 5, 6, 7]
-            elif requester_role_id == 3:
+            elif requester_role_id in [3, 6]:
                 learner = self.db.query(User).filter(
                     User.user_id == target_user_id,
                     User.Team_Leader_id == requester_user_id,

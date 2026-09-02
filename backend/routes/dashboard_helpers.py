@@ -645,10 +645,10 @@ def get_team_leader_dashboard_data(db: Session, team_leader_user_id: int) -> Dic
     if not team_leader:
         raise HTTPException(status_code=404, detail="Team Leader not found")
 
-    if team_leader.role_id != 3:
+    if team_leader.role_id not in [3, 6]:
         raise HTTPException(
             status_code=403,
-            detail="Access denied. Team Leader privileges required."
+            detail="Access denied. Team Leader or Franchise Developer privileges required."
         )
 
     team_members = db.query(User).filter(User.Team_Leader_id == team_leader_user_id).all()

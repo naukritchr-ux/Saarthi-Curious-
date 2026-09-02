@@ -61,13 +61,31 @@ def create_user(
     actor_id: Optional[int] = Query(None),
     actor_name: Optional[str] = Query(None)
 ):
-    # Authorization: Only Master Admin (1) and Admin (2) can create users
+    # Only admins and Franchise Developers can create users.
     current_user = db.query(User).filter(User.user_id == current_user_id).first()
-    if not current_user or current_user.role_id not in [1, 2]:
+    if not current_user or current_user.role_id not in [1, 2, 6]:
         raise HTTPException(
             status_code=403,
-            detail="Only Master Admin and Admin can create users"
+            detail="Only Master Admin, Admin, and Franchise Developer can create users"
         )
+
+    if current_user.role_id == 6 and user.role_id not in [4, 5]:
+        raise HTTPException(
+            status_code=403,
+            detail="Franchise Developers can only create Franchise Partners and Franchise Employees"
+        )
+
+    team_leader_id = user.Team_Leader_id
+    reporting_manager = user.reporting_manager
+    if current_user.role_id == 6:
+        if team_leader_id and team_leader_id != current_user.user_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Franchise Developers can only assign users within their own scope"
+            )
+        team_leader_id = current_user.user_id
+        if user.role_id == 4:
+            reporting_manager = current_user.full_name
     existing_user = db.query(User).filter(
         User.email == user.email
     ).first()
@@ -79,10 +97,10 @@ def create_user(
         )
 
     # Validate Team_Leader_id if provided
-    if user.Team_Leader_id:
+    if team_leader_id:
         team_leader = db.query(User).filter(
-            User.user_id == user.Team_Leader_id,
-            User.role_id == 3,
+            User.user_id == team_leader_id,
+            User.role_id.in_([3, 6]),
             User.is_active == True
         ).first()
 
@@ -101,8 +119,8 @@ def create_user(
             full_name=user.full_name,
             email=user.email,
             city=user.city,
-            reporting_manager=user.reporting_manager,
-            Team_Leader_id=user.Team_Leader_id,
+            reporting_manager=reporting_manager,
+            Team_Leader_id=team_leader_id,
             role_id=user.role_id,
             date_of_joining=user.date_of_joining,
             password_hash=hashed_password,
@@ -187,8 +205,8 @@ def get_users(
     if current_user.role_id in [1, 2]:
         # Master Admin and Admin can view all users
         pass  # No filtering needed
-    elif current_user.role_id == 3:
-        # Team Leader can see users under them (Franchise Partners and their employees)
+    elif current_user.role_id in [3, 6]:
+        # Team Leader and Franchise Developer can see their team users.
         # Get all Franchise Partners (role 4) under this Team Leader
         franchise_partners = db.query(User).filter(
             User.Team_Leader_id == current_user.user_id,

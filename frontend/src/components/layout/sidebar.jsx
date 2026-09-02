@@ -101,7 +101,7 @@ const Sidebar = ({ isExpanded, onMouseEnter, onMouseLeave, onNavigate }) => {
         label: "Team Directory",
         path: "/team-directory",
         section: "Team Management",
-        roles: [3], // Only for Team Leaders
+        roles: [3, 6], // Team Leaders and Franchise Developers
       },
       {
         id: "franchise-directory",
@@ -204,7 +204,13 @@ const Sidebar = ({ isExpanded, onMouseEnter, onMouseLeave, onNavigate }) => {
         "reports-analytics",
         "streak-management",
       ],
-      6: ["leaderboards", "rewards", "streak-management", "reports-analytics"],
+      6: [
+        "team-directory",
+        "leaderboards",
+        "rewards",
+        "reports-analytics",
+        "streak-management",
+      ],
       7: ["leaderboards", "rewards", "streak-management", "reports-analytics"],
     };
 
@@ -310,7 +316,7 @@ const Sidebar = ({ isExpanded, onMouseEnter, onMouseLeave, onNavigate }) => {
             />
           ) : null}
 
-          {roleId === 3 ? (
+          {roleId === 3 || roleId === 6 ? (
             <NavItem
               icon={LayoutDashboard}
               label="Team Leader Dashboard"
