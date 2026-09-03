@@ -1,6 +1,5 @@
 import { ArrowLeft, Bell, KeyRound, LogIn, ShieldCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import MainLayout from "../../layout/mainLayout";
 
 const securityFeatures = [
   {
@@ -39,9 +38,8 @@ const PrivacyPolicy = () => {
   const navigate = useNavigate();
 
   return (
-    <MainLayout>
-      <div className="min-h-screen bg-[#F8F7FC] p-6">
-        <div className="mx-auto max-w-5xl">
+    <main className="min-h-screen bg-[#F8F7FC] p-6 text-[#1E1B4B] sm:p-10">
+      <div className="mx-auto max-w-5xl">
           <button
             type="button"
             onClick={() => navigate("/settings")}
@@ -90,9 +88,8 @@ const PrivacyPolicy = () => {
               The frontend uses browser local storage for session values and notification preferences. Clearing site data removes these locally stored values and may sign you out or reset notification choices.
             </p>
           </section>
-        </div>
       </div>
-    </MainLayout>
+    </main>
   );
 };
 
