@@ -42,11 +42,11 @@ const PrivacyPolicy = () => {
       <div className="mx-auto max-w-5xl">
           <button
             type="button"
-            onClick={() => navigate("/settings")}
+            onClick={() => navigate("/")}
             className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-[#5B21B6] transition-colors hover:text-[#4C1D95]"
           >
             <ArrowLeft size={18} />
-            Back to Settings
+            Back to Sign in
           </button>
 
           <header className="mb-8 max-w-3xl">
