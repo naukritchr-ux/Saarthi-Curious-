@@ -1,6 +1,11 @@
+# routes/login.py
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.orm import Session
 from datetime import datetime
+import sys
+
+print(f"\n🔵 LOADING login.py")
+print(f"🔵 File: {__file__}")
 
 from database import get_db
 from models import User
@@ -26,13 +31,10 @@ from email_service import (
     send_login_otp_email
 )
 
+print("🔵 Creating router...")
 router = APIRouter()
+print(f"🔵 Router created: {router}")
 
-# At the top of login.py, after creating the router
-print(f"✅ Login router created with routes:")
-for route in router.routes:
-    print(f"  {route.path} {route.methods}")
-    
 @router.post("/login")
 def login(
     request: LoginRequest,
@@ -274,3 +276,17 @@ def change_password(
 @router.get("/test")
 def test_route():
     return {"message": "Login router is working!"}
+
+# ==========================================
+# DEBUG - Print all routes in this router
+# ==========================================
+print("\n" + "="*60)
+print("✅ LOGIN ROUTER ROUTES:")
+print("="*60)
+for route in router.routes:
+    if hasattr(route, 'methods'):
+        print(f"  {route.path} - {', '.join(route.methods)}")
+    else:
+        print(f"  {route.path}")
+print("="*60)
+print("✅ login.py loaded successfully!\n")
