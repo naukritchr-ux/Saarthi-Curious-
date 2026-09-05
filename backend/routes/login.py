@@ -28,6 +28,11 @@ from email_service import (
 
 router = APIRouter()
 
+# At the top of login.py, after creating the router
+print(f"✅ Login router created with routes:")
+for route in router.routes:
+    print(f"  {route.path} {route.methods}")
+    
 @router.post("/login")
 def login(
     request: LoginRequest,
@@ -184,6 +189,7 @@ def verify_login_otp(
     user = db.query(User).filter(User.email == request.email).first()
 
     if not user:
+        print(f"User not found: {request.email}")
         raise HTTPException(
             status_code=404,
             detail="User not found"

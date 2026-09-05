@@ -93,6 +93,18 @@ app.include_router(bookings_router)
 # ROOT
 # ============================
 
+# At the bottom of main.py, before the @app.get("/") route
+print("\n" + "="*60)
+print("REGISTERED ROUTES:")
+print("="*60)
+for route in app.routes:
+    methods = getattr(route, 'methods', None)
+    if methods:
+        print(f"  {route.path} {methods}")
+    else:
+        print(f"  {route.path}")
+print("="*60 + "\n")
+
 @app.get("/")
 def root():
     return {
