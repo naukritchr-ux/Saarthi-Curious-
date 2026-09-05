@@ -74,7 +74,7 @@ app.add_middleware(
 # ROUTERS
 # ============================
 
-app.include_router(login_router)
+app.include_router(login_router, prefix="/auth")
 app.include_router(users_router)
 app.include_router(notifications_scripts_router)
 app.include_router(programs_router)

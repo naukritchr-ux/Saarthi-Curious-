@@ -264,3 +264,7 @@ def change_password(
     return {
         "message": "Password changed successfully"
     }
+
+@router.get("/test")
+def test_route():
+    return {"message": "Login router is working!"}
