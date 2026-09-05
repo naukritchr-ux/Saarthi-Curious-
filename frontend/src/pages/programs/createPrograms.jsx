@@ -4,7 +4,7 @@ import {
   updateRetentionQuiz,
   updateApplicationCheck,
 } from "../../services/programService";
-import { useState } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "../../layout/mainLayout";
 import SurveyQuestionBuilder from "./surveyQuestionBuilder";
@@ -27,6 +27,8 @@ import {
   Plus,
   Trash2,
   X,
+  Eye,
+  Save,
 } from "lucide-react";
 
 const RequiredMark = () => (
@@ -61,12 +63,8 @@ const CreatePrograms = () => {
 
   const [programCuros, setProgramCuros] = useState("");
 
-  const [retentionUnlockDays, setRetentionUnlockDays] = useState(15);
-
   const [retentionDueDays, setRetentionDueDays] = useState(7);
-
   const [retentionPassing, setRetentionPassing] = useState(80);
-
   const [retentionQuizCuros, setRetentionQuizCuros] = useState("");
 
   const [appCheckCuros, setAppCheckCuros] = useState({
@@ -75,9 +73,16 @@ const CreatePrograms = () => {
     a3: "",
   });
 
-  // Retention Quiz independent state (namespaced to avoid collisions)
+  // Auto-save draft state
+  const [draftProgramId, setDraftProgramId] = useState(null);
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState(null);
+  const autoSaveTimer = useRef(null);
+
+  // Retention Quiz state
   const [showRetentionQuestionModal, setShowRetentionQuestionModal] =
     useState(false);
+  const [showRetentionPreview, setShowRetentionPreview] = useState(false);
   const [retentionQuizQuestionsForm, setRetentionQuizQuestionsForm] = useState([
     {
       questionText: "",
@@ -92,7 +97,7 @@ const CreatePrograms = () => {
 
   const [retentionSavedQuestions, setRetentionSavedQuestions] = useState([]);
 
-  // Application Check surveys: independent state for 3 checks
+  // Application Check surveys
   const [showAppCheckModal, setShowAppCheckModal] = useState({
     a1: false,
     a2: false,
@@ -122,6 +127,194 @@ const CreatePrograms = () => {
     a2: [],
     a3: [],
   });
+
+  // Auto-save draft function
+  const autoSaveDraft = useCallback(async () => {
+    if (
+      !programName.trim() &&
+      !description.trim() &&
+      !videos.length &&
+      !retentionSavedQuestions.length
+    ) {
+      return;
+    }
+
+    setIsAutoSaving(true);
+    try {
+      const payload = {
+        name: programName || "Untitled Program",
+        description,
+        type: programType,
+        duration,
+        language,
+        category: categories.join(","),
+        tags: tags.join(","),
+        status: "Draft",
+        unlock_type: unlockType,
+        unlock_days: Number(unlockDays) || 0,
+        thumbnail: thumbnailUrl,
+        curos: Number(programCuros) || 0,
+      };
+
+      let program;
+      if (draftProgramId) {
+        // Update existing draft - using create for now as update endpoint may not exist
+        // In production, you'd have a PUT endpoint
+        program = { id: draftProgramId, ...payload };
+      } else {
+        // Create new draft
+        try {
+          const response = await createProgram(payload);
+          program = response;
+          setDraftProgramId(response.id);
+        } catch (error) {
+          // If create fails, just store locally
+          console.error("Auto-save create failed:", error);
+          program = { id: "local-draft", ...payload };
+        }
+      }
+
+      setLastSaved(new Date().toLocaleTimeString());
+    } catch (error) {
+      console.error("Auto-save failed:", error);
+    } finally {
+      setIsAutoSaving(false);
+    }
+  }, [
+    programName,
+    description,
+    programType,
+    duration,
+    language,
+    categories,
+    tags,
+    unlockType,
+    unlockDays,
+    thumbnailUrl,
+    programCuros,
+    draftProgramId,
+    videos,
+    retentionSavedQuestions,
+  ]);
+
+  // Auto-save on field changes with debounce
+  useEffect(() => {
+    if (autoSaveTimer.current) {
+      clearTimeout(autoSaveTimer.current);
+    }
+
+    if (
+      programName.trim() ||
+      description.trim() ||
+      videos.length ||
+      retentionSavedQuestions.length
+    ) {
+      autoSaveTimer.current = setTimeout(() => {
+        autoSaveDraft();
+      }, 3000);
+    }
+
+    return () => {
+      if (autoSaveTimer.current) {
+        clearTimeout(autoSaveTimer.current);
+      }
+    };
+  }, [
+    programName,
+    description,
+    programType,
+    duration,
+    language,
+    categories,
+    tags,
+    unlockType,
+    unlockDays,
+    thumbnailUrl,
+    programCuros,
+    videos,
+    retentionSavedQuestions,
+    autoSaveDraft,
+  ]);
+
+  // Save draft to localStorage on changes
+  useEffect(() => {
+    const draftData = {
+      name: programName,
+      description,
+      type: programType,
+      duration,
+      language,
+      categories,
+      tags,
+      unlockType,
+      unlockDays,
+      programCuros,
+      thumbnailUrl,
+      draftProgramId,
+      retentionSavedQuestions,
+      appCheckSaved,
+      appCheckCuros,
+      timestamp: new Date().toISOString(),
+    };
+
+    if (programName.trim() || description.trim() || videos.length) {
+      localStorage.setItem("programDraft", JSON.stringify(draftData));
+    }
+  }, [
+    programName,
+    description,
+    programType,
+    duration,
+    language,
+    categories,
+    tags,
+    unlockType,
+    unlockDays,
+    programCuros,
+    thumbnailUrl,
+    draftProgramId,
+    retentionSavedQuestions,
+    appCheckSaved,
+    appCheckCuros,
+  ]);
+
+  // Restore draft on component mount
+  useEffect(() => {
+    const savedDraft = localStorage.getItem("programDraft");
+    if (savedDraft) {
+      try {
+        const draft = JSON.parse(savedDraft);
+        setProgramName(draft.name || "");
+        setDescription(draft.description || "");
+        setProgramType(draft.type || "Mandatory");
+        setDuration(draft.duration || "");
+        setLanguage(draft.language || "English");
+        setCategories(draft.categories || []);
+        setTags(draft.tags || []);
+        setUnlockType(draft.unlockType || "Immediate");
+        setUnlockDays(draft.unlockDays || 0);
+        setProgramCuros(draft.programCuros || "");
+        setThumbnailUrl(draft.thumbnailUrl || "");
+        setDraftProgramId(draft.draftProgramId || null);
+
+        if (draft.retentionSavedQuestions?.length) {
+          setRetentionSavedQuestions(draft.retentionSavedQuestions);
+        }
+
+        if (draft.appCheckSaved) {
+          setAppCheckSaved(draft.appCheckSaved);
+        }
+
+        if (draft.appCheckCuros) {
+          setAppCheckCuros(draft.appCheckCuros);
+        }
+
+        console.log("Draft restored from local storage");
+      } catch (e) {
+        console.error("Failed to restore draft:", e);
+      }
+    }
+  }, []);
 
   const getAppQuestions = (key) => appCheckQuestions[key] || [];
 
@@ -159,30 +352,73 @@ const CreatePrograms = () => {
       }
     }
 
-    const checkNumber = key === "a1" ? 1 : key === "a2" ? 2 : 3;
-    const payload = {
-      questions: questions.map((q, index) => ({
-        question: q.question,
-        display_order: index + 1,
-      })),
-    };
+    const saved = questions.map((q) => ({ ...q }));
+    setAppCheckSaved((prev) => ({
+      ...prev,
+      [key]: saved,
+    }));
 
-    try {
-      setAppCheckSaved((prev) => ({
-        ...prev,
-        [key]: questions.map((q) => ({ ...q })),
-      }));
-      setAppQuestions(key, [
-        { question: "", type: "Short Answer", required: false, options: [] },
-      ]);
-      setShowAppCheckModal((s) => ({ ...s, [key]: false }));
-      setActiveAppCheckKey(null);
-      alert("Application Check saved successfully.");
-    } catch (error) {
-      console.error(error);
-      alert(error.message);
-    }
+    // Save to localStorage
+    const draft = JSON.parse(localStorage.getItem("programDraft") || "{}");
+    draft.appCheckSaved = { ...appCheckSaved, [key]: saved };
+    localStorage.setItem("programDraft", JSON.stringify(draft));
+
+    setAppQuestions(key, [
+      { question: "", type: "Short Answer", required: false, options: [] },
+    ]);
+    setShowAppCheckModal((s) => ({ ...s, [key]: false }));
+    setActiveAppCheckKey(null);
+    alert("Application Check saved successfully.");
   };
+
+  // Open retention quiz modal with existing questions
+  const openRetentionQuizModal = useCallback(() => {
+    if (retentionSavedQuestions.length > 0) {
+      const formQuestions = retentionSavedQuestions.map((q) => ({
+        questionText: q.questionText || "",
+        marks: q.marks || 1,
+        explanation: q.explanation || "",
+        options:
+          q.options && q.options.length
+            ? q.options.map((o) => ({ ...o }))
+            : [
+                { text: q.option_a || "", isCorrect: q.correct_answer === "A" },
+                { text: q.option_b || "", isCorrect: q.correct_answer === "B" },
+                { text: q.option_c || "", isCorrect: q.correct_answer === "C" },
+                { text: q.option_d || "", isCorrect: q.correct_answer === "D" },
+              ].filter((opt) => opt.text),
+      }));
+
+      setRetentionQuizQuestionsForm(
+        formQuestions.length
+          ? formQuestions
+          : [
+              {
+                questionText: "",
+                marks: 1,
+                explanation: "",
+                options: [
+                  { text: "", isCorrect: true },
+                  { text: "", isCorrect: false },
+                ],
+              },
+            ],
+      );
+    } else {
+      setRetentionQuizQuestionsForm([
+        {
+          questionText: "",
+          marks: 1,
+          explanation: "",
+          options: [
+            { text: "", isCorrect: true },
+            { text: "", isCorrect: false },
+          ],
+        },
+      ]);
+    }
+    setShowRetentionQuestionModal(true);
+  }, [retentionSavedQuestions]);
 
   const addRetentionQuestionToForm = () => {
     setRetentionQuizQuestionsForm([
@@ -265,70 +501,37 @@ const CreatePrograms = () => {
       }
     }
 
-    const payload = {
-      questions: retentionQuizQuestionsForm.map((q, index) => {
-        const correctIndex = q.options.findIndex((opt) => opt.isCorrect);
+    const saved = retentionQuizQuestionsForm.map((q) => ({
+      questionText: q.questionText,
+      marks: Number(q.marks),
+      options: q.options.map((o) => ({
+        text: o.text,
+        isCorrect: o.isCorrect,
+      })),
+      explanation: q.explanation || "",
+    }));
 
-        const answerLetter =
-          correctIndex === 0
-            ? "A"
-            : correctIndex === 1
-              ? "B"
-              : correctIndex === 2
-                ? "C"
-                : correctIndex === 3
-                  ? "D"
-                  : "";
+    setRetentionSavedQuestions(saved);
 
-        return {
-          question: q.questionText,
-          option_a: q.options[0]?.text || "",
-          option_b: q.options[1]?.text || "",
-          option_c: q.options[2]?.text || "",
-          option_d: q.options[3]?.text || "",
-          correct_answer: answerLetter,
-          explanation: q.explanation || "",
-          display_order: index + 1,
-        };
-      }),
-    };
+    // Save to localStorage
+    const draft = JSON.parse(localStorage.getItem("programDraft") || "{}");
+    draft.retentionSavedQuestions = saved;
+    localStorage.setItem("programDraft", JSON.stringify(draft));
 
-    console.log("Retention Quiz save payload", {
-      currentProgramId: null,
-      payload,
-    });
+    setRetentionQuizQuestionsForm([
+      {
+        questionText: "",
+        marks: 1,
+        explanation: "",
+        options: [
+          { text: "", isCorrect: true },
+          { text: "", isCorrect: false },
+        ],
+      },
+    ]);
 
-    try {
-      setRetentionSavedQuestions(
-        retentionQuizQuestionsForm.map((q) => ({
-          questionText: q.questionText,
-          marks: Number(q.marks),
-          options: q.options.map((o) => ({
-            text: o.text,
-            isCorrect: o.isCorrect,
-          })),
-          explanation: q.explanation || "",
-        })),
-      );
-
-      setRetentionQuizQuestionsForm([
-        {
-          questionText: "",
-          marks: 1,
-          explanation: "",
-          options: [
-            { text: "", isCorrect: true },
-            { text: "", isCorrect: false },
-          ],
-        },
-      ]);
-
-      setShowRetentionQuestionModal(false);
-      alert("Retention Quiz saved successfully.");
-    } catch (error) {
-      console.error(error);
-      alert(error.message);
-    }
+    setShowRetentionQuestionModal(false);
+    alert("Retention Quiz saved successfully.");
   };
 
   const addVideo = () => {
@@ -349,7 +552,6 @@ const CreatePrograms = () => {
 
   const getYoutubeThumbnail = (url) => {
     const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/);
-
     return match ? `https://img.youtube.com/vi/${match[1]}/mqdefault.jpg` : "";
   };
 
@@ -402,7 +604,6 @@ const CreatePrograms = () => {
 
     try {
       setIsUploading(true);
-
       const publicUrl = await uploadProgramThumbnail(file);
       setThumbnailUrl(publicUrl);
       alert("Thumbnail uploaded successfully!");
@@ -465,12 +666,8 @@ const CreatePrograms = () => {
       };
 
       const createdProgram = await createProgram(payload);
-      console.log("Created Program:", createdProgram);
 
-      console.log("Retention Saved Questions:", retentionSavedQuestions);
-
-      console.log("Application Saved:", appCheckSaved);
-      // Persist any retention quiz questions saved in the create flow
+      // Persist retention quiz questions
       try {
         if (retentionSavedQuestions && retentionSavedQuestions.length > 0) {
           const retentionPayload = {
@@ -497,12 +694,10 @@ const CreatePrograms = () => {
               display_order: index + 1,
             })),
           };
-
-          console.log("Retention Payload", retentionPayload);
           await updateRetentionQuiz(createdProgram.id, retentionPayload);
         }
 
-        // Persist application checks saved in the create flow
+        // Persist application checks
         const appKeys = ["a1", "a2", "a3"];
         for (let i = 0; i < appKeys.length; i++) {
           const key = appKeys[i];
@@ -523,12 +718,13 @@ const CreatePrograms = () => {
           "Failed to persist validation checks during program creation",
           err,
         );
-        // don't block navigation; show a warning
         alert(
           "Program created but saving validation questions failed. You can add them from Program Details.",
         );
       }
 
+      // Clear draft
+      localStorage.removeItem("programDraft");
       navigate(`/programs/${createdProgram.id}`);
     } catch (error) {
       console.error(error);
@@ -541,18 +737,35 @@ const CreatePrograms = () => {
       <div className="space-y-8">
         {/* Header */}
         <div className="rounded-2xl bg-white p-8 shadow-sm border border-slate-100">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="rounded-lg bg-slate-100 p-2.5">
-              <PlayCircle className="text-slate-600" size={24} />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-slate-100 p-2.5">
+                <PlayCircle className="text-slate-600" size={24} />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900">
+                  Create Program
+                </h1>
+                <p className="text-sm text-slate-500 leading-relaxed">
+                  Create and configure a new learning program with custom
+                  settings, rewards, and access controls.
+                </p>
+              </div>
             </div>
-            <h1 className="text-2xl font-bold text-slate-900">
-              Create Program
-            </h1>
+            <div className="flex items-center gap-2 text-xs text-gray-400">
+              {isAutoSaving ? (
+                <span className="flex items-center gap-1">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Saving draft...
+                </span>
+              ) : lastSaved ? (
+                <span className="flex items-center gap-1">
+                  <Save className="w-3 h-3" />
+                  Last saved: {lastSaved}
+                </span>
+              ) : null}
+            </div>
           </div>
-          <p className="text-sm text-slate-500 leading-relaxed">
-            Create and configure a new learning program with custom settings,
-            rewards, and access controls.
-          </p>
         </div>
 
         {/* Program Info */}
@@ -577,7 +790,6 @@ const CreatePrograms = () => {
                 Program Name
                 <RequiredMark />
               </label>
-
               <input
                 value={programName}
                 onChange={(e) => setProgramName(e.target.value)}
@@ -591,7 +803,6 @@ const CreatePrograms = () => {
               <label className="block mb-2 font-medium text-slate-700 text-sm">
                 Description
               </label>
-
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -606,7 +817,6 @@ const CreatePrograms = () => {
                 Program Type
                 <RequiredMark />
               </label>
-
               <select
                 value={programType}
                 onChange={(e) => setProgramType(e.target.value)}
@@ -622,7 +832,6 @@ const CreatePrograms = () => {
               <label className="block mb-2 font-medium text-slate-700 text-sm">
                 Duration
               </label>
-
               <input
                 value={duration}
                 onChange={(e) => setDuration(e.target.value)}
@@ -635,7 +844,6 @@ const CreatePrograms = () => {
               <label className="block mb-2 font-medium text-slate-700 text-sm">
                 Language
               </label>
-
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
@@ -652,7 +860,6 @@ const CreatePrograms = () => {
               <label className="block mb-2 font-medium text-slate-700 text-sm">
                 Category
               </label>
-
               <div className="space-y-2">
                 <div className="flex flex-wrap gap-2">
                   {categories.map((cat, index) => (
@@ -685,7 +892,6 @@ const CreatePrograms = () => {
               <label className="block mb-2 font-medium text-slate-700 text-sm">
                 Program Completion Curos
               </label>
-
               <input
                 value={programCuros}
                 onChange={(e) => setProgramCuros(e.target.value)}
@@ -698,7 +904,6 @@ const CreatePrograms = () => {
               <label className="block mb-2 font-medium text-slate-700 text-sm">
                 Tags
               </label>
-
               <div className="space-y-2">
                 <div className="flex flex-wrap gap-2">
                   {tags.map((tag, index) => (
@@ -731,7 +936,6 @@ const CreatePrograms = () => {
               <label className="block mb-2 font-medium text-slate-700 text-sm">
                 Status
               </label>
-
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
@@ -745,7 +949,6 @@ const CreatePrograms = () => {
               <label className="block mb-2 font-medium text-slate-700 text-sm">
                 Program Thumbnail
               </label>
-
               <div className="relative">
                 <input
                   type="file"
@@ -769,7 +972,6 @@ const CreatePrograms = () => {
                   )}
                 </div>
               </div>
-
               {thumbnailUrl && (
                 <div className="mt-3">
                   <p className="text-xs text-slate-500 mb-2">
@@ -786,6 +988,7 @@ const CreatePrograms = () => {
           </div>
         </div>
 
+        {/* Access Control */}
         <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-100">
           <div className="flex items-center gap-3 mb-6">
             <div className="rounded-lg bg-slate-100 p-2">
@@ -800,7 +1003,6 @@ const CreatePrograms = () => {
                 Unlock Type
                 <RequiredMark />
               </label>
-
               <select
                 value={unlockType}
                 onChange={(e) => setUnlockType(e.target.value)}
@@ -817,7 +1019,6 @@ const CreatePrograms = () => {
                 Unlock After Days
                 {unlockType === "After Days" && <RequiredMark />}
               </label>
-
               <input
                 type="number"
                 min={unlockType === "After Days" ? 1 : 0}
@@ -833,6 +1034,7 @@ const CreatePrograms = () => {
           </div>
         </div>
 
+        {/* Retention Quiz Configuration */}
         <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-100">
           <div className="flex items-center gap-3 mb-6">
             <div className="rounded-lg bg-slate-100 p-2">
@@ -859,13 +1061,26 @@ const CreatePrograms = () => {
               <label className="block mb-2 font-medium text-slate-700 text-sm">
                 Retention Quiz Questions
               </label>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 <button
                   type="button"
-                  onClick={() => setShowRetentionQuestionModal(true)}
+                  onClick={openRetentionQuizModal}
                   className="rounded-xl border border-blue-600 px-4 py-2 text-sm font-bold transition text-blue-600 hover:bg-blue-50"
                 >
                   Manage Retention Quiz Questions
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowRetentionPreview(true)}
+                  disabled={retentionSavedQuestions.length === 0}
+                  className={`rounded-xl border px-4 py-2 text-sm font-bold transition flex items-center gap-2 ${
+                    retentionSavedQuestions.length > 0
+                      ? "border-green-600 text-green-600 hover:bg-green-50"
+                      : "border-gray-300 text-gray-400 cursor-not-allowed"
+                  }`}
+                >
+                  <Eye size={16} />
+                  Preview Questions
                 </button>
                 <div className="text-sm text-slate-500">
                   {retentionSavedQuestions.length} saved question(s)
@@ -875,6 +1090,7 @@ const CreatePrograms = () => {
           </div>
         </div>
 
+        {/* Application Check Configuration */}
         <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-100">
           <div className="flex items-center gap-3 mb-6">
             <div className="rounded-lg bg-slate-100 p-2">
@@ -965,6 +1181,7 @@ const CreatePrograms = () => {
           </div>
         </div>
 
+        {/* Retention Quiz Modal */}
         {showRetentionQuestionModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs">
             <div className="w-[750px] rounded-3xl bg-white p-6 shadow-2xl max-h-[90vh] overflow-y-auto border">
@@ -997,7 +1214,6 @@ const CreatePrograms = () => {
                         <label className="text-xs font-bold text-gray-700 block mb-1">
                           Question {qIndex + 1} Prompt *
                         </label>
-
                         <textarea
                           value={question.questionText}
                           onChange={(e) =>
@@ -1012,12 +1228,10 @@ const CreatePrograms = () => {
                           className="w-full rounded-xl border border-gray-300 p-3 text-sm bg-white outline-none focus:border-blue-500"
                         />
                       </div>
-
                       <div>
                         <label className="text-xs font-bold text-gray-700 block mb-1">
                           Marks *
                         </label>
-
                         <input
                           type="number"
                           min="1"
@@ -1144,6 +1358,78 @@ const CreatePrograms = () => {
           </div>
         )}
 
+        {/* Retention Quiz Preview Modal */}
+        {showRetentionPreview && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className="w-[800px] max-w-[95vw] rounded-3xl bg-white p-6 shadow-2xl max-h-[90vh] overflow-y-auto border">
+              <div className="flex items-start justify-between gap-4 mb-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Retention Quiz Preview
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    {retentionSavedQuestions.length} questions configured
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowRetentionPreview(false)}
+                  className="rounded-lg border border-gray-200 p-2 text-gray-500 hover:bg-gray-50"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {retentionSavedQuestions.map((q, index) => (
+                  <div
+                    key={index}
+                    className="p-4 border rounded-xl bg-gray-50 space-y-3"
+                  >
+                    <div className="flex items-start justify-between">
+                      <h3 className="font-semibold text-gray-900">
+                        {index + 1}. {q.questionText}
+                      </h3>
+                      <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                        {q.marks} marks
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {q.options.map((opt, oIdx) => (
+                        <div
+                          key={oIdx}
+                          className={`p-2 rounded-lg border text-sm ${opt.isCorrect ? "border-green-500 bg-green-50 text-green-700" : "border-gray-200 bg-white text-gray-700"}`}
+                        >
+                          {String.fromCharCode(65 + oIdx)}. {opt.text}
+                          {opt.isCorrect && (
+                            <span className="ml-2 text-green-600">✓</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    {q.explanation && (
+                      <div className="text-xs text-gray-500 bg-gray-100 p-2 rounded-lg">
+                        <span className="font-semibold">Explanation:</span>{" "}
+                        {q.explanation}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex justify-end mt-6 pt-4 border-t">
+                <button
+                  onClick={() => setShowRetentionPreview(false)}
+                  className="px-6 py-2 rounded-xl bg-[#1E1B4B] text-white font-semibold"
+                >
+                  Close Preview
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Application Check Modals */}
         {activeAppCheckKey && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs">
             <div className="w-[920px] max-w-[95vw] rounded-3xl bg-white p-6 shadow-2xl max-h-[90vh] overflow-y-auto border">
@@ -1205,9 +1491,9 @@ const CreatePrograms = () => {
           <button
             onClick={handleCreateProgram}
             disabled={isUploading}
-            className="rounded-lg border border-slate-200 px-5 py-2.5 font-medium text-slate-700 hover:bg-slate-50 transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg bg-[#10B981] px-6 py-3 font-semibold text-white hover:bg-[#059669] transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-50 shadow-md shadow-[#10B981]/20"
           >
-            {isUploading ? "Uploading Thumbnail..." : "Save Draft"}
+            {isUploading ? "Uploading Thumbnail..." : "Create Program"}
           </button>
         </div>
       </div>

@@ -153,14 +153,14 @@ function App() {
         />
 
         {/* Application Check Result */}
-<Route
-  path="/learner/application-check/:checkId/result"
-  element={
-    <ProtectedRoute requiredRoles={[3, 4, 5, 6, 7]}>
-      <ApplicationCheckResult />
-    </ProtectedRoute>
-  }
-/>
+        <Route
+          path="/learner/application-check/:checkId/result"
+          element={
+            <ProtectedRoute requiredRoles={[3, 4, 5, 6, 7]}>
+              <ApplicationCheckResult />
+            </ProtectedRoute>
+          }
+        />
 
         {/* All Assignments */}
         <Route
@@ -181,6 +181,8 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route path="/programs/edit/:id" element={<EditPrograms />} />
 
         {/* Admin Application Check Submissions */}
         <Route
@@ -315,10 +317,7 @@ function App() {
           }
         />
 
-        <Route
-         path="/admin/reschedule"
-         element={<AdminReschedule />}
-        />
+        <Route path="/admin/reschedule" element={<AdminReschedule />} />
 
         <Route
           path="/admin/roles"
@@ -367,17 +366,14 @@ function App() {
           }
         />
 
-        <Route
-          path="/privacy-policy"
-          element={<PrivacyPolicy />}
-        />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
         <Route
-         path="/book-call"
-         element={
-           <ProtectedRoute>
-             <BookCall />
-           </ProtectedRoute>
+          path="/book-call"
+          element={
+            <ProtectedRoute>
+              <BookCall />
+            </ProtectedRoute>
           }
         />
 
