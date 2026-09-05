@@ -188,7 +188,7 @@ def verify_login_otp(
         )
 
     # Find user
-    user = db.query(User).filter(User.email == request.email).first()
+    user = db.query(User).filter(User.email.ilike(request.email)).first()
 
     if not user:
         print(f"User not found: {request.email}")
