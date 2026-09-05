@@ -9,20 +9,15 @@ load_dotenv(Path(__file__).resolve().parent / ".env")
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routes.bookings import router as bookings_router
-
-
 from routes.login import router as login_router
 from routes.users import router as users_router
-from routes.notifications_scripts import (
-    router as notifications_scripts_router
-)
+from routes.notifications_scripts import router as notifications_scripts_router
 from routes.notifications import router as notifications_router
 from routes.programs import router as programs_router
 from routes.roles import router as roles_router
 from routes.curo import router as curo_router
 from routes.learner import router as learner_router
 from routes.streaks import router as streaks_router
-
 from routes.dashboard import router as dashboard_router
 from routes import badges
 from routes.reports import router as reports_router
@@ -34,14 +29,6 @@ app = FastAPI(
     title="Saarthi Curious API",
     version="1.0.0"
 )
-
-@app.middleware("http")
-async def strip_api_prefix(request, call_next):
-    if request.scope["path"].startswith("/api"):
-        request.scope["path"] = request.scope["path"][4:] or "/"
-
-    response = await call_next(request)
-    return response
 
 # ============================
 # CORS
@@ -73,7 +60,6 @@ app.add_middleware(
 # ============================
 # ROUTERS
 # ============================
-
 app.include_router(login_router)
 app.include_router(users_router)
 app.include_router(notifications_scripts_router)
@@ -90,21 +76,26 @@ app.include_router(reports_router, prefix="/reports", tags=["reports"])
 app.include_router(bookings_router)
 
 # ============================
-# ROOT
+# DEBUG - Print all routes (fixed)
 # ============================
-
-# At the bottom of main.py, before the @app.get("/") route
 print("\n" + "="*60)
-print("REGISTERED ROUTES:")
+print("📋 ALL REGISTERED ROUTES:")
 print("="*60)
 for route in app.routes:
-    methods = getattr(route, 'methods', None)
-    if methods:
-        print(f"  {route.path} {methods}")
-    else:
-        print(f"  {route.path}")
+    try:
+        if hasattr(route, 'methods') and route.methods:
+            print(f"  {route.path} - {', '.join(route.methods)}")
+        elif hasattr(route, 'path'):
+            print(f"  {route.path}")
+        else:
+            print(f"  {route.__class__.__name__} (router included)")
+    except Exception as e:
+        print(f"  Error printing route: {e}")
 print("="*60 + "\n")
 
+# ============================
+# ROOT
+# ============================
 @app.get("/")
 def root():
     return {

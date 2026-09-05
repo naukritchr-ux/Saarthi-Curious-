@@ -1,4 +1,4 @@
 // config/api.js
-export const API_BASE =
-  import.meta.env.VITE_API_URL ||
-  (import.meta.env.DEV ? "http://127.0.0.1:8000" : "/api");
+export const API_BASE = 
+  import.meta.env.VITE_API_URL || 
+  (import.meta.env.DEV ? "http://127.0.0.1:8000" : "https://saarthi-curious-00e8.onrender.com");
