@@ -74,20 +74,20 @@ app.add_middleware(
 # ROUTERS
 # ============================
 
-app.include_router(login_router, prefix="/api")
-app.include_router(users_router, prefix="/api")
-app.include_router(notifications_scripts_router, prefix="/api")
-app.include_router(programs_router, prefix="/api")
-app.include_router(roles_router, prefix="/api")
-app.include_router(curo_router, prefix="/api")
-app.include_router(learner_router, prefix="/api")
-app.include_router(streaks_router, prefix="/api")
-app.include_router(dashboard_router, prefix="/api")
-app.include_router(badges.router, prefix="/api")
-app.include_router(leaderboards_router, prefix="/api")
-app.include_router(notifications_router, prefix="/api")
-app.include_router(reports_router, prefix="/api", tags=["reports"])
-app.include_router(bookings_router, prefix="/api")
+app.include_router(login_router)
+app.include_router(users_router)
+app.include_router(notifications_scripts_router)
+app.include_router(programs_router)
+app.include_router(roles_router)
+app.include_router(curo_router)
+app.include_router(learner_router)
+app.include_router(streaks_router)
+app.include_router(dashboard_router)
+app.include_router(badges.router)
+app.include_router(leaderboards_router)
+app.include_router(notifications_router)
+app.include_router(reports_router, prefix="/reports", tags=["reports"])
+app.include_router(bookings_router)
 
 # ============================
 # ROOT

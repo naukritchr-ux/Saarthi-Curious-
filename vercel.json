@@ -12,7 +12,7 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "https://your-render-backend-url.onrender.com/api/$1"
+      "dest": "https://saarthi-curious-00e8.onrender.com/$1"
     },
     {
       "handle": "filesystem"
