@@ -1,10 +1,13 @@
 import MainLayout from "../../layout/mainLayout";
 import DashboardCard from "../../components/ui/dashboardCard";
 import React, { useState, useEffect } from "react";
-import { Shield, Users, Building2, Briefcase, UserCheck, X, ChevronRight, LayoutDashboard, BookOpen, FileText, Settings, BarChart3 } from "lucide-react";
+import { Shield, Users, Building2, Briefcase, UserCheck, X, ChevronRight, LayoutDashboard, BookOpen, FileText, Settings, BarChart3, Plus, Edit2, Trash2 } from "lucide-react";
 import {
   getRoles,
-  updateRolePermission
+  updateRolePermission,
+  createRole,
+  updateRoleName,
+  deleteRole
 } from "../../services/roleApi";
 
 const RoleManagementPage = () => {
@@ -58,6 +61,18 @@ const RoleManagementPage = () => {
 
   const [selectedRoleId, setSelectedRoleId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingRoleId, setEditingRoleId] = useState(null);
+  const [editRoleName, setEditRoleName] = useState("");
+  const [newRoleName, setNewRoleName] = useState("");
+  const [newRolePermissions, setNewRolePermissions] = useState({
+    dashboard: false,
+    programs: false,
+    reports: false,
+    analytics: false,
+    settings: false,
+  });
 
   const toggleRolePermission = async (
     roleId,
@@ -120,6 +135,91 @@ const RoleManagementPage = () => {
     setIsModalOpen(false);
   };
 
+  const openCreateModal = () => {
+    setNewRoleName("");
+    setNewRolePermissions({
+      dashboard: false,
+      programs: false,
+      reports: false,
+      analytics: false,
+      settings: false,
+    });
+    setIsCreateModalOpen(true);
+  };
+
+  const closeCreateModal = () => {
+    setIsCreateModalOpen(false);
+  };
+
+  const handleCreateRole = async () => {
+    if (!newRoleName.trim()) {
+      alert("Please enter a role name");
+      return;
+    }
+
+    try {
+      await createRole({
+        role_name: newRoleName,
+        ...newRolePermissions,
+      });
+      await fetchRoles();
+      closeCreateModal();
+      alert("Role created successfully!");
+    } catch (error) {
+      console.error("Error creating role:", error);
+      alert("Failed to create role. Please try again.");
+    }
+  };
+
+  const openEditModal = (role) => {
+    setEditingRoleId(role.id);
+    setEditRoleName(role.name);
+    setIsEditModalOpen(true);
+  };
+
+  const closeEditModal = () => {
+    setEditingRoleId(null);
+    setEditRoleName("");
+    setIsEditModalOpen(false);
+  };
+
+  const handleUpdateRoleName = async () => {
+    if (!editRoleName.trim()) {
+      alert("Please enter a role name");
+      return;
+    }
+
+    try {
+      await updateRoleName(editingRoleId, editRoleName);
+      await fetchRoles();
+      closeEditModal();
+      alert("Role name updated successfully!");
+    } catch (error) {
+      console.error("Error updating role name:", error);
+      alert("Failed to update role name. Please try again.");
+    }
+  };
+
+  const handleDeleteRole = async (roleId) => {
+    if (roleId <= 7) {
+      alert("Cannot delete default system roles");
+      return;
+    }
+
+    if (!confirm("Are you sure you want to delete this role?")) {
+      return;
+    }
+
+    try {
+      await deleteRole(roleId);
+      await fetchRoles();
+      alert("Role deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting role:", error);
+      alert("Failed to delete role. Please try again.");
+    }
+  };
+
   // Get current role data from roles state
   const getCurrentRole = () => {
     return roles.find(role => role.id === selectedRoleId);
@@ -138,6 +238,15 @@ const RoleManagementPage = () => {
 
       {/* Role Permission Matrix */}
       <DashboardCard title="Role Access Matrix">
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={openCreateModal}
+            className="bg-[#10B981] hover:bg-[#059669] text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition-colors"
+          >
+            <Plus size={16} />
+            Create New Role
+          </button>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -189,13 +298,34 @@ const RoleManagementPage = () => {
                     </td>
                   ))}
                   <td className="text-center py-4 px-4">
-                    <button
-                      onClick={() => openRoleModal(role)}
-                      className="bg-[#693C83] hover:bg-[#5a2f6f] text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 mx-auto transition-colors"
-                    >
-                      View Users
-                      <ChevronRight size={16} />
-                    </button>
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => openEditModal(role)}
+                        className="bg-blue-100 hover:bg-blue-200 text-blue-700 p-2 rounded-lg transition-colors"
+                        title="Edit Role Name"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteRole(role.id)}
+                        className={`p-2 rounded-lg transition-colors ${
+                          role.id <= 7
+                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                            : "bg-red-100 hover:bg-red-200 text-red-700"
+                        }`}
+                        title={role.id <= 7 ? "Cannot delete default role" : "Delete Role"}
+                        disabled={role.id <= 7}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                      <button
+                        onClick={() => openRoleModal(role)}
+                        className="bg-[#693C83] hover:bg-[#5a2f6f] text-white px-3 py-2 rounded-lg text-sm flex items-center gap-2 transition-colors"
+                      >
+                        View Users
+                        <ChevronRight size={16} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -275,6 +405,153 @@ const RoleManagementPage = () => {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Role Modal */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={closeCreateModal}>
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="bg-[#693C83] text-white p-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-2 rounded-lg">
+                  <Shield size={24} />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold">Create New Role</h2>
+                  <p className="text-white/80 text-sm">Define role permissions</p>
+                </div>
+              </div>
+              <button
+                onClick={closeCreateModal}
+                className="bg-white/20 hover:bg-white/30 p-2 rounded-lg transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Role Name
+                </label>
+                <input
+                  type="text"
+                  value={newRoleName}
+                  onChange={(e) => setNewRoleName(e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 p-3 focus:border-[#693C83] focus:ring-2 focus:ring-[#693C83]/10 outline-none transition-all"
+                  placeholder="Enter role name"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Permissions
+                </label>
+                <div className="space-y-3">
+                  {permissions.map((permission) => (
+                    <div key={permission.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="text-[#693C83]">{permission.icon}</div>
+                        <span className="text-sm font-medium">{permission.name}</span>
+                      </div>
+                      <button
+                        onClick={() =>
+                          setNewRolePermissions((prev) => ({
+                            ...prev,
+                            [permission.id]: !prev[permission.id],
+                          }))
+                        }
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
+                          newRolePermissions[permission.id] ? "bg-[#10B981]" : "bg-[#D9CFE8]"
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
+                            newRolePermissions[permission.id] ? "translate-x-6" : "translate-x-1"
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  onClick={closeCreateModal}
+                  className="px-4 py-2 rounded-xl border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateRole}
+                  className="px-4 py-2 rounded-xl bg-[#693C83] text-white font-medium hover:bg-[#5a2f6f] transition-all"
+                >
+                  Create Role
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Role Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={closeEditModal}>
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="bg-[#693C83] text-white p-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-2 rounded-lg">
+                  <Edit2 size={24} />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold">Edit Role Name</h2>
+                  <p className="text-white/80 text-sm">Update the role name</p>
+                </div>
+              </div>
+              <button
+                onClick={closeEditModal}
+                className="bg-white/20 hover:bg-white/30 p-2 rounded-lg transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Role Name
+                </label>
+                <input
+                  type="text"
+                  value={editRoleName}
+                  onChange={(e) => setEditRoleName(e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 p-3 focus:border-[#693C83] focus:ring-2 focus:ring-[#693C83]/10 outline-none transition-all"
+                  placeholder="Enter role name"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  onClick={closeEditModal}
+                  className="px-4 py-2 rounded-xl border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleUpdateRoleName}
+                  className="px-4 py-2 rounded-xl bg-[#693C83] text-white font-medium hover:bg-[#5a2f6f] transition-all"
+                >
+                  Update Role
+                </button>
               </div>
             </div>
           </div>

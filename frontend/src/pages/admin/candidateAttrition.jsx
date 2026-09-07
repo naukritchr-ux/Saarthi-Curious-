@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import MainLayout from "../../layout/mainLayout";
+import { API_BASE } from "../../config/api";
 
 const CandidateAttrition = () => {
   const [data, setData] = useState(null);
@@ -24,7 +25,7 @@ const CandidateAttrition = () => {
     setError(null);
     try {
       const response = await fetch(
-        "http://127.0.0.1:8000/programs/survey-analytics/candidate-attrition",
+        `${API_BASE}/programs/survey-analytics/candidate-attrition`,
       );
       if (!response.ok) {
         throw new Error(`Error: ${response.status} ${response.statusText}`);
@@ -232,7 +233,7 @@ const CandidateAttrition = () => {
             disabled={downloadingCsv}
             onClick={() =>
               downloadReport(
-                "http://127.0.0.1:8000/programs/survey-analytics/candidate-attrition/export/csv",
+                `${API_BASE}/programs/survey-analytics/candidate-attrition/export/csv`,
                 "candidate_attrition_report.csv",
                 setDownloadingCsv,
               )
@@ -246,7 +247,7 @@ const CandidateAttrition = () => {
             disabled={downloadingPdf}
             onClick={() =>
               downloadReport(
-                "http://127.0.0.1:8000/programs/survey-analytics/candidate-attrition/export/pdf",
+                `${API_BASE}/programs/survey-analytics/candidate-attrition/export/pdf`,
                 "candidate_attrition_report.pdf",
                 setDownloadingPdf,
               )

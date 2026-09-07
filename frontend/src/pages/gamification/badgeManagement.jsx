@@ -9,6 +9,8 @@ import {
   Shield,
   RefreshCw,
   CheckCircle,
+  Maximize2,
+  X,
 } from "lucide-react";
 import {
   getUserBadges,
@@ -77,6 +79,8 @@ export default function BadgeManagement() {
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [selectedBadge, setSelectedBadge] = useState(null);
 
   useEffect(() => {
     const loadBadges = async () => {
@@ -240,7 +244,8 @@ export default function BadgeManagement() {
                 {badges.map((badge) => (
                   <div
                     key={badge.badge_id || badge.badge_name}
-                    className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow text-center group"
+                    className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow text-center group cursor-pointer"
+                    onClick={() => setSelectedBadge(badge)}
                   >
                     <div className="flex justify-center mb-3">
                       {renderBadgeIcon(badge, "w-32 h-32")}
@@ -272,7 +277,8 @@ export default function BadgeManagement() {
                 {availableBadges.map((badge) => (
                   <div
                     key={badge.badge_id || badge.badge_name}
-                    className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 opacity-75 text-center group hover:opacity-100 transition-opacity"
+                    className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 opacity-75 text-center group hover:opacity-100 transition-opacity cursor-pointer"
+                    onClick={() => setSelectedBadge(badge)}
                   >
                     <div className="flex justify-center mb-3">
                       <div className="w-32 h-32 flex-shrink-0 overflow-visible relative opacity-50 grayscale">
@@ -300,26 +306,46 @@ export default function BadgeManagement() {
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Badge Gallery - Main Focus */}
             <div className="lg:col-span-2 bg-white rounded-3xl p-6 shadow-sm">
-              <div className="flex items-center gap-3 mb-5">
-                <Award className="text-purple-600" />
-                <h2 className="text-2xl font-bold text-[#23195A]">
-                  Badge Gallery
-                </h2>
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <Award className="text-purple-600" />
+                  <h2 className="text-2xl font-bold text-[#23195A]">
+                    Badge Gallery
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setIsFullScreen(true)}
+                  className="bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-2 rounded-lg text-sm flex items-center gap-2 transition-colors"
+                >
+                  <Maximize2 size={16} />
+                  Full Screen
+                </button>
               </div>
 
               {badges.length > 0 ? (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                <div className="space-y-3">
                   {badges.map((badge) => (
                     <div
                       key={badge.badge_id || badge.badge_name}
-                      className="text-center"
+                      className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer"
+                      onClick={() => setSelectedBadge(badge)}
                     >
-                      <div className="bg-purple-50 rounded-xl p-3 hover:bg-purple-100 transition-colors">
-                        {renderBadgeIcon(badge, "w-20 h-20")}
+                      <div className="bg-purple-50 rounded-lg p-2 flex-shrink-0">
+                        {renderBadgeIcon(badge, "w-16 h-16")}
                       </div>
-                      <p className="text-xs text-gray-600 mt-1 truncate">
-                        {badge.badge_name}
-                      </p>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-[#23195A] truncate">
+                          {badge.badge_name}
+                        </h3>
+                        <div className="flex gap-2 mt-1">
+                          <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-xs">
+                            +{badge.reward_curos || 0}
+                          </span>
+                          <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+                            {badge.badge_type}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -368,6 +394,104 @@ export default function BadgeManagement() {
             </div>
           </div>
         </>
+      )}
+
+      {/* Full Screen Badge Gallery Modal */}
+      {isFullScreen && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+            {/* Modal Header */}
+            <div className="bg-[#693C83] text-white p-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Award size={28} />
+                <div>
+                  <h2 className="text-2xl font-bold">Badge Gallery</h2>
+                  <p className="text-white/80 text-sm">{badges.length} badges earned</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsFullScreen(false)}
+                className="bg-white/20 hover:bg-white/30 p-2 rounded-lg transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-100px)]">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                {badges.map((badge) => (
+                  <div
+                    key={badge.badge_id || badge.badge_name}
+                    className="bg-gray-50 rounded-2xl p-6 text-center hover:bg-gray-100 transition-colors cursor-pointer"
+                    onClick={() => setSelectedBadge(badge)}
+                  >
+                    <div className="flex justify-center mb-3">
+                      {renderBadgeIcon(badge, "w-24 h-24")}
+                    </div>
+                    <h3 className="text-sm font-semibold text-[#23195A] truncate">
+                      {badge.badge_name}
+                    </h3>
+                    <div className="mt-2 flex justify-center gap-2 flex-wrap">
+                      <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs">
+                        +{badge.reward_curos || 0}
+                      </span>
+                      <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">
+                        {badge.badge_type}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Badge Detail Modal - Full Screen View */}
+      {selectedBadge && (
+        <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4" onClick={() => setSelectedBadge(null)}>
+          <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="p-8 flex flex-col items-center">
+              <button
+                onClick={() => setSelectedBadge(null)}
+                className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 p-2 rounded-full transition-colors"
+              >
+                <X size={28} className="text-white" />
+              </button>
+              
+              <div className="flex justify-center mb-6">
+                {renderBadgeIcon(selectedBadge, "w-80 h-80")}
+              </div>
+              
+              <h3 className="text-4xl font-bold text-[#23195A] mb-4 text-center">
+                {selectedBadge.badge_name}
+              </h3>
+              
+              <div className="flex gap-3 mb-6">
+                <span className="bg-purple-100 text-purple-700 px-4 py-2 rounded-full text-lg font-medium">
+                  +{selectedBadge.reward_curos || selectedBadge.curos_reward || 0} Curos
+                </span>
+                <span className="bg-gray-100 text-gray-600 px-4 py-2 rounded-full text-lg font-medium">
+                  {selectedBadge.badge_type}
+                </span>
+              </div>
+              
+              {selectedBadge.requirement_value && (
+                <p className="text-gray-600 text-center mb-6">
+                  Requirement: {selectedBadge.requirement_value}
+                </p>
+              )}
+              
+              <button
+                onClick={() => setSelectedBadge(null)}
+                className="px-8 py-3 bg-[#693C83] hover:bg-[#5a2f6f] text-white text-lg font-medium rounded-xl transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </MainLayout>
   );

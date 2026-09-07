@@ -1781,6 +1781,78 @@ def get_program(program_id: int, db: Session = Depends(get_db)):
     }
 
 
+@router.delete("/{program_id}")
+def delete_program(
+    program_id: int,
+    http_request: Request,
+    db: Session = Depends(get_db),
+    actor_id: Optional[int] = Query(None),
+    actor_name: Optional[str] = Query(None),
+):
+    """Deletes a program and all its associated data."""
+    program = (
+        db.query(Program)
+        .filter(Program.id == program_id)
+        .first()
+    )
+
+    if not program:
+        raise HTTPException(status_code=404, detail="Program not found")
+
+    try:
+        # Delete associated modules and their content
+        modules = db.query(Module).filter(Module.program_id == program_id).all()
+        for module in modules:
+            # Delete videos
+            db.query(Video).filter(Video.module_id == module.id).delete()
+            # Delete quizzes
+            db.query(Quiz).filter(Quiz.module_id == module.id).delete()
+            # Delete written lessons
+            db.query(WrittenLesson).filter(WrittenLesson.module_id == module.id).delete()
+            # Delete surveys
+            db.query(SurveyForm).filter(SurveyForm.module_id == module.id).delete()
+            # Delete assignments
+            db.query(Assignment).filter(Assignment.module_id == module.id).delete()
+            # Delete the module
+            db.delete(module)
+
+        # Delete retention quiz
+        db.query(RetentionQuiz).filter(RetentionQuiz.program_id == program_id).delete()
+
+        # Delete application checks
+        db.query(ApplicationCheck).filter(ApplicationCheck.program_id == program_id).delete()
+
+        # Delete user program progress
+        db.query(UserProgramProgress).filter(UserProgramProgress.program_id == program_id).delete()
+
+        # Delete the program
+        db.delete(program)
+        db.commit()
+
+        create_audit_log(
+            db=db,
+            request=http_request,
+            actor_id=actor_id,
+            actor_name=actor_name,
+            action="program_deleted",
+            entity_type="program",
+            entity_id=program_id,
+            message=f"Deleted program: {program.name}",
+            metadata={
+                "program_id": program_id,
+                "name": program.name,
+            },
+        )
+
+        return {"message": "Program deleted successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete program: {str(e)}"
+        )
+
+
 class ModuleOrderItem(BaseModel):
     id: int
     module_order: int
