@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import MainLayout from "../../layout/mainLayout";
@@ -75,23 +75,6 @@ const SortableModuleItem = ({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  // Handle selection with proper event handling
-  const handleSelect = (e) => {
-    // Prevent selection if clicking on interactive elements
-    const target = e.target;
-    if (
-      target.closest("input") ||
-      target.closest("textarea") ||
-      target.closest("button") ||
-      target.closest("a") ||
-      target.closest('[role="button"]') ||
-      target.closest(".no-select") // Add a class to prevent selection
-    ) {
-      return;
-    }
-    onSelect(module);
-  };
-
   return (
     <div ref={setNodeRef} style={style} className="group">
       <div
@@ -100,7 +83,7 @@ const SortableModuleItem = ({
             ? "bg-[#1E1B4B] text-white shadow-lg shadow-[#1E1B4B]/20"
             : "bg-[#F8F5FC] text-gray-800 hover:bg-[#E8E4F0] border-2 border-transparent hover:border-[#1E1B4B]/20"
         }`}
-        onMouseDown={handleSelect}
+        onClick={() => onSelect(module)}
       >
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <button
@@ -133,7 +116,6 @@ const SortableModuleItem = ({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            e.preventDefault();
             onDelete(module.id);
           }}
           className={`ml-2 p-1.5 rounded-lg transition-all ${
@@ -147,10 +129,8 @@ const SortableModuleItem = ({
         </button>
       </div>
 
-      {/* Children wrapper - prevent parent selection when clicking inside */}
-      <div onMouseDown={(e) => e.stopPropagation()}>
-        {selectedModule?.id === module.id && children}
-      </div>
+      {/* Children wrapper - REMOVED onMouseDown handler */}
+      <div>{selectedModule?.id === module.id && children}</div>
     </div>
   );
 };
@@ -159,7 +139,41 @@ const SortableModuleItem = ({
 const ProgramDetails = () => {
   const { id: programId } = useParams();
   const navigate = useNavigate();
+  const editorContainerRef = useRef(null);
+  useEffect(() => {
+  const container = editorContainerRef.current;
+  if (!container) return;
 
+  const handleGlobalKeyDown = (e) => {
+    // If the event target is inside our editor container, stop it from reaching other listeners
+    if (container.contains(e.target)) {
+      e.stopPropagation();
+      // Do NOT call preventDefault() – let the browser handle character insertion
+    }
+  };
+
+  // Attach in capture phase so it runs before any other document listener
+  document.addEventListener('keydown', handleGlobalKeyDown, true);
+
+  return () => {
+    document.removeEventListener('keydown', handleGlobalKeyDown, true);
+  };
+}, []);
+  const inputRef = useRef(null);
+  useEffect(() => {
+  const input = inputRef.current;
+  if (!input) return;
+
+  const handleKeyDownCapture = (e) => {
+    e.stopPropagation(); // stops the event from reaching the document
+  };
+
+  input.addEventListener('keydown', handleKeyDownCapture, true); // capture phase
+
+  return () => {
+    input.removeEventListener('keydown', handleKeyDownCapture, true);
+  };
+}, []);
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -395,102 +409,105 @@ const ProgramDetails = () => {
         const fetchedModules = data.modules || [];
         setModules(fetchedModules);
 
-        if (fetchedModules.length > 0) {
-          if (updateSelection && targetModuleId) {
-            const matched = fetchedModules.find((m) => m.id === targetModuleId);
-            setSelectedModule(matched || fetchedModules[0]);
-            setEditModuleTitle(
-              matched ? matched.title : fetchedModules[0].title,
-            );
-            setEditModuleDescription(
-              matched
-                ? matched.description || ""
-                : fetchedModules[0].description || "",
-            );
-            setEditModuleCuros(
-              matched ? matched.curos || 0 : fetchedModules[0].curos || 0,
-            );
-          } else if (!selectedModule) {
-            setSelectedModule(fetchedModules[0]);
-            setEditModuleTitle(fetchedModules[0].title);
-            setEditModuleDescription(fetchedModules[0].description || "");
-            setEditModuleCuros(fetchedModules[0].curos || 0);
-          } else {
-            const recheck = fetchedModules.find(
-              (m) => m.id === selectedModule?.id,
-            );
-            setSelectedModule(recheck || fetchedModules[0]);
-            if (recheck) {
-              setEditModuleTitle(recheck.title);
-              setEditModuleDescription(recheck.description || "");
-              setEditModuleCuros(recheck.curos || 0);
-            }
-
-            if (selectedContent && recheck) {
-              if (selectedContent.type === "video") {
-                const activeVideo = recheck.videos?.find(
-                  (v) => v.id === selectedContent?.data?.id,
-                );
-                if (activeVideo)
-                  setSelectedContent({ type: "video", data: activeVideo });
-              } else if (selectedContent.type === "quiz") {
-                const activeQuiz = recheck.quizzes?.find(
-                  (q) => q.id === selectedContent?.data?.id,
-                );
-                if (activeQuiz)
-                  setSelectedContent({ type: "quiz", data: activeQuiz });
-              } else if (selectedContent.type === "writtenLesson") {
-                const activeLesson = recheck.written_lessons?.find(
-                  (l) => l.id === selectedContent?.data?.id,
-                );
-                if (activeLesson)
-                  setSelectedContent({
-                    type: "writtenLesson",
-                    data: activeLesson,
-                  });
-              } else if (selectedContent.type === "survey") {
-                const activeSurvey = recheck.surveys?.find(
-                  (s) => s.id === selectedContent?.data?.id,
-                );
-                if (activeSurvey) {
-                  setSelectedContent({ type: "survey", data: activeSurvey });
-                  const formattedQuestions = (activeSurvey.questions || []).map(
-                    (q) => ({
-                      question: q.question || q.question_text || "",
-                      type: q.question_type || "Multiple Choice",
-                      required: q.is_required || false,
-                      options: (q.options || []).map((o) => o.option_text || o),
-                    }),
-                  );
-                  setSurveyQuestions(formattedQuestions);
-                }
-              } else if (selectedContent.type === "assignment") {
-                const activeAssignment = recheck.assignments?.find(
-                  (a) => a.id === selectedContent?.data?.id,
-                );
-                if (activeAssignment) {
-                  setSelectedContent({
-                    type: "assignment",
-                    data: activeAssignment,
-                  });
-                }
-              }
-            }
-          }
-        } else {
+        if (fetchedModules.length === 0) {
           setSelectedModule(null);
           setSelectedContent(null);
           setEditModuleTitle("");
           setEditModuleDescription("");
           setEditModuleCuros("");
+          return;
         }
+
+        // ---- selectedModule, without depending on selectedModule ----
+        setSelectedModule((prevSelected) => {
+          let nextModule;
+
+          if (updateSelection && targetModuleId) {
+            nextModule =
+              fetchedModules.find((m) => m.id === targetModuleId) ||
+              fetchedModules[0];
+          } else if (!prevSelected) {
+            nextModule = fetchedModules[0];
+          } else {
+            nextModule =
+              fetchedModules.find((m) => m.id === prevSelected.id) ||
+              fetchedModules[0];
+          }
+
+          // Only touch the edit-form fields when the selected module
+          // actually changed. This is what stops keystrokes from being
+          // wiped out by background refreshes.
+          const moduleChanged =
+            !prevSelected || prevSelected.id !== nextModule.id;
+          if (moduleChanged) {
+            setEditModuleTitle(nextModule.title);
+            setEditModuleDescription(nextModule.description || "");
+            setEditModuleCuros(nextModule.curos || 0);
+            setHasUnsavedChanges(false);
+          }
+
+          return nextModule;
+        });
+
+        // ---- selectedContent, without depending on selectedContent ----
+        setSelectedContent((prevContent) => {
+          if (!prevContent) return prevContent;
+
+          if (prevContent.type === "video") {
+            for (const m of fetchedModules) {
+              const match = m.videos?.find(
+                (v) => v.id === prevContent.data?.id,
+              );
+              if (match) return { type: "video", data: match };
+            }
+          } else if (prevContent.type === "quiz") {
+            for (const m of fetchedModules) {
+              const match = m.quizzes?.find(
+                (q) => q.id === prevContent.data?.id,
+              );
+              if (match) return { type: "quiz", data: match };
+            }
+          } else if (prevContent.type === "writtenLesson") {
+            for (const m of fetchedModules) {
+              const match = m.written_lessons?.find(
+                (l) => l.id === prevContent.data?.id,
+              );
+              if (match) return { type: "writtenLesson", data: match };
+            }
+          } else if (prevContent.type === "survey") {
+            for (const m of fetchedModules) {
+              const match = m.surveys?.find(
+                (s) => s.id === prevContent.data?.id,
+              );
+              if (match) {
+                const formattedQuestions = (match.questions || []).map((q) => ({
+                  question: q.question || q.question_text || "",
+                  type: q.question_type || "Multiple Choice",
+                  required: q.is_required || false,
+                  options: (q.options || []).map((o) => o.option_text || o),
+                }));
+                setSurveyQuestions(formattedQuestions);
+                return { type: "survey", data: match };
+              }
+            }
+          } else if (prevContent.type === "assignment") {
+            for (const m of fetchedModules) {
+              const match = m.assignments?.find(
+                (a) => a.id === prevContent.data?.id,
+              );
+              if (match) return { type: "assignment", data: match };
+            }
+          }
+
+          return null; // item no longer exists (e.g. deleted elsewhere)
+        });
       } catch (error) {
         handleApiError(error);
       } finally {
         setLoading(false);
       }
     },
-    [programId, selectedModule, selectedContent],
+    [programId], // ← ONLY this. This is the actual fix.
   );
 
   const fetchProgramValidationData = useCallback(async () => {
@@ -2561,240 +2578,248 @@ const ProgramDetails = () => {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="relative">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-                      Module Name
-                    </label>
-                    <input
-                      value={selectedModule ? editModuleTitle : ""}
-                      onChange={(e) => {
-                        setEditModuleTitle(e.target.value);
-                        setHasUnsavedChanges(true);
-                      }}
-                      onMouseDown={(e) => e.stopPropagation()}
-                      onClick={(e) => e.stopPropagation()}
-                      onFocus={(e) => e.stopPropagation()}
-                      className="w-full rounded-xl border-2 border-gray-200 p-4 bg-white font-semibold text-lg outline-none focus:border-[#1E1B4B] focus:ring-4 focus:ring-[#1E1B4B]/10 transition-all"
-                      placeholder="Enter module name..."
-                    />
-                    {hasUnsavedChanges && (
-                      <span className="absolute right-3 top-9 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full border border-amber-200">
-                        Unsaved changes
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="relative">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-                      Module Description
-                    </label>
-                    <textarea
-                      value={selectedModule ? editModuleDescription : ""}
-                      onChange={(e) => {
-                        setEditModuleDescription(e.target.value);
-                        setHasUnsavedChanges(true);
-                      }}
-                      onMouseDown={(e) => e.stopPropagation()}
-                      onClick={(e) => e.stopPropagation()}
-                      onFocus={(e) => e.stopPropagation()}
-                      className="w-full rounded-xl border-2 border-gray-200 p-4 bg-white outline-none focus:border-[#1E1B4B] focus:ring-4 focus:ring-[#1E1B4B]/10 transition-all resize-none"
-                      rows={3}
-                      placeholder="Provide a general summary/description for this module..."
-                    />
-                  </div>
-
-                  <div className="relative">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-                      Module Completion Curos
-                    </label>
-                    <input
-                      type="number"
-                      value={selectedModule ? editModuleCuros : ""}
-                      onChange={(e) => {
-                        setEditModuleCuros(e.target.value);
-                        setHasUnsavedChanges(true);
-                      }}
-                      onMouseDown={(e) => e.stopPropagation()}
-                      onClick={(e) => e.stopPropagation()}
-                      onFocus={(e) => e.stopPropagation()}
-                      className="w-full rounded-xl border-2 border-gray-200 p-4 bg-white font-semibold text-lg outline-none focus:border-[#1E1B4B] focus:ring-4 focus:ring-[#1E1B4B]/10 transition-all"
-                      placeholder="Enter curos awarded for module completion"
-                    />
-                  </div>
-
-                  {selectedModule && (
-                    <div className="flex justify-end gap-3">
-                      <button
-                        onClick={() => {
-                          if (selectedModule) {
-                            setEditModuleTitle(selectedModule.title);
-                            setEditModuleDescription(
-                              selectedModule.description || "",
-                            );
-                            setEditModuleCuros(selectedModule.curos || 0);
-                            setHasUnsavedChanges(false);
+                  <div className="space-y-4" ref={editorContainerRef}>
+                    <div className="relative">
+                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
+                        Module Name
+                      </label>
+                      <input
+                       ref={inputRef}
+                        value={selectedModule ? editModuleTitle : ""}
+                        onChange={(e) => {
+                          setEditModuleTitle(e.target.value);
+                          setHasUnsavedChanges(true);
+                        }}
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          // Allow typing by not stopping propagation
+                          // Only stop propagation for Enter key if needed
+                          if (e.key === "Enter") {
+                            e.stopPropagation();
                           }
                         }}
-                        onMouseDown={(e) => e.stopPropagation()}
-                        disabled={!hasUnsavedChanges || savingModule}
-                        className="rounded-xl border-2 border-gray-200 px-5 py-2.5 text-gray-600 text-sm font-medium hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={updateModuleDetails}
-                        onMouseDown={(e) => e.stopPropagation()}
-                        disabled={savingModule}
-                        className="rounded-xl bg-[#1E1B4B] px-6 py-2.5 text-white text-sm font-medium hover:bg-[#2D256B] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-[#1E1B4B]/20 flex items-center gap-2"
-                      >
-                        {savingModule ? (
-                          <>
-                            <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                            Saving...
-                          </>
-                        ) : (
-                          <>
-                            Save Changes
-                            <CheckCircle size={16} />
-                          </>
-                        )}
-                      </button>
+                        className="w-full rounded-xl border-2 border-gray-200 p-4 bg-white font-semibold text-lg outline-none focus:border-[#1E1B4B] focus:ring-4 focus:ring-[#1E1B4B]/10 transition-all"
+                        placeholder="Enter module name..."
+                      />
+                      {hasUnsavedChanges && (
+                        <span className="absolute right-3 top-9 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full border border-amber-200">
+                          Unsaved changes
+                        </span>
+                      )}
                     </div>
-                  )}
 
-                  <button
-                    onClick={() => setShowContentTypes(!showContentTypes)}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    className="mt-4 rounded-xl border-2 border-dashed border-[#10B981] px-5 py-4 text-[#10B981] font-semibold w-full hover:bg-[#10B981]/5 transition-all flex items-center justify-center gap-2 group"
-                  >
-                    {showContentTypes && (
-                      <>
-                        <X size={18} />
-                        Hide Content Menu
-                      </>
-                    )}
-                    {!showContentTypes && (
-                      <>
-                        <Plus
-                          size={18}
-                          className="group-hover:rotate-90 transition-transform"
-                        />
-                        Add Core Content Items To Module
-                      </>
-                    )}
-                  </button>
-
-                  {showContentTypes && (
-                    <div className="mt-4 grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 bg-gradient-to-br from-gray-50 to-white p-5 rounded-2xl border border-gray-200">
-                      <button
-                        onClick={() => setShowVideoModal(true)}
-                        onMouseDown={(e) => e.stopPropagation()}
-                        className="group bg-white rounded-xl border-2 border-gray-100 p-4 shadow-sm hover:border-[#10B981] hover:shadow-md transition-all text-left"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-colors">
-                            <PlayCircle className="text-red-500" size={20} />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-sm text-gray-800">
-                              Video Lesson
-                            </p>
-                            <p className="text-xs text-gray-400">
-                              YouTube content
-                            </p>
-                          </div>
-                        </div>
-                      </button>
-                      <button
-                        onClick={() => setShowWrittenLessonModal(true)}
-                        onMouseDown={(e) => e.stopPropagation()}
-                        className="group bg-white rounded-xl border-2 border-gray-100 p-4 shadow-sm hover:border-[#10B981] hover:shadow-md transition-all text-left"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
-                            <BookOpen className="text-blue-500" size={20} />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-sm text-gray-800">
-                              Written Lesson
-                            </p>
-                            <p className="text-xs text-gray-400">
-                              Text & PDF content
-                            </p>
-                          </div>
-                        </div>
-                      </button>
-                      <button
-                        onClick={() => setShowQuizModal(true)}
-                        onMouseDown={(e) => e.stopPropagation()}
-                        className="group bg-white rounded-xl border-2 border-gray-100 p-4 shadow-sm hover:border-[#10B981] hover:shadow-md transition-all text-left"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center group-hover:bg-purple-100 transition-colors">
-                            <ClipboardCheck
-                              className="text-purple-500"
-                              size={20}
-                            />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-sm text-gray-800">
-                              Quiz Assessment
-                            </p>
-                            <p className="text-xs text-gray-400">
-                              MCQ evaluations
-                            </p>
-                          </div>
-                        </div>
-                      </button>
-                      <button
-                        onClick={() => setShowSurveyChoiceModal(true)}
-                        onMouseDown={(e) => e.stopPropagation()}
-                        className="group bg-white rounded-xl border-2 border-gray-100 p-4 shadow-sm hover:border-[#10B981] hover:shadow-md transition-all text-left"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center group-hover:bg-green-100 transition-colors">
-                            <FileQuestion
-                              className="text-green-500"
-                              size={20}
-                            />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-sm text-gray-800">
-                              Survey Block
-                            </p>
-                            <p className="text-xs text-gray-400">
-                              Feedback forms
-                            </p>
-                          </div>
-                        </div>
-                      </button>
-                      <button
-                        onClick={() => {
-                          resetAssignmentForm();
-                          setShowAssignmentModal(true);
+                    <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
+                        Module Description
+                      </label>
+                      <textarea
+                       ref={inputRef}
+                        value={selectedModule ? editModuleDescription : ""}
+                        onChange={(e) => {
+                          setEditModuleDescription(e.target.value);
+                          setHasUnsavedChanges(true);
                         }}
-                        onMouseDown={(e) => e.stopPropagation()}
-                        className="group bg-white rounded-xl border-2 border-gray-100 p-4 shadow-sm hover:border-[#10B981] hover:shadow-md transition-all text-left sm:col-span-2 lg:col-span-1"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
-                            <ClipboardCheck
-                              className="text-amber-500"
-                              size={20}
-                            />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-sm text-gray-800">
-                              Assignment Deck
-                            </p>
-                            <p className="text-xs text-gray-400">
-                              Task management
-                            </p>
-                          </div>
-                        </div>
-                      </button>
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          // Don't stop propagation for typing
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            // Let the textarea handle Enter normally
+                          }
+                        }}
+                        className="w-full rounded-xl border-2 border-gray-200 p-4 bg-white outline-none focus:border-[#1E1B4B] focus:ring-4 focus:ring-[#1E1B4B]/10 transition-all resize-none"
+                        rows={3}
+                        placeholder="Provide a general summary/description for this module..."
+                      />
                     </div>
-                  )}
+
+                    <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
+                        Module Completion Curos
+                      </label>
+                      <input
+                       ref={inputRef}
+                        type="number"
+                        value={selectedModule ? editModuleCuros : ""}
+                        onChange={(e) => {
+                          setEditModuleCuros(e.target.value);
+                          setHasUnsavedChanges(true);
+                        }}
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          // Allow typing
+                        }}
+                        className="w-full rounded-xl border-2 border-gray-200 p-4 bg-white font-semibold text-lg outline-none focus:border-[#1E1B4B] focus:ring-4 focus:ring-[#1E1B4B]/10 transition-all"
+                        placeholder="Enter curos awarded for module completion"
+                      />
+                    </div>
+
+                    {selectedModule && (
+                      <div className="flex justify-end gap-3">
+                        <button
+                          onClick={() => {
+                            if (selectedModule) {
+                              setEditModuleTitle(selectedModule.title);
+                              setEditModuleDescription(
+                                selectedModule.description || "",
+                              );
+                              setEditModuleCuros(selectedModule.curos || 0);
+                              setHasUnsavedChanges(false);
+                            }
+                          }}
+                          disabled={!hasUnsavedChanges || savingModule}
+                          className="rounded-xl border-2 border-gray-200 px-5 py-2.5 text-gray-600 text-sm font-medium hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={updateModuleDetails}
+                          disabled={savingModule}
+                          className="rounded-xl bg-[#1E1B4B] px-6 py-2.5 text-white text-sm font-medium hover:bg-[#2D256B] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-[#1E1B4B]/20 flex items-center gap-2"
+                        >
+                          {savingModule ? (
+                            <>
+                              <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              Save Changes
+                              <CheckCircle size={16} />
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={() => setShowContentTypes(!showContentTypes)}
+                      className="mt-4 rounded-xl border-2 border-dashed border-[#10B981] px-5 py-4 text-[#10B981] font-semibold w-full hover:bg-[#10B981]/5 transition-all flex items-center justify-center gap-2 group"
+                    >
+                      {showContentTypes && (
+                        <>
+                          <X size={18} />
+                          Hide Content Menu
+                        </>
+                      )}
+                      {!showContentTypes && (
+                        <>
+                          <Plus
+                            size={18}
+                            className="group-hover:rotate-90 transition-transform"
+                          />
+                          Add Core Content Items To Module
+                        </>
+                      )}
+                    </button>
+
+                    {showContentTypes && (
+                      <div className="mt-4 grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 bg-gradient-to-br from-gray-50 to-white p-5 rounded-2xl border border-gray-200">
+                        {/* Content type buttons remain the same */}
+                        <button
+                          onClick={() => setShowVideoModal(true)}
+                          className="group bg-white rounded-xl border-2 border-gray-100 p-4 shadow-sm hover:border-[#10B981] hover:shadow-md transition-all text-left"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-colors">
+                              <PlayCircle className="text-red-500" size={20} />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-sm text-gray-800">
+                                Video Lesson
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                YouTube content
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => setShowWrittenLessonModal(true)}
+                          className="group bg-white rounded-xl border-2 border-gray-100 p-4 shadow-sm hover:border-[#10B981] hover:shadow-md transition-all text-left"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+                              <BookOpen className="text-blue-500" size={20} />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-sm text-gray-800">
+                                Written Lesson
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                Text & PDF content
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => setShowQuizModal(true)}
+                          className="group bg-white rounded-xl border-2 border-gray-100 p-4 shadow-sm hover:border-[#10B981] hover:shadow-md transition-all text-left"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center group-hover:bg-purple-100 transition-colors">
+                              <ClipboardCheck
+                                className="text-purple-500"
+                                size={20}
+                              />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-sm text-gray-800">
+                                Quiz Assessment
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                MCQ evaluations
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => setShowSurveyChoiceModal(true)}
+                          className="group bg-white rounded-xl border-2 border-gray-100 p-4 shadow-sm hover:border-[#10B981] hover:shadow-md transition-all text-left"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center group-hover:bg-green-100 transition-colors">
+                              <FileQuestion
+                                className="text-green-500"
+                                size={20}
+                              />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-sm text-gray-800">
+                                Survey Block
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                Feedback forms
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => {
+                            resetAssignmentForm();
+                            setShowAssignmentModal(true);
+                          }}
+                          className="group bg-white rounded-xl border-2 border-gray-100 p-4 shadow-sm hover:border-[#10B981] hover:shadow-md transition-all text-left sm:col-span-2 lg:col-span-1"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
+                              <ClipboardCheck
+                                className="text-amber-500"
+                                size={20}
+                              />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-sm text-gray-800">
+                                Assignment Deck
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                Task management
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </>
             )}

@@ -1,13 +1,29 @@
 import MainLayout from "../../layout/mainLayout";
 import DashboardCard from "../../components/ui/dashboardCard";
 import React, { useState, useEffect } from "react";
-import { Shield, Users, Building2, Briefcase, UserCheck, X, ChevronRight, LayoutDashboard, BookOpen, FileText, Settings, BarChart3, Plus, Edit2, Trash2 } from "lucide-react";
+import {
+  Shield,
+  Users,
+  Building2,
+  Briefcase,
+  UserCheck,
+  X,
+  ChevronRight,
+  LayoutDashboard,
+  BookOpen,
+  FileText,
+  Settings,
+  BarChart3,
+  Plus,
+  Edit2,
+  Trash2,
+} from "lucide-react";
 import {
   getRoles,
   updateRolePermission,
   createRole,
   updateRoleName,
-  deleteRole
+  deleteRole,
 } from "../../services/roleApi";
 
 const RoleManagementPage = () => {
@@ -20,45 +36,7 @@ const RoleManagementPage = () => {
     { id: "settings", name: "Settings", icon: <Settings size={16} /> },
   ];
 
-  // Define roles with their permission access
   const [roles, setRoles] = useState([]);
-
-  useEffect(() => {
-    fetchRoles();
-  }, []);
-
- const fetchRoles = async () => {
-  try {
-    const data = await getRoles();
-
-    console.log("Roles API Response:", data);
-
-    if (!Array.isArray(data)) {
-      console.error("API is not returning an array:", data);
-      return;
-    }
-
-    const formattedRoles = data.map((role) => ({
-      id: role.id,
-      name: role.role_name || role.name,
-      permissions: {
-        dashboard: role.dashboard ?? false,
-        programs: role.programs ?? false,
-        reports: role.reports ?? false,
-        analytics: role.analytics ?? false,
-        settings: role.settings ?? false,
-      },
-      users: role.users || [],
-      icon: <Users size={24} className="text-[#693C83]" />,
-      description: "",
-    }));
-
-    setRoles(formattedRoles);
-  } catch (err) {
-    console.error("Fetch Roles Error:", err);
-  }
-};
-
   const [selectedRoleId, setSelectedRoleId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -74,13 +52,43 @@ const RoleManagementPage = () => {
     settings: false,
   });
 
-  const toggleRolePermission = async (
-    roleId,
-    permissionId
-  ) => {
-    const role = roles.find(
-      r => r.id === roleId
-    );
+  useEffect(() => {
+    fetchRoles();
+  }, []);
+
+  const fetchRoles = async () => {
+    try {
+      const data = await getRoles();
+      console.log("Roles API Response:", data);
+
+      if (!Array.isArray(data)) {
+        console.error("API is not returning an array:", data);
+        return;
+      }
+
+      const formattedRoles = data.map((role) => ({
+        id: role.id,
+        name: role.role_name || role.name,
+        permissions: {
+          dashboard: role.dashboard ?? false,
+          programs: role.programs ?? false,
+          reports: role.reports ?? false,
+          analytics: role.analytics ?? false,
+          settings: role.settings ?? false,
+        },
+        users: role.users || [],
+        icon: <Users size={24} className="text-[#693C83]" />,
+        description: "",
+      }));
+
+      setRoles(formattedRoles);
+    } catch (err) {
+      console.error("Fetch Roles Error:", err);
+    }
+  };
+
+  const toggleRolePermission = async (roleId, permissionId) => {
+    const role = roles.find((r) => r.id === roleId);
 
     if (!role) {
       console.error("Role not found for id:", roleId);
@@ -90,39 +98,43 @@ const RoleManagementPage = () => {
     const newValue = !role.permissions[permissionId];
 
     try {
-      await updateRolePermission(
-        roleId,
-        permissionId,
-        newValue
-      );
+      // The backend expects { permission: "name", value: true/false }
+      await updateRolePermission(roleId, {
+        permission: permissionId,
+        value: newValue,
+      });
 
-      fetchRoles();
+      // Refresh roles to get updated permissions
+      await fetchRoles();
     } catch (err) {
       console.error("Toggle permission error:", err);
+      alert("Failed to update permission. Please try again.");
     }
   };
 
   const toggleUserPermission = (roleId, userId, permissionId) => {
-    setRoles(roles.map(role => {
-      if (role.id === roleId) {
-        return {
-          ...role,
-          users: role.users.map(user => {
-            if (user.id === userId) {
-              return {
-                ...user,
-                permissions: {
-                  ...user.permissions,
-                  [permissionId]: !user.permissions[permissionId]
-                }
-              };
-            }
-            return user;
-          })
-        };
-      }
-      return role;
-    }));
+    setRoles(
+      roles.map((role) => {
+        if (role.id === roleId) {
+          return {
+            ...role,
+            users: role.users.map((user) => {
+              if (user.id === userId) {
+                return {
+                  ...user,
+                  permissions: {
+                    ...user.permissions,
+                    [permissionId]: !user.permissions[permissionId],
+                  },
+                };
+              }
+              return user;
+            }),
+          };
+        }
+        return role;
+      }),
+    );
   };
 
   const openRoleModal = (role) => {
@@ -158,16 +170,32 @@ const RoleManagementPage = () => {
     }
 
     try {
-      await createRole({
-        role_name: newRoleName,
-        ...newRolePermissions,
-      });
+      // The API expects these exact field names
+      const payload = {
+        role_name: newRoleName.trim(),
+        dashboard: newRolePermissions.dashboard || false,
+        programs: newRolePermissions.programs || false,
+        reports: newRolePermissions.reports || false,
+        analytics: newRolePermissions.analytics || false,
+        settings: newRolePermissions.settings || false,
+      };
+
+      console.log("Creating role with payload:", payload);
+
+      const response = await createRole(payload);
+      console.log("Create role response:", response);
+
       await fetchRoles();
       closeCreateModal();
       alert("Role created successfully!");
     } catch (error) {
       console.error("Error creating role:", error);
-      alert("Failed to create role. Please try again.");
+      // Show more detailed error
+      const errorMessage =
+        error.response?.data?.detail ||
+        error.message ||
+        "Failed to create role. Please try again.";
+      alert(errorMessage);
     }
   };
 
@@ -222,7 +250,7 @@ const RoleManagementPage = () => {
 
   // Get current role data from roles state
   const getCurrentRole = () => {
-    return roles.find(role => role.id === selectedRoleId);
+    return roles.find((role) => role.id === selectedRoleId);
   };
 
   return (
@@ -255,7 +283,10 @@ const RoleManagementPage = () => {
                   Role
                 </th>
                 {permissions.map((permission) => (
-                  <th key={permission.id} className="text-center py-4 px-4 text-[#1E1B4B] font-semibold min-w-[120px]">
+                  <th
+                    key={permission.id}
+                    className="text-center py-4 px-4 text-[#1E1B4B] font-semibold min-w-[120px]"
+                  >
                     <div className="flex flex-col items-center gap-1">
                       {permission.icon}
                       <span className="text-sm">{permission.name}</span>
@@ -269,29 +300,42 @@ const RoleManagementPage = () => {
             </thead>
             <tbody>
               {roles.map((role) => (
-                <tr key={role.id} className="border-b border-[#D9CFE8] hover:bg-[#ECE5F2]/30 transition-colors">
+                <tr
+                  key={role.id}
+                  className="border-b border-[#D9CFE8] hover:bg-[#ECE5F2]/30 transition-colors"
+                >
                   <td className="py-4 px-4">
                     <div className="flex items-center gap-3">
                       <div className="bg-[#ECE5F2] p-2 rounded-lg">
                         {role.icon}
                       </div>
                       <div>
-                        <p className="text-[#1E1B4B] font-medium">{role.name}</p>
-                        <p className="text-[#4F4679] text-xs">{role.users.length} users</p>
+                        <p className="text-[#1E1B4B] font-medium">
+                          {role.name}
+                        </p>
+                        <p className="text-[#4F4679] text-xs">
+                          {role.users.length} users
+                        </p>
                       </div>
                     </div>
                   </td>
                   {permissions.map((permission) => (
                     <td key={permission.id} className="text-center py-4 px-4">
                       <button
-                        onClick={() => toggleRolePermission(role.id, permission.id)}
+                        onClick={() =>
+                          toggleRolePermission(role.id, permission.id)
+                        }
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
-                          role.permissions[permission.id] ? 'bg-[#10B981]' : 'bg-[#D9CFE8]'
+                          role.permissions[permission.id]
+                            ? "bg-[#10B981]"
+                            : "bg-[#D9CFE8]"
                         }`}
                       >
                         <span
                           className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
-                            role.permissions[permission.id] ? 'translate-x-6' : 'translate-x-1'
+                            role.permissions[permission.id]
+                              ? "translate-x-6"
+                              : "translate-x-1"
                           }`}
                         />
                       </button>
@@ -313,7 +357,11 @@ const RoleManagementPage = () => {
                             ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                             : "bg-red-100 hover:bg-red-200 text-red-700"
                         }`}
-                        title={role.id <= 7 ? "Cannot delete default role" : "Delete Role"}
+                        title={
+                          role.id <= 7
+                            ? "Cannot delete default role"
+                            : "Delete Role"
+                        }
                         disabled={role.id <= 7}
                       >
                         <Trash2 size={16} />
@@ -345,8 +393,12 @@ const RoleManagementPage = () => {
                   {getCurrentRole().icon}
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold">{getCurrentRole().name}</h2>
-                  <p className="text-white/80 text-sm">{getCurrentRole().users.length} users</p>
+                  <h2 className="text-2xl font-bold">
+                    {getCurrentRole().name}
+                  </h2>
+                  <p className="text-white/80 text-sm">
+                    {getCurrentRole().users.length} users
+                  </p>
                 </div>
               </div>
               <button
@@ -367,7 +419,10 @@ const RoleManagementPage = () => {
                         User
                       </th>
                       {permissions.map((permission) => (
-                        <th key={permission.id} className="text-center py-4 px-4 text-[#1E1B4B] font-semibold min-w-[120px]">
+                        <th
+                          key={permission.id}
+                          className="text-center py-4 px-4 text-[#1E1B4B] font-semibold min-w-[120px]"
+                        >
                           <div className="flex flex-col items-center gap-1">
                             {permission.icon}
                             <span className="text-sm">{permission.name}</span>
@@ -378,24 +433,44 @@ const RoleManagementPage = () => {
                   </thead>
                   <tbody>
                     {getCurrentRole().users.map((user) => (
-                      <tr key={user.id} className="border-b border-[#D9CFE8] hover:bg-[#ECE5F2]/30 transition-colors">
+                      <tr
+                        key={user.id}
+                        className="border-b border-[#D9CFE8] hover:bg-[#ECE5F2]/30 transition-colors"
+                      >
                         <td className="py-4 px-4">
                           <div>
-                            <p className="text-[#1E1B4B] font-medium">{user.name}</p>
-                            <p className="text-[#4F4679] text-xs">{user.email}</p>
+                            <p className="text-[#1E1B4B] font-medium">
+                              {user.name}
+                            </p>
+                            <p className="text-[#4F4679] text-xs">
+                              {user.email}
+                            </p>
                           </div>
                         </td>
                         {permissions.map((permission) => (
-                          <td key={permission.id} className="text-center py-4 px-4">
+                          <td
+                            key={permission.id}
+                            className="text-center py-4 px-4"
+                          >
                             <button
-                              onClick={() => toggleUserPermission(getCurrentRole().id, user.id, permission.id)}
+                              onClick={() =>
+                                toggleUserPermission(
+                                  getCurrentRole().id,
+                                  user.id,
+                                  permission.id,
+                                )
+                              }
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
-                                user.permissions[permission.id] ? 'bg-[#10B981]' : 'bg-[#D9CFE8]'
+                                user.permissions[permission.id]
+                                  ? "bg-[#10B981]"
+                                  : "bg-[#D9CFE8]"
                               }`}
                             >
                               <span
                                 className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
-                                  user.permissions[permission.id] ? 'translate-x-6' : 'translate-x-1'
+                                  user.permissions[permission.id]
+                                    ? "translate-x-6"
+                                    : "translate-x-1"
                                 }`}
                               />
                             </button>
@@ -413,8 +488,14 @@ const RoleManagementPage = () => {
 
       {/* Create Role Modal */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={closeCreateModal}>
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={closeCreateModal}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-md w-full shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Modal Header */}
             <div className="bg-[#693C83] text-white p-6 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -423,7 +504,9 @@ const RoleManagementPage = () => {
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold">Create New Role</h2>
-                  <p className="text-white/80 text-sm">Define role permissions</p>
+                  <p className="text-white/80 text-sm">
+                    Define role permissions
+                  </p>
                 </div>
               </div>
               <button
@@ -455,10 +538,15 @@ const RoleManagementPage = () => {
                 </label>
                 <div className="space-y-3">
                   {permissions.map((permission) => (
-                    <div key={permission.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div
+                      key={permission.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    >
                       <div className="flex items-center gap-3">
                         <div className="text-[#693C83]">{permission.icon}</div>
-                        <span className="text-sm font-medium">{permission.name}</span>
+                        <span className="text-sm font-medium">
+                          {permission.name}
+                        </span>
                       </div>
                       <button
                         onClick={() =>
@@ -468,12 +556,16 @@ const RoleManagementPage = () => {
                           }))
                         }
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
-                          newRolePermissions[permission.id] ? "bg-[#10B981]" : "bg-[#D9CFE8]"
+                          newRolePermissions[permission.id]
+                            ? "bg-[#10B981]"
+                            : "bg-[#D9CFE8]"
                         }`}
                       >
                         <span
                           className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
-                            newRolePermissions[permission.id] ? "translate-x-6" : "translate-x-1"
+                            newRolePermissions[permission.id]
+                              ? "translate-x-6"
+                              : "translate-x-1"
                           }`}
                         />
                       </button>
@@ -503,8 +595,14 @@ const RoleManagementPage = () => {
 
       {/* Edit Role Modal */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={closeEditModal}>
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={closeEditModal}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-md w-full shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Modal Header */}
             <div className="bg-[#693C83] text-white p-6 flex items-center justify-between">
               <div className="flex items-center gap-3">
