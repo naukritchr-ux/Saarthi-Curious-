@@ -1,5 +1,9 @@
 from datetime import date, datetime
 from typing import List, Optional
+from uuid import uuid4
+
+from services.certificate_service import CertificateService
+from services.certificate_storage import CertificateStorageService
 
 from database import get_db
 from fastapi import APIRouter, Depends, HTTPException
@@ -10,6 +14,7 @@ from models import (
     Assignment,
     AssignmentSubmission,
     Badge,
+    Certificate,
     LearningStreak,
     Module,
     ModuleCompletion,
@@ -1413,6 +1418,10 @@ def create_retention_quiz_attempt(
     db.commit()
     db.refresh(attempt)
 
+    if passed:
+        _check_and_generate_certificate(
+            request.user_id, retention_quiz.program_id, db
+        )
 
 
     print("===== RETENTION ATTEMPT SAVED =====")
@@ -2000,6 +2009,11 @@ def create_application_check_attempt(
 
     db.commit()
     db.refresh(attempt)
+
+    if automation_enabled and passed:
+        _check_and_generate_certificate(
+            request.user_id, program.id, db
+        )
 
     # Award curos if passed
     if passed and (application_check.curos or 0) > 0:
@@ -3490,6 +3504,130 @@ def check_module_completion(user_id: int, module_id: int, db: Session):
     return True
 
 
+def _check_and_generate_certificate(user_id: int, program_id: int, db: Session):
+    program = db.query(Program).filter(Program.id == program_id).first()
+    user = db.query(User).filter(User.user_id == user_id).first()
+
+    if not program or not user:
+        return
+
+    program_progress = (
+        db.query(UserProgramProgress)
+        .filter(
+            UserProgramProgress.user_id == user_id,
+            UserProgramProgress.program_id == program_id,
+        )
+        .first()
+    )
+    if not (
+        program_progress
+        and program_progress.completed is True
+        and program_progress.completed_percentage == 100
+    ):
+        return
+
+    retention_quiz = (
+        db.query(RetentionQuiz)
+        .filter(RetentionQuiz.program_id == program_id)
+        .first()
+    )
+    latest_retention_attempt = (
+        db.query(RetentionQuizAttempt)
+        .filter(
+            RetentionQuizAttempt.user_id == user_id,
+            RetentionQuizAttempt.retention_quiz_id == retention_quiz.id,
+        )
+        .order_by(RetentionQuizAttempt.attempted_at.desc())
+        .first()
+        if retention_quiz
+        else None
+    )
+    retention_completed = (
+        retention_quiz is not None
+        and latest_retention_attempt is not None
+        and latest_retention_attempt.passed is True
+    )
+
+    application_checks = (
+        db.query(ApplicationCheck)
+        .filter(ApplicationCheck.program_id == program_id)
+        .all()
+    )
+    all_application_checks_approved = all(
+        db.query(UserApplicationCheckProgress)
+        .filter(
+            UserApplicationCheckProgress.user_id == user_id,
+            UserApplicationCheckProgress.program_id == program_id,
+            UserApplicationCheckProgress.application_check_id
+            == application_check.id,
+            UserApplicationCheckProgress.status == "Approved",
+        )
+        .first()
+        is not None
+        for application_check in application_checks
+    )
+
+    if not retention_completed or not all_application_checks_approved:
+        return
+
+    existing_certificate = (
+        db.query(Certificate)
+        .filter(
+            Certificate.user_id == user_id,
+            Certificate.program_id == program_id,
+        )
+        .first()
+    )
+
+    if not existing_certificate:
+        certificate_number = (
+            f"CERT-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-"
+            f"{uuid4().hex[:8].upper()}"
+        )
+        completion_date = program_progress.completed_at
+
+        certificate_service = CertificateService()
+        pdf_bytes = certificate_service.generate_certificate(
+            recipient_name=user.full_name or f"User {user_id}",
+            program_name=program.name,
+            completion_date=completion_date,
+            certificate_number=certificate_number,
+            issued_at=datetime.utcnow(),
+        )
+
+        certificate_storage = CertificateStorageService()
+        certificate_path = certificate_storage.upload_certificate(
+            user_id=user_id,
+            program_id=program_id,
+            certificate_number=certificate_number,
+            pdf_bytes=pdf_bytes,
+            completion_date=completion_date,
+        )
+
+        certificate = Certificate(
+            user_id=user_id,
+            program_id=program_id,
+            certificate_number=certificate_number,
+            recipient_name=user.full_name or f"User {user_id}",
+            program_name=program.name,
+            completion_date=completion_date,
+            certificate_path=certificate_path,
+            issued_at=datetime.utcnow(),
+        )
+        db.add(certificate)
+
+        print("==========================================")
+        print("CERTIFICATE GENERATED SUCCESSFULLY")
+        print("Certificate Number:", certificate_number)
+        print("Certificate Path:", certificate_path)
+        print("==========================================")
+    else:
+        print(
+            f"Certificate already exists: "
+            f"{existing_certificate.certificate_number}"
+        )
+
+
 def update_program_progress_after_module_completion(
     user_id: int, program_id: int, db: Session
 ):
@@ -3573,6 +3711,11 @@ def update_program_progress_after_module_completion(
             program = (
                 db.query(Program).filter(Program.id == program_id).first()
             )
+
+            # ==========================================
+            # GENERATE PROGRAM COMPLETION CERTIFICATE
+            # ==========================================
+
             program_curos = program.curos if program else 0
             print(f"Program curos to award: {program_curos}")
 
@@ -3636,6 +3779,8 @@ def update_program_progress_after_module_completion(
         create_program_completion_notifications(
             user_id=user_id, program_id=program_id, db=db
         )
+
+        _check_and_generate_certificate(user_id, program_id, db)
 
     # ==========================================
     # FINAL COMMIT

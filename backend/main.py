@@ -19,6 +19,7 @@ from routes.curo import router as curo_router
 from routes.learner import router as learner_router
 from routes.streaks import router as streaks_router
 from routes.dashboard import router as dashboard_router
+from routes.certificates import router as certificates_router
 from routes import badges
 from routes.reports import router as reports_router
 from routes.leaderboards import router as leaderboards_router
@@ -74,6 +75,7 @@ app.include_router(leaderboards_router)
 app.include_router(notifications_router)
 app.include_router(reports_router, prefix="/reports", tags=["reports"])
 app.include_router(bookings_router)
+app.include_router(certificates_router)
 
 # ============================
 # DEBUG - Print all routes (fixed)

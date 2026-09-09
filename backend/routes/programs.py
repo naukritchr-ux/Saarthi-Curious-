@@ -59,6 +59,7 @@ from schemas import (
     AssignmentUpdate,
     BulkQuestionsInput,
     ModuleUpdate,
+    ModuleCreate,
     ProgramCreate,
     RetentionQuizCreate,
     RetentionQuizResponse,
@@ -1600,6 +1601,11 @@ def review_application_check_submission(
                     f"to {user.email}: {e}"
                 )
 
+        if payload.status == "Approved":
+            from routes.learner import _check_and_generate_certificate
+
+            _check_and_generate_certificate(attempt.user_id, program.id, db)
+
         db.commit()
         db.refresh(progress)
 
@@ -1928,13 +1934,12 @@ def reorder_module_content(
 
 
 @router.post("/{program_id}/modules/")
+@router.post("/{program_id}/modules/")
 def create_program_module(
     program_id: int,
-    title: str,
+    payload: ModuleCreate,
     http_request: Request,
     db: Session = Depends(get_db),
-    description: str | None = None,
-    curos: int = 0,
     actor_id: Optional[int] = Query(None),
     actor_name: Optional[str] = Query(None),
 ):
@@ -1948,18 +1953,18 @@ def create_program_module(
         .order_by(Module.module_order.desc())
         .first()
     )
+
     next_order = 1
     if last_module and last_module.module_order is not None:
         next_order = last_module.module_order + 1
 
     new_module = Module(
         program_id=program_id,
-        title=title,
-        description=description,
+        title=payload.title,
+        description=payload.description,
         module_order=next_order,
         is_active=True,
-
-        curos=curos
+        curos=payload.curos or 0,
     )
 
     try:
@@ -1983,14 +1988,15 @@ def create_program_module(
                 "description": new_module.description,
             },
         )
+
     except Exception as e:
         db.rollback()
         raise HTTPException(
-            status_code=500, detail=f"Database write error for module: {str(e)}"
+            status_code=500,
+            detail=f"Database write error for module: {str(e)}"
         )
 
     return new_module
-
 
 @router.get("/{program_id}/modules/")
 def get_program_modules(program_id: int, db: Session = Depends(get_db)):

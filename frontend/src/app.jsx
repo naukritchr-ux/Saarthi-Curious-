@@ -10,6 +10,7 @@ import CandidateAttrition from "./pages/admin/candidateAttrition";
 import UserManagementPage from "./pages/admin/userManagement";
 import RoleManagementPage from "./pages/admin/roleManagement";
 import InactiveUsersPage from "./pages/admin/inactiveUsers";
+import CertificateManagement from "./pages/admin/certificates";
 
 import TeamLeaderDashboard from "./pages/teamLeader/teamLeaderDashboard";
 import FranchiseeDashboard from "./pages/franchiseePartner/franchiseeDashboard";
@@ -28,6 +29,7 @@ import PrivacyPolicy from "./pages/privacyPolicy/privacyPolicy";
 import LearnerDashboard from "./pages/learner/learnerDashboard";
 import ReportsPage from "./pages/Reports/ReportsPage";
 import OpenProgram from "./pages/learner/openProgram/openProgram";
+import CertificatePage from "./pages/learner/openProgram/certificatePage";
 import RetentionQuizPage from "./pages/learner/RetentionQuizPage";
 import RetentionQuizResultPage from "./pages/learner/RetentionQuizResultPage";
 import ApplicationCheckPage from "./pages/learner/ApplicationCheckPage";
@@ -123,6 +125,15 @@ function App() {
           }
         />
 
+        <Route
+  path="/learner/certificates"
+  element={
+    <ProtectedRoute>
+      <CertificatePage />
+    </ProtectedRoute>
+  }
+/>
+
         {/* Retention Quiz */}
         <Route
           path="/retention-quiz/:quizId"
@@ -211,6 +222,15 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+<Route
+  path="/learner/certificate/:certificateId"
+  element={
+    <ProtectedRoute>
+      <CertificatePage />
+    </ProtectedRoute>
+  }
+/>
 
         <Route
           path="/programs/edit/:id"
@@ -336,6 +356,15 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+<Route
+  path="/admin/certificates"
+  element={
+    <ProtectedRoute requiredRoles={[1, 2]}>
+      <CertificateManagement />
+    </ProtectedRoute>
+  }
+/>
 
         {/* Communication */}
         <Route

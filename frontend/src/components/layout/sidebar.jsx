@@ -75,6 +75,14 @@ const Sidebar = ({ isExpanded, onMouseEnter, onMouseLeave, onNavigate }) => {
         section: "Engagement & Gamification",
       },
       {
+        id: "certificates",
+        icon: Award,
+        label: "Certificates",
+        path: "/admin/certificates",
+        section: "Engagement & Gamification",
+        roles: [1, 2],
+      },
+      {
         id: "leaderboards",
         icon: Trophy,
         label: "Leaderboards",
@@ -163,6 +171,7 @@ const Sidebar = ({ isExpanded, onMouseEnter, onMouseLeave, onNavigate }) => {
         "rewards",
         "streak-management",
         "user-management",
+        "certificates",
         "role-management",
         "inactive-users",
         "notification-scripts",
@@ -177,6 +186,7 @@ const Sidebar = ({ isExpanded, onMouseEnter, onMouseLeave, onNavigate }) => {
         "rewards",
         "streak-management",
         "user-management",
+        "certificates",
         "role-management",
         "inactive-users",
         "notification-scripts",
@@ -349,7 +359,24 @@ const Sidebar = ({ isExpanded, onMouseEnter, onMouseLeave, onNavigate }) => {
               tooltipLabel={getLearningLabel()}
             />
           ) : null}
+
+          {roleId === 3 ||
+roleId === 4 ||
+roleId === 5 ||
+roleId === 6 ||
+roleId === 7 ? (
+  <NavItem
+    icon={Award}
+    label="Certificates"
+    onClick={() => handleNavigate("/learner/certificates")}
+    isActive={location.pathname === "/learner/certificates"}
+    tooltipLabel="Certificates"
+  />
+) : null}
+
         </div>
+
+
 
         {/* Menu Items Grouped by Section */}
         {[

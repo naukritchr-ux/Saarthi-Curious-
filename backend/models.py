@@ -1118,3 +1118,63 @@ class Booking(Base):
         DateTime(timezone=True),
         server_default=func.now()
     )
+
+class Certificate(Base):
+    __tablename__ = "certificates"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "program_id",
+            name="uq_certificate_user_program"
+        ),
+    )
+
+    id = Column(BigInteger, primary_key=True, index=True)
+
+    user_id = Column(
+        BigInteger,
+        ForeignKey("users.user_id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    program_id = Column(
+        BigInteger,
+        ForeignKey("programs.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    certificate_number = Column(
+        String,
+        unique=True,
+        nullable=False
+    )
+
+    recipient_name = Column(
+        String,
+        nullable=False
+    )
+
+    program_name = Column(
+        String,
+        nullable=False
+    )
+
+    completion_date = Column(
+        DateTime,
+        nullable=False
+    )
+
+    certificate_path = Column(
+        Text,
+        nullable=True
+    )
+
+    issued_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+    user = relationship("User")
+    program = relationship("Program")

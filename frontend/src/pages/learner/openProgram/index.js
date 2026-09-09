@@ -7,3 +7,5 @@ export { default as ReadingContent } from "./readingContent";
 export { default as DocumentContent } from "./documentContent";
 
 export * from "./dummyData";
+
+export { default as CertificatePage } from "./certificatePage";

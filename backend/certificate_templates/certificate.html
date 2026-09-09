@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <style>
+
+        /* =====================================================
+           PAGE
+           ===================================================== */
+
+        @page {
+            size: 1000px 750px;
+            margin: 0;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 1000px;
+            height: 750px;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: white;
+            font-family: "Times New Roman", serif;
+        }
+
+
+        /* =====================================================
+           CERTIFICATE
+           ===================================================== */
+
+        .certificate {
+            position: relative;
+
+            width: 1000px;
+            height: 750px;
+
+            overflow: hidden;
+
+            background: white;
+        }
+
+
+        /* =====================================================
+           CERTIFICATE BACKGROUND IMAGE
+
+           Using an actual IMG instead of CSS background.
+           This makes sure the image is included in the PDF.
+           ===================================================== */
+
+        .certificate-bg {
+            position: absolute;
+
+            left: 0;
+            top: 0;
+
+            width: 1000px;
+            height: 750px;
+
+            object-fit: fill;
+
+            z-index: 1;
+        }
+
+
+        /* =====================================================
+           HIDE OLD SAMPLE NAME / PROGRAM / TEXT
+           ===================================================== */
+
+        .sample-text-cover {
+            position: absolute;
+
+            left: 245px;
+            top: 300px;
+
+            width: 570px;
+            height: 185px;
+
+            background: white;
+
+            z-index: 5;
+        }
+
+
+        /* =====================================================
+           HIDE OLD "APRIL-SEPTEMBER 2023"
+           ===================================================== */
+
+        .old-program-period-cover {
+            position: absolute;
+
+            left: 245px;
+            top: 430px;
+
+            width: 570px;
+            height: 70px;
+
+            background: white;
+
+            z-index: 5;
+        }
+
+
+        /* =====================================================
+           HIDE OLD DATE
+
+           Covers:
+           "Date: 8th December 2023"
+
+           The right side is clipped so the corner
+           design remains visible.
+           ===================================================== */
+
+        .old-date-cover {
+            position: absolute;
+
+            left: 610px;
+            top: 645px;
+
+            width: 330px;
+            height: 48px;
+
+            background: white;
+
+            clip-path: polygon(
+                0 0,
+                100% 0,
+                88% 100%,
+                0 100%
+            );
+
+            z-index: 5;
+        }
+
+
+        /* =====================================================
+           HIDE OLD CERTIFICATE NUMBER
+           ===================================================== */
+
+        .certificate-number-cover {
+            position: absolute;
+
+            left: 780px;
+            top: 720px;
+
+            width: 205px;
+            height: 18px;
+
+            background: white;
+
+            z-index: 5;
+        }
+
+
+        /* =====================================================
+           DYNAMIC MAIN CONTENT
+           ===================================================== */
+
+        .content {
+            position: absolute;
+
+            left: 245px;
+
+            /* Moved slightly downward */
+            top: 300px;
+
+            width: 570px;
+
+            text-align: center;
+
+            z-index: 10;
+        }
+
+
+        /* =====================================================
+           AWARDED TO
+           ===================================================== */
+
+        .awarded {
+            font-size: 20px;
+
+            font-style: italic;
+
+            margin-bottom: 8px;
+        }
+
+
+        /* =====================================================
+           RECIPIENT
+           ===================================================== */
+
+        .recipient {
+            font-size: 31px;
+
+            font-weight: bold;
+            font-style: italic;
+
+            line-height: 1.15;
+
+            margin-bottom: 8px;
+        }
+
+
+        /* =====================================================
+           PROGRAM
+           ===================================================== */
+
+        .program {
+            font-size: 21px;
+
+            font-weight: bold;
+            font-style: italic;
+
+            line-height: 1.2;
+
+            margin-bottom: 7px;
+        }
+
+
+        /* =====================================================
+           COMPLETION TEXT
+           ===================================================== */
+
+        .completion {
+            font-size: 18px;
+
+            font-style: italic;
+
+            line-height: 1.25;
+        }
+
+
+        /* =====================================================
+           DYNAMIC DATE
+           ===================================================== */
+
+        .date {
+            position: absolute;
+
+            left: 635px;
+            top: 645px;
+
+            font-size: 17px;
+
+            font-style: italic;
+
+            white-space: nowrap;
+
+            z-index: 20;
+        }
+
+
+        /* =====================================================
+           DYNAMIC CERTIFICATE NUMBER
+           ===================================================== */
+
+        .certificate-number {
+            position: absolute;
+
+            right: 20px;
+            bottom: 7px;
+
+            font-family: Arial, sans-serif;
+
+            font-size: 8px;
+
+            color: #555;
+
+            white-space: nowrap;
+
+            z-index: 20;
+        }
+
+
+        /* =====================================================
+           PRINT SETTINGS
+           ===================================================== */
+
+        @media print {
+
+            html,
+            body {
+                width: 1000px;
+                height: 750px;
+
+                margin: 0;
+                padding: 0;
+            }
+
+            .certificate {
+                width: 1000px;
+                height: 750px;
+            }
+
+            .certificate-bg {
+                display: block;
+            }
+
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+
+    </style>
+</head>
+
+
+<body>
+
+<div class="certificate">
+
+
+    <!-- =====================================================
+         CERTIFICATE BACKGROUND
+         ===================================================== -->
+
+    <img
+        src="certificate_template.jpg"
+        class="certificate-bg"
+        alt="Certificate Template"
+    >
+
+
+    <!-- =====================================================
+         HIDE OLD SAMPLE CONTENT
+         ===================================================== -->
+
+    <div class="sample-text-cover"></div>
+
+
+    <!-- =====================================================
+         HIDE OLD APRIL-SEPTEMBER TEXT
+         ===================================================== -->
+
+    <div class="old-program-period-cover"></div>
+
+
+    <!-- =====================================================
+         HIDE OLD DATE
+         ===================================================== -->
+
+    <div class="old-date-cover"></div>
+
+
+    <!-- =====================================================
+         HIDE OLD CERTIFICATE NUMBER
+         ===================================================== -->
+
+    <div class="certificate-number-cover"></div>
+
+
+    <!-- =====================================================
+         DYNAMIC CERTIFICATE CONTENT
+         ===================================================== -->
+
+    <div class="content">
+
+        <div class="awarded">
+            awarded to
+        </div>
+
+        <div class="recipient">
+            {{ recipient_name }}
+        </div>
+
+        <div class="program">
+            {{ program_name }}
+        </div>
+
+        <div class="completion">
+            For the successful completion of the program
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         DYNAMIC DATE
+         ===================================================== -->
+
+    <div class="date">
+        Date: {{ issued_at }}
+    </div>
+
+
+    <!-- =====================================================
+         DYNAMIC CERTIFICATE NUMBER
+         ===================================================== -->
+
+    <div class="certificate-number">
+        Certificate No: {{ certificate_number }}
+    </div>
+
+
+</div>
+
+</body>
+</html>

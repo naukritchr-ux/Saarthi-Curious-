@@ -54,6 +54,17 @@ const OpenProgram = () => {
   const [programMilestones, setProgramMilestones] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const programCompleted =
+    progress?.completed === true && progress?.progress === 100;
+  const retentionCompleted =
+    programMilestones?.retention_quiz?.is_completed === true;
+  const applicationChecksCompleted =
+    (programMilestones?.application_checks || []).every(
+      (check) => (check.status || "").toLowerCase() === "approved"
+    );
+  const certificateUnlocked =
+    programCompleted && retentionCompleted && applicationChecksCompleted;
+
   // Fetch program and progress data
   const fetchProgramData = async () => {
     try {
@@ -1591,6 +1602,58 @@ const OpenProgram = () => {
                 </div>
               </div>
             )}
+
+            <div className="mt-8 border-t border-gray-200 pt-6">
+              <div
+                className={`rounded-2xl border p-5 ${
+                  certificateUnlocked
+                    ? "border-green-200 bg-green-50"
+                    : "border-gray-200 bg-gray-50"
+                }`}
+              >
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-start gap-3">
+                    {certificateUnlocked ? (
+                      <Award className="mt-0.5 h-5 w-5 text-green-600" />
+                    ) : (
+                      <Lock className="mt-0.5 h-5 w-5 text-gray-500" />
+                    )}
+                    <div>
+                      <h3 className="text-base font-semibold text-[#1E1B4B]">
+                        {certificateUnlocked
+                          ? "Certificate Unlocked"
+                          : "Certificate Locked"}
+                      </h3>
+                      <p className="mt-1 text-sm text-gray-600">
+                        {certificateUnlocked
+                          ? "Your program, retention, and application requirements are complete."
+                          : "Complete the Program, Retention, and all Application Checks to unlock your certificate."}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!certificateUnlocked}
+                    onClick={() => {
+                      const certificateId =
+                        programMilestones?.certificate?.id ||
+                        progress?.certificate_id;
+                      if (certificateId) {
+                        navigate(`/learner/certificate/${certificateId}`);
+                      }
+                    }}
+                    className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition-colors ${
+                      certificateUnlocked
+                        ? "bg-[#693C83] text-white hover:bg-[#5a2e6e]"
+                        : "cursor-not-allowed bg-gray-200 text-gray-500"
+                    }`}
+                  >
+                    <Award className="h-4 w-4" />
+                    View Certificate
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

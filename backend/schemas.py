@@ -418,7 +418,7 @@ class RewardResponse(RewardCreate):
 class ModuleCreate(BaseModel):
     title: str
     description: Optional[str] = None
-    module_order: int
+    module_order: Optional[int] = None
     curos: Optional[int] = 0
 
 

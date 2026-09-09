@@ -510,11 +510,12 @@ const ProgramDetails = () => {
 
   // ============ EFFECTS ============
   useEffect(() => {
-    if (programId) {
-      fetchProgram();
-      fetchProgramValidationData();
-    }
-  }, [programId, fetchProgram, fetchProgramValidationData]);
+  if (programId) {
+    fetchProgram();
+    fetchProgramValidationData();
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [programId]);
 
   // ============ PROGRAM PUBLISHING ============
   const handlePublishProgram = async () => {
