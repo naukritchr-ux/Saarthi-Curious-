@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import MainLayout from "../../layout/mainLayout";
@@ -129,7 +129,8 @@ const SortableModuleItem = ({
         </button>
       </div>
 
-      {selectedModule?.id === module.id && children}
+      {/* Children wrapper - REMOVED onMouseDown handler */}
+      <div>{selectedModule?.id === module.id && children}</div>
     </div>
   );
 };
@@ -138,7 +139,41 @@ const SortableModuleItem = ({
 const ProgramDetails = () => {
   const { id: programId } = useParams();
   const navigate = useNavigate();
+  const editorContainerRef = useRef(null);
+  useEffect(() => {
+  const container = editorContainerRef.current;
+  if (!container) return;
 
+  const handleGlobalKeyDown = (e) => {
+    // If the event target is inside our editor container, stop it from reaching other listeners
+    if (container.contains(e.target)) {
+      e.stopPropagation();
+      // Do NOT call preventDefault() – let the browser handle character insertion
+    }
+  };
+
+  // Attach in capture phase so it runs before any other document listener
+  document.addEventListener('keydown', handleGlobalKeyDown, true);
+
+  return () => {
+    document.removeEventListener('keydown', handleGlobalKeyDown, true);
+  };
+}, []);
+  const inputRef = useRef(null);
+  useEffect(() => {
+  const input = inputRef.current;
+  if (!input) return;
+
+  const handleKeyDownCapture = (e) => {
+    e.stopPropagation(); // stops the event from reaching the document
+  };
+
+  input.addEventListener('keydown', handleKeyDownCapture, true); // capture phase
+
+  return () => {
+    input.removeEventListener('keydown', handleKeyDownCapture, true);
+  };
+}, []);
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -374,102 +409,105 @@ const ProgramDetails = () => {
         const fetchedModules = data.modules || [];
         setModules(fetchedModules);
 
-        if (fetchedModules.length > 0) {
-          if (updateSelection && targetModuleId) {
-            const matched = fetchedModules.find((m) => m.id === targetModuleId);
-            setSelectedModule(matched || fetchedModules[0]);
-            setEditModuleTitle(
-              matched ? matched.title : fetchedModules[0].title,
-            );
-            setEditModuleDescription(
-              matched
-                ? matched.description || ""
-                : fetchedModules[0].description || "",
-            );
-            setEditModuleCuros(
-              matched ? matched.curos || 0 : fetchedModules[0].curos || 0,
-            );
-          } else if (!selectedModule) {
-            setSelectedModule(fetchedModules[0]);
-            setEditModuleTitle(fetchedModules[0].title);
-            setEditModuleDescription(fetchedModules[0].description || "");
-            setEditModuleCuros(fetchedModules[0].curos || 0);
-          } else {
-            const recheck = fetchedModules.find(
-              (m) => m.id === selectedModule?.id,
-            );
-            setSelectedModule(recheck || fetchedModules[0]);
-            if (recheck) {
-              setEditModuleTitle(recheck.title);
-              setEditModuleDescription(recheck.description || "");
-              setEditModuleCuros(recheck.curos || 0);
-            }
-
-            if (selectedContent && recheck) {
-              if (selectedContent.type === "video") {
-                const activeVideo = recheck.videos?.find(
-                  (v) => v.id === selectedContent?.data?.id,
-                );
-                if (activeVideo)
-                  setSelectedContent({ type: "video", data: activeVideo });
-              } else if (selectedContent.type === "quiz") {
-                const activeQuiz = recheck.quizzes?.find(
-                  (q) => q.id === selectedContent?.data?.id,
-                );
-                if (activeQuiz)
-                  setSelectedContent({ type: "quiz", data: activeQuiz });
-              } else if (selectedContent.type === "writtenLesson") {
-                const activeLesson = recheck.written_lessons?.find(
-                  (l) => l.id === selectedContent?.data?.id,
-                );
-                if (activeLesson)
-                  setSelectedContent({
-                    type: "writtenLesson",
-                    data: activeLesson,
-                  });
-              } else if (selectedContent.type === "survey") {
-                const activeSurvey = recheck.surveys?.find(
-                  (s) => s.id === selectedContent?.data?.id,
-                );
-                if (activeSurvey) {
-                  setSelectedContent({ type: "survey", data: activeSurvey });
-                  const formattedQuestions = (activeSurvey.questions || []).map(
-                    (q) => ({
-                      question: q.question || q.question_text || "",
-                      type: q.question_type || "Multiple Choice",
-                      required: q.is_required || false,
-                      options: (q.options || []).map((o) => o.option_text || o),
-                    }),
-                  );
-                  setSurveyQuestions(formattedQuestions);
-                }
-              } else if (selectedContent.type === "assignment") {
-                const activeAssignment = recheck.assignments?.find(
-                  (a) => a.id === selectedContent?.data?.id,
-                );
-                if (activeAssignment) {
-                  setSelectedContent({
-                    type: "assignment",
-                    data: activeAssignment,
-                  });
-                }
-              }
-            }
-          }
-        } else {
+        if (fetchedModules.length === 0) {
           setSelectedModule(null);
           setSelectedContent(null);
           setEditModuleTitle("");
           setEditModuleDescription("");
           setEditModuleCuros("");
+          return;
         }
+
+        // ---- selectedModule, without depending on selectedModule ----
+        setSelectedModule((prevSelected) => {
+          let nextModule;
+
+          if (updateSelection && targetModuleId) {
+            nextModule =
+              fetchedModules.find((m) => m.id === targetModuleId) ||
+              fetchedModules[0];
+          } else if (!prevSelected) {
+            nextModule = fetchedModules[0];
+          } else {
+            nextModule =
+              fetchedModules.find((m) => m.id === prevSelected.id) ||
+              fetchedModules[0];
+          }
+
+          // Only touch the edit-form fields when the selected module
+          // actually changed. This is what stops keystrokes from being
+          // wiped out by background refreshes.
+          const moduleChanged =
+            !prevSelected || prevSelected.id !== nextModule.id;
+          if (moduleChanged) {
+            setEditModuleTitle(nextModule.title);
+            setEditModuleDescription(nextModule.description || "");
+            setEditModuleCuros(nextModule.curos || 0);
+            setHasUnsavedChanges(false);
+          }
+
+          return nextModule;
+        });
+
+        // ---- selectedContent, without depending on selectedContent ----
+        setSelectedContent((prevContent) => {
+          if (!prevContent) return prevContent;
+
+          if (prevContent.type === "video") {
+            for (const m of fetchedModules) {
+              const match = m.videos?.find(
+                (v) => v.id === prevContent.data?.id,
+              );
+              if (match) return { type: "video", data: match };
+            }
+          } else if (prevContent.type === "quiz") {
+            for (const m of fetchedModules) {
+              const match = m.quizzes?.find(
+                (q) => q.id === prevContent.data?.id,
+              );
+              if (match) return { type: "quiz", data: match };
+            }
+          } else if (prevContent.type === "writtenLesson") {
+            for (const m of fetchedModules) {
+              const match = m.written_lessons?.find(
+                (l) => l.id === prevContent.data?.id,
+              );
+              if (match) return { type: "writtenLesson", data: match };
+            }
+          } else if (prevContent.type === "survey") {
+            for (const m of fetchedModules) {
+              const match = m.surveys?.find(
+                (s) => s.id === prevContent.data?.id,
+              );
+              if (match) {
+                const formattedQuestions = (match.questions || []).map((q) => ({
+                  question: q.question || q.question_text || "",
+                  type: q.question_type || "Multiple Choice",
+                  required: q.is_required || false,
+                  options: (q.options || []).map((o) => o.option_text || o),
+                }));
+                setSurveyQuestions(formattedQuestions);
+                return { type: "survey", data: match };
+              }
+            }
+          } else if (prevContent.type === "assignment") {
+            for (const m of fetchedModules) {
+              const match = m.assignments?.find(
+                (a) => a.id === prevContent.data?.id,
+              );
+              if (match) return { type: "assignment", data: match };
+            }
+          }
+
+          return null; // item no longer exists (e.g. deleted elsewhere)
+        });
       } catch (error) {
         handleApiError(error);
       } finally {
         setLoading(false);
       }
     },
-    [programId, selectedModule, selectedContent],
+    [programId], // ← ONLY this. This is the actual fix.
   );
 
   const fetchProgramValidationData = useCallback(async () => {
@@ -734,6 +772,7 @@ const ProgramDetails = () => {
         description: "Default program structure block overview details.",
         curos: 0,
       });
+      setSelectedContent(null);
       await fetchProgram(true, response.data?.id);
     } catch (error) {
       handleApiError(error);
@@ -1062,7 +1101,6 @@ const ProgramDetails = () => {
     }
   };
 
-  // Fixed: removed undefined `question` variable reference
   const addSurveyQuestion = () => {
     setSurveyQuestions([
       ...surveyQuestions,
@@ -1197,7 +1235,6 @@ const ProgramDetails = () => {
 
     setSavingAssignment(true);
 
-    // Fixed: Added missing fields to payload
     const payload = {
       module_id: selectedModule.id,
       title: assignmentTitle,
@@ -1598,7 +1635,10 @@ const ProgramDetails = () => {
             </div>
 
             <button
-              onClick={addModule}
+              onClick={(e) => {
+                e.stopPropagation();
+                addModule();
+              }}
               disabled={savingModule}
               className="mb-5 w-full rounded-xl bg-gradient-to-r from-[#10B981] to-[#059669] py-3 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-[#10B981]/20 hover:shadow-xl hover:shadow-[#10B981]/30 flex items-center justify-center gap-2"
             >
@@ -1983,8 +2023,14 @@ const ProgramDetails = () => {
             </div>
           )}
 
-          {/* Right Content Area */}
-          <div className="lg:col-span-9 rounded-3xl bg-white p-6 shadow-lg border border-gray-100">
+          {/* Right Content Area - FIXED INPUTS */}
+          <div
+            className="lg:col-span-9 rounded-3xl bg-white p-6 shadow-lg border border-gray-100"
+            onMouseDown={(e) => {
+              // Prevent click from bubbling up to sidebar
+              e.stopPropagation();
+            }}
+          >
             {selectedContent ? (
               <div className="mb-6 rounded-2xl border bg-white p-6">
                 <button
@@ -2512,7 +2558,7 @@ const ProgramDetails = () => {
                 )}
               </div>
             ) : (
-              // No Content Selected - Show Module Editor
+              // No Content Selected - Show Module Editor with FIXED INPUTS
               <>
                 <div className="border-b pb-5 mb-6">
                   <div className="flex items-center gap-3 mb-2">
@@ -2533,226 +2579,248 @@ const ProgramDetails = () => {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="relative">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-                      Module Name
-                    </label>
-                    <input
-                      value={selectedModule ? editModuleTitle : ""}
-                      onChange={(e) => {
-                        setEditModuleTitle(e.target.value);
-                        setHasUnsavedChanges(true);
-                      }}
-                      className="w-full rounded-xl border-2 border-gray-200 p-4 bg-white font-semibold text-lg outline-none focus:border-[#1E1B4B] focus:ring-4 focus:ring-[#1E1B4B]/10 transition-all"
-                      placeholder="Enter module name..."
-                      disabled={!selectedModule}
-                    />
-                    {hasUnsavedChanges && (
-                      <span className="absolute right-3 top-9 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full border border-amber-200">
-                        Unsaved changes
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="relative">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-                      Module Description
-                    </label>
-                    <textarea
-                      value={selectedModule ? editModuleDescription : ""}
-                      onChange={(e) => {
-                        setEditModuleDescription(e.target.value);
-                        setHasUnsavedChanges(true);
-                      }}
-                      className="w-full rounded-xl border-2 border-gray-200 p-4 bg-white outline-none focus:border-[#1E1B4B] focus:ring-4 focus:ring-[#1E1B4B]/10 transition-all resize-none"
-                      rows={3}
-                      placeholder="Provide a general summary/description for this module..."
-                      disabled={!selectedModule}
-                    />
-                  </div>
-
-                  <div className="relative">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
-                      Module Completion Curos
-                    </label>
-                    <input
-                      type="number"
-                      value={selectedModule ? editModuleCuros : ""}
-                      onChange={(e) => {
-                        setEditModuleCuros(e.target.value);
-                        setHasUnsavedChanges(true);
-                      }}
-                      className="w-full rounded-xl border-2 border-gray-200 p-4 bg-white font-semibold text-lg outline-none focus:border-[#1E1B4B] focus:ring-4 focus:ring-[#1E1B4B]/10 transition-all"
-                      placeholder="Enter curos awarded for module completion"
-                      disabled={!selectedModule}
-                    />
-                  </div>
-
-                  {selectedModule && (
-                    <div className="flex justify-end gap-3">
-                      <button
-                        onClick={() => {
-                          if (selectedModule) {
-                            setEditModuleTitle(selectedModule.title);
-                            setEditModuleDescription(
-                              selectedModule.description || "",
-                            );
-                            setEditModuleCuros(selectedModule.curos || 0);
-                            setHasUnsavedChanges(false);
+                  <div className="space-y-4" ref={editorContainerRef}>
+                    <div className="relative">
+                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
+                        Module Name
+                      </label>
+                      <input
+                       ref={inputRef}
+                        value={selectedModule ? editModuleTitle : ""}
+                        onChange={(e) => {
+                          setEditModuleTitle(e.target.value);
+                          setHasUnsavedChanges(true);
+                        }}
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          // Allow typing by not stopping propagation
+                          // Only stop propagation for Enter key if needed
+                          if (e.key === "Enter") {
+                            e.stopPropagation();
                           }
                         }}
-                        disabled={!hasUnsavedChanges || savingModule}
-                        className="rounded-xl border-2 border-gray-200 px-5 py-2.5 text-gray-600 text-sm font-medium hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={updateModuleDetails}
-                        disabled={savingModule}
-                        className="rounded-xl bg-[#1E1B4B] px-6 py-2.5 text-white text-sm font-medium hover:bg-[#2D256B] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-[#1E1B4B]/20 flex items-center gap-2"
-                      >
-                        {savingModule ? (
-                          <>
-                            <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                            Saving...
-                          </>
-                        ) : (
-                          <>
-                            Save Changes
-                            <CheckCircle size={16} />
-                          </>
-                        )}
-                      </button>
+                        className="w-full rounded-xl border-2 border-gray-200 p-4 bg-white font-semibold text-lg outline-none focus:border-[#1E1B4B] focus:ring-4 focus:ring-[#1E1B4B]/10 transition-all"
+                        placeholder="Enter module name..."
+                      />
+                      {hasUnsavedChanges && (
+                        <span className="absolute right-3 top-9 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full border border-amber-200">
+                          Unsaved changes
+                        </span>
+                      )}
                     </div>
-                  )}
 
-                  <button
-                    onClick={() => setShowContentTypes(!showContentTypes)}
-                    className="mt-4 rounded-xl border-2 border-dashed border-[#10B981] px-5 py-4 text-[#10B981] font-semibold w-full hover:bg-[#10B981]/5 transition-all flex items-center justify-center gap-2 group"
-                  >
-                    {showContentTypes && (
-                      <>
-                        <X size={18} />
-                        Hide Content Menu
-                      </>
-                    )}
-                    {!showContentTypes && (
-                      <>
-                        <Plus
-                          size={18}
-                          className="group-hover:rotate-90 transition-transform"
-                        />
-                        Add Core Content Items To Module
-                      </>
-                    )}
-                  </button>
-
-                  {showContentTypes && (
-                    <div className="mt-4 grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 bg-gradient-to-br from-gray-50 to-white p-5 rounded-2xl border border-gray-200">
-                      <button
-                        onClick={() => setShowVideoModal(true)}
-                        className="group bg-white rounded-xl border-2 border-gray-100 p-4 shadow-sm hover:border-[#10B981] hover:shadow-md transition-all text-left"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-colors">
-                            <PlayCircle className="text-red-500" size={20} />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-sm text-gray-800">
-                              Video Lesson
-                            </p>
-                            <p className="text-xs text-gray-400">
-                              YouTube content
-                            </p>
-                          </div>
-                        </div>
-                      </button>
-                      <button
-                        onClick={() => setShowWrittenLessonModal(true)}
-                        className="group bg-white rounded-xl border-2 border-gray-100 p-4 shadow-sm hover:border-[#10B981] hover:shadow-md transition-all text-left"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
-                            <BookOpen className="text-blue-500" size={20} />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-sm text-gray-800">
-                              Written Lesson
-                            </p>
-                            <p className="text-xs text-gray-400">
-                              Text & PDF content
-                            </p>
-                          </div>
-                        </div>
-                      </button>
-                      <button
-                        onClick={() => setShowQuizModal(true)}
-                        className="group bg-white rounded-xl border-2 border-gray-100 p-4 shadow-sm hover:border-[#10B981] hover:shadow-md transition-all text-left"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center group-hover:bg-purple-100 transition-colors">
-                            <ClipboardCheck
-                              className="text-purple-500"
-                              size={20}
-                            />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-sm text-gray-800">
-                              Quiz Assessment
-                            </p>
-                            <p className="text-xs text-gray-400">
-                              MCQ evaluations
-                            </p>
-                          </div>
-                        </div>
-                      </button>
-                      <button
-                        onClick={() => setShowSurveyChoiceModal(true)}
-                        className="group bg-white rounded-xl border-2 border-gray-100 p-4 shadow-sm hover:border-[#10B981] hover:shadow-md transition-all text-left"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center group-hover:bg-green-100 transition-colors">
-                            <FileQuestion
-                              className="text-green-500"
-                              size={20}
-                            />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-sm text-gray-800">
-                              Survey Block
-                            </p>
-                            <p className="text-xs text-gray-400">
-                              Feedback forms
-                            </p>
-                          </div>
-                        </div>
-                      </button>
-                      <button
-                        onClick={() => {
-                          resetAssignmentForm();
-                          setShowAssignmentModal(true);
+                    <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
+                        Module Description
+                      </label>
+                      <textarea
+                       ref={inputRef}
+                        value={selectedModule ? editModuleDescription : ""}
+                        onChange={(e) => {
+                          setEditModuleDescription(e.target.value);
+                          setHasUnsavedChanges(true);
                         }}
-                        className="group bg-white rounded-xl border-2 border-gray-100 p-4 shadow-sm hover:border-[#10B981] hover:shadow-md transition-all text-left sm:col-span-2 lg:col-span-1"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
-                            <ClipboardCheck
-                              className="text-amber-500"
-                              size={20}
-                            />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-sm text-gray-800">
-                              Assignment Deck
-                            </p>
-                            <p className="text-xs text-gray-400">
-                              Task management
-                            </p>
-                          </div>
-                        </div>
-                      </button>
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          // Don't stop propagation for typing
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            // Let the textarea handle Enter normally
+                          }
+                        }}
+                        className="w-full rounded-xl border-2 border-gray-200 p-4 bg-white outline-none focus:border-[#1E1B4B] focus:ring-4 focus:ring-[#1E1B4B]/10 transition-all resize-none"
+                        rows={3}
+                        placeholder="Provide a general summary/description for this module..."
+                      />
                     </div>
-                  )}
+
+                    <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
+                        Module Completion Curos
+                      </label>
+                      <input
+                       ref={inputRef}
+                        type="number"
+                        value={selectedModule ? editModuleCuros : ""}
+                        onChange={(e) => {
+                          setEditModuleCuros(e.target.value);
+                          setHasUnsavedChanges(true);
+                        }}
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          // Allow typing
+                        }}
+                        className="w-full rounded-xl border-2 border-gray-200 p-4 bg-white font-semibold text-lg outline-none focus:border-[#1E1B4B] focus:ring-4 focus:ring-[#1E1B4B]/10 transition-all"
+                        placeholder="Enter curos awarded for module completion"
+                      />
+                    </div>
+
+                    {selectedModule && (
+                      <div className="flex justify-end gap-3">
+                        <button
+                          onClick={() => {
+                            if (selectedModule) {
+                              setEditModuleTitle(selectedModule.title);
+                              setEditModuleDescription(
+                                selectedModule.description || "",
+                              );
+                              setEditModuleCuros(selectedModule.curos || 0);
+                              setHasUnsavedChanges(false);
+                            }
+                          }}
+                          disabled={!hasUnsavedChanges || savingModule}
+                          className="rounded-xl border-2 border-gray-200 px-5 py-2.5 text-gray-600 text-sm font-medium hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={updateModuleDetails}
+                          disabled={savingModule}
+                          className="rounded-xl bg-[#1E1B4B] px-6 py-2.5 text-white text-sm font-medium hover:bg-[#2D256B] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-[#1E1B4B]/20 flex items-center gap-2"
+                        >
+                          {savingModule ? (
+                            <>
+                              <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              Save Changes
+                              <CheckCircle size={16} />
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={() => setShowContentTypes(!showContentTypes)}
+                      className="mt-4 rounded-xl border-2 border-dashed border-[#10B981] px-5 py-4 text-[#10B981] font-semibold w-full hover:bg-[#10B981]/5 transition-all flex items-center justify-center gap-2 group"
+                    >
+                      {showContentTypes && (
+                        <>
+                          <X size={18} />
+                          Hide Content Menu
+                        </>
+                      )}
+                      {!showContentTypes && (
+                        <>
+                          <Plus
+                            size={18}
+                            className="group-hover:rotate-90 transition-transform"
+                          />
+                          Add Core Content Items To Module
+                        </>
+                      )}
+                    </button>
+
+                    {showContentTypes && (
+                      <div className="mt-4 grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 bg-gradient-to-br from-gray-50 to-white p-5 rounded-2xl border border-gray-200">
+                        {/* Content type buttons remain the same */}
+                        <button
+                          onClick={() => setShowVideoModal(true)}
+                          className="group bg-white rounded-xl border-2 border-gray-100 p-4 shadow-sm hover:border-[#10B981] hover:shadow-md transition-all text-left"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-colors">
+                              <PlayCircle className="text-red-500" size={20} />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-sm text-gray-800">
+                                Video Lesson
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                YouTube content
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => setShowWrittenLessonModal(true)}
+                          className="group bg-white rounded-xl border-2 border-gray-100 p-4 shadow-sm hover:border-[#10B981] hover:shadow-md transition-all text-left"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+                              <BookOpen className="text-blue-500" size={20} />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-sm text-gray-800">
+                                Written Lesson
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                Text & PDF content
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => setShowQuizModal(true)}
+                          className="group bg-white rounded-xl border-2 border-gray-100 p-4 shadow-sm hover:border-[#10B981] hover:shadow-md transition-all text-left"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center group-hover:bg-purple-100 transition-colors">
+                              <ClipboardCheck
+                                className="text-purple-500"
+                                size={20}
+                              />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-sm text-gray-800">
+                                Quiz Assessment
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                MCQ evaluations
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => setShowSurveyChoiceModal(true)}
+                          className="group bg-white rounded-xl border-2 border-gray-100 p-4 shadow-sm hover:border-[#10B981] hover:shadow-md transition-all text-left"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center group-hover:bg-green-100 transition-colors">
+                              <FileQuestion
+                                className="text-green-500"
+                                size={20}
+                              />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-sm text-gray-800">
+                                Survey Block
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                Feedback forms
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => {
+                            resetAssignmentForm();
+                            setShowAssignmentModal(true);
+                          }}
+                          className="group bg-white rounded-xl border-2 border-gray-100 p-4 shadow-sm hover:border-[#10B981] hover:shadow-md transition-all text-left sm:col-span-2 lg:col-span-1"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
+                              <ClipboardCheck
+                                className="text-amber-500"
+                                size={20}
+                              />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-sm text-gray-800">
+                                Assignment Deck
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                Task management
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </>
             )}
@@ -2777,6 +2845,8 @@ const ProgramDetails = () => {
                 <input
                   value={writtenLessonTitle}
                   onChange={(e) => setWrittenLessonTitle(e.target.value)}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
                   placeholder="E.g., Complete Object-Oriented Framework Overview"
                   className="w-full rounded-xl border p-3 text-sm"
                 />
@@ -2788,6 +2858,8 @@ const ProgramDetails = () => {
                 <textarea
                   value={writtenLessonContent}
                   onChange={(e) => setWrittenLessonContent(e.target.value)}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
                   rows={10}
                   placeholder="Type or paste core written notes documentation text inside this sheet viewport..."
                   className="w-full rounded-xl border p-3 text-sm"
@@ -2828,6 +2900,8 @@ const ProgramDetails = () => {
                 <input
                   value={writtenLessonPdfUrl}
                   onChange={(e) => setWrittenLessonPdfUrl(e.target.value)}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
                   placeholder="https://example.com/assets/handout.pdf"
                   className="w-full rounded-xl border p-3 text-sm"
                   disabled={!!writtenLessonFile || uploadingNote}
@@ -2842,6 +2916,7 @@ const ProgramDetails = () => {
                     setWrittenLessonPdfUrl("");
                     setWrittenLessonFile(null);
                   }}
+                  onMouseDown={(e) => e.stopPropagation()}
                   disabled={savingWrittenLesson || uploadingNote}
                   className="rounded-xl border px-4 py-2 text-sm font-medium"
                 >
@@ -2849,6 +2924,7 @@ const ProgramDetails = () => {
                 </button>
                 <button
                   onClick={saveWrittenLesson}
+                  onMouseDown={(e) => e.stopPropagation()}
                   disabled={savingWrittenLesson || uploadingNote}
                   className="rounded-xl bg-[#10B981] px-5 py-2 text-white text-sm font-medium disabled:opacity-50"
                 >
@@ -2873,12 +2949,16 @@ const ProgramDetails = () => {
               <input
                 value={lessonTitle}
                 onChange={(e) => setLessonTitle(e.target.value)}
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
                 placeholder="Video Title"
                 className="w-full rounded-xl border p-3 text-sm"
               />
               <textarea
                 value={lessonDescription}
                 onChange={(e) => setLessonDescription(e.target.value)}
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
                 rows={2}
                 placeholder="Brief Description Subtitle"
                 className="w-full rounded-xl border p-3 text-sm"
@@ -2886,6 +2966,8 @@ const ProgramDetails = () => {
               <textarea
                 value={videoExplanation}
                 onChange={(e) => setVideoExplanation(e.target.value)}
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
                 rows={4}
                 placeholder="Write long descriptions / explanation text sheet records for this video session..."
                 className="w-full rounded-xl border p-3 text-sm"
@@ -2893,12 +2975,15 @@ const ProgramDetails = () => {
               <input
                 value={youtubeLink}
                 onChange={(e) => setYoutubeLink(e.target.value)}
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
                 placeholder="YouTube URL Link String"
                 className="w-full rounded-xl border p-3 text-sm"
               />
               <div className="flex justify-end gap-3 mt-4">
                 <button
                   onClick={() => setShowVideoModal(false)}
+                  onMouseDown={(e) => e.stopPropagation()}
                   disabled={savingVideo}
                   className="rounded-xl border px-4 py-2 text-sm font-medium"
                 >
@@ -2906,6 +2991,7 @@ const ProgramDetails = () => {
                 </button>
                 <button
                   onClick={saveVideoLesson}
+                  onMouseDown={(e) => e.stopPropagation()}
                   disabled={savingVideo}
                   className="rounded-xl bg-[#10B981] px-5 py-2 text-white text-sm font-medium disabled:opacity-50"
                 >
@@ -2959,6 +3045,8 @@ const ProgramDetails = () => {
                     <input
                       value={quizTitle}
                       onChange={(e) => setQuizTitle(e.target.value)}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
                       placeholder="Example: Final Module Technical Benchmark"
                       className="w-full rounded-xl border border-gray-200 p-3 text-sm outline-none focus:border-[#1E1B4B] focus:ring-2 focus:ring-indigo-100 bg-white font-medium text-gray-800 transition"
                     />
@@ -2970,6 +3058,8 @@ const ProgramDetails = () => {
                     <textarea
                       value={quizDescription}
                       onChange={(e) => setQuizDescription(e.target.value)}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
                       rows={2}
                       placeholder="Describe the assessment objectives, topics, and constraints..."
                       className="w-full rounded-xl border border-gray-200 p-3 text-sm outline-none focus:border-[#1E1B4B] focus:ring-2 focus:ring-indigo-100 bg-white text-gray-700 transition resize-none"
@@ -2989,6 +3079,8 @@ const ProgramDetails = () => {
                         max="100"
                         value={passingPercentage}
                         onChange={(e) => setPassingPercentage(e.target.value)}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
                         placeholder="70"
                         className="w-full rounded-xl border border-gray-200 p-3 pr-12 text-sm font-bold text-gray-800 outline-none focus:border-[#1E1B4B] transition"
                       />
@@ -3023,6 +3115,7 @@ const ProgramDetails = () => {
                   setQuizDescription("");
                   setPassingPercentage("");
                 }}
+                onMouseDown={(e) => e.stopPropagation()}
                 disabled={savingQuiz}
                 className="rounded-xl border border-gray-200 px-5 py-2.5 text-sm font-semibold text-gray-600 bg-white hover:bg-gray-50 transition"
               >
@@ -3031,6 +3124,7 @@ const ProgramDetails = () => {
               <button
                 type="button"
                 onClick={saveQuiz}
+                onMouseDown={(e) => e.stopPropagation()}
                 disabled={savingQuiz}
                 className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 px-6 py-2.5 text-white text-sm font-bold shadow-md shadow-emerald-500/10 active:scale-98 transition-all flex items-center gap-2 disabled:opacity-50"
               >
@@ -3071,6 +3165,7 @@ const ProgramDetails = () => {
                     <button
                       type="button"
                       onClick={() => removeQuestionFromForm(qIndex)}
+                      onMouseDown={(e) => e.stopPropagation()}
                       className="absolute top-4 right-4 text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition"
                       title="Remove Question block"
                     >
@@ -3092,6 +3187,8 @@ const ProgramDetails = () => {
                             e.target.value,
                           )
                         }
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
                         placeholder="Type your main question text here..."
                         rows={2}
                         className="w-full rounded-xl border border-gray-300 p-3 text-sm bg-white outline-none focus:border-blue-500"
@@ -3114,6 +3211,8 @@ const ProgramDetails = () => {
                             e.target.value,
                           )
                         }
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
                         placeholder="Marks"
                         className="w-full rounded-xl border border-gray-300 p-3 text-sm bg-white outline-none focus:border-blue-500"
                       />
@@ -3136,6 +3235,8 @@ const ProgramDetails = () => {
                               e.target.checked,
                             )
                           }
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onClick={(e) => e.stopPropagation()}
                           className="h-4 w-4 text-green-600 rounded cursor-pointer"
                           title="Mark Option as Correct Answer"
                         />
@@ -3150,6 +3251,8 @@ const ProgramDetails = () => {
                               e.target.value,
                             )
                           }
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onClick={(e) => e.stopPropagation()}
                           placeholder={`Option ${oIndex + 1}`}
                           className="flex-1 rounded-xl border border-gray-300 px-3 py-2 text-sm bg-white outline-none focus:border-blue-400"
                         />
@@ -3159,6 +3262,7 @@ const ProgramDetails = () => {
                             onClick={() =>
                               removeOptionFromQuestion(qIndex, oIndex)
                             }
+                            onMouseDown={(e) => e.stopPropagation()}
                             className="text-gray-400 hover:text-red-500 transition"
                             title="Minus Option Field"
                           >
@@ -3170,6 +3274,7 @@ const ProgramDetails = () => {
                     <button
                       type="button"
                       onClick={() => addOptionToQuestion(qIndex)}
+                      onMouseDown={(e) => e.stopPropagation()}
                       className="text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition inline-flex items-center gap-1 mt-1"
                     >
                       + Add Option
@@ -3188,6 +3293,8 @@ const ProgramDetails = () => {
                           e.target.value,
                         )
                       }
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
                       placeholder="Add custom explanation/feedback text shown after incorrect answers..."
                       rows={2}
                       className="w-full rounded-xl border border-gray-300 p-3 text-sm bg-white outline-none focus:border-blue-500"
@@ -3199,6 +3306,7 @@ const ProgramDetails = () => {
                 <button
                   type="button"
                   onClick={addQuestionToForm}
+                  onMouseDown={(e) => e.stopPropagation()}
                   className="rounded-xl border border-blue-600 text-blue-600 px-4 py-2 text-sm font-bold hover:bg-blue-50 transition"
                 >
                   + Add Next Question Block
@@ -3206,6 +3314,7 @@ const ProgramDetails = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={() => setShowQuestionModal(false)}
+                    onMouseDown={(e) => e.stopPropagation()}
                     disabled={savingQuestions}
                     className="rounded-xl border px-4 py-2 text-sm font-medium hover:bg-gray-50"
                   >
@@ -3213,6 +3322,7 @@ const ProgramDetails = () => {
                   </button>
                   <button
                     onClick={saveQuestion}
+                    onMouseDown={(e) => e.stopPropagation()}
                     disabled={savingQuestions}
                     className="rounded-xl bg-[#10B981] px-5 py-2 text-white text-sm font-bold shadow-sm hover:opacity-95 disabled:opacity-50"
                   >
@@ -3246,6 +3356,8 @@ const ProgramDetails = () => {
                 <input
                   value={noteTitle}
                   onChange={(e) => setNoteTitle(e.target.value)}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
                   placeholder="E.g., Complete SQL Notes PDF"
                   className="w-full rounded-xl border p-3 text-sm"
                 />
@@ -3257,6 +3369,8 @@ const ProgramDetails = () => {
                 <textarea
                   value={noteDescription}
                   onChange={(e) => setNoteDescription(e.target.value)}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
                   placeholder="Brief summary of what this note covers..."
                   rows={2}
                   className="w-full rounded-xl border p-3 text-sm"
@@ -3297,6 +3411,8 @@ const ProgramDetails = () => {
                 <input
                   value={noteUrlLink}
                   onChange={(e) => setNoteUrlLink(e.target.value)}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
                   placeholder="https://example.com/hosted_document.pdf"
                   className="w-full rounded-xl border p-3 text-sm"
                   disabled={!!noteFile || uploadingNote}
@@ -3311,6 +3427,7 @@ const ProgramDetails = () => {
                   setNoteFile(null);
                   setNoteUrlLink("");
                 }}
+                onMouseDown={(e) => e.stopPropagation()}
                 className="border px-4 py-2 rounded-xl text-sm font-medium"
                 disabled={uploadingNote}
               >
@@ -3318,6 +3435,7 @@ const ProgramDetails = () => {
               </button>
               <button
                 onClick={saveNotes}
+                onMouseDown={(e) => e.stopPropagation()}
                 className="bg-[#10B981] text-white px-5 py-2 rounded-xl text-sm font-medium shadow-sm disabled:opacity-50"
                 disabled={uploadingNote}
               >
@@ -3348,6 +3466,8 @@ const ProgramDetails = () => {
                   type="text"
                   value={surveyTitle}
                   onChange={(e) => setSurveyTitle(e.target.value)}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
                   placeholder="E.g., End-of-Course Feedback Survey"
                   className="w-full rounded-xl border border-gray-300 p-3 text-sm outline-none focus:border-purple-500"
                 />
@@ -3359,6 +3479,8 @@ const ProgramDetails = () => {
                 <textarea
                   value={surveyDescription}
                   onChange={(e) => setSurveyDescription(e.target.value)}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
                   placeholder="Provide high-level guidelines or operational context for respondents..."
                   rows={3}
                   className="w-full rounded-xl border border-gray-300 p-3 text-sm outline-none focus:border-purple-500 resize-none"
@@ -3371,6 +3493,7 @@ const ProgramDetails = () => {
                     setSurveyTitle("");
                     setSurveyDescription("");
                   }}
+                  onMouseDown={(e) => e.stopPropagation()}
                   className="border px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-50 transition"
                   disabled={savingSurvey}
                 >
@@ -3378,6 +3501,7 @@ const ProgramDetails = () => {
                 </button>
                 <button
                   onClick={handleCreateInitialSurvey}
+                  onMouseDown={(e) => e.stopPropagation()}
                   disabled={savingSurvey}
                   className="bg-[#10B981] hover:bg-[#0fA773] text-white px-5 py-2 rounded-xl text-sm font-bold shadow-sm transition disabled:opacity-50"
                 >
@@ -3389,7 +3513,7 @@ const ProgramDetails = () => {
         </div>
       )}
 
-      {/* Assignment Modal */}
+      {/* Assignment Modal - Fix all inputs */}
       {showAssignmentModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0f172a]/40 backdrop-blur-sm p-4 animate-fadeIn">
           <div className="w-full max-w-3xl rounded-3xl bg-slate-50 shadow-2xl max-h-[92vh] flex flex-col overflow-hidden border border-slate-200">
@@ -3414,6 +3538,7 @@ const ProgramDetails = () => {
                   setShowAssignmentModal(false);
                   resetAssignmentForm();
                 }}
+                onMouseDown={(e) => e.stopPropagation()}
                 className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-xl transition"
               >
                 <X size={18} />
@@ -3440,6 +3565,8 @@ const ProgramDetails = () => {
                     <input
                       value={assignmentTitle}
                       onChange={(e) => setAssignmentTitle(e.target.value)}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
                       placeholder="React Authentication System"
                       className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all text-slate-800 placeholder-slate-400 bg-slate-50/50"
                     />
@@ -3452,6 +3579,8 @@ const ProgramDetails = () => {
                     <input
                       value={assignmentDescription}
                       onChange={(e) => setAssignmentDescription(e.target.value)}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
                       placeholder="Build a secure authentication system using React."
                       className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all text-slate-800 placeholder-slate-400 bg-slate-50/50"
                     />
@@ -3470,6 +3599,8 @@ const ProgramDetails = () => {
                       onChange={(e) =>
                         setAssignmentInstructions(e.target.value)
                       }
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
                       placeholder="Complete all tasks listed below..."
                       rows={4}
                       className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all text-slate-800 placeholder-slate-400 bg-slate-50/50 resize-none"
@@ -3499,6 +3630,8 @@ const ProgramDetails = () => {
                       type="datetime-local"
                       value={assignmentDeadline}
                       onChange={(e) => setAssignmentDeadline(e.target.value)}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
                       className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all text-slate-800 bg-slate-50/50"
                     />
                   </div>
@@ -3511,6 +3644,8 @@ const ProgramDetails = () => {
                       onChange={(e) =>
                         setAssignmentSubmissionType(e.target.value)
                       }
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
                       className="w-full rounded-xl border border-slate-200 p-3 text-sm bg-slate-50/50 text-slate-800 outline-none focus:border-indigo-500 transition-all cursor-pointer"
                     >
                       <option value="file">File Upload</option>
@@ -3544,6 +3679,8 @@ const ProgramDetails = () => {
                       type="number"
                       value={assignmentMaxMarks}
                       onChange={(e) => setAssignmentMaxMarks(e.target.value)}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
                       className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all text-slate-800 bg-slate-50/50"
                     />
                   </div>
@@ -3557,6 +3694,8 @@ const ProgramDetails = () => {
                       onChange={(e) =>
                         setAssignmentPassingMarks(e.target.value)
                       }
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
                       className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all text-slate-800 bg-slate-50/50"
                     />
                     <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1 mt-1.5">
@@ -3587,6 +3726,8 @@ const ProgramDetails = () => {
                       type="number"
                       value={maxFileSize}
                       onChange={(e) => setMaxFileSize(e.target.value)}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
                       className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all text-slate-800 bg-slate-50/50"
                     />
                   </div>
@@ -3614,6 +3755,7 @@ const ProgramDetails = () => {
                             key={ext}
                             type="button"
                             onClick={() => handleFileTypeToggle(ext)}
+                            onMouseDown={(e) => e.stopPropagation()}
                             className={`px-3 py-1.5 rounded-full border text-xs font-bold transition-all flex items-center gap-1.5 ${
                               isSelected
                                 ? "bg-indigo-600 border-indigo-600 text-white shadow-xs"
@@ -3657,6 +3799,7 @@ const ProgramDetails = () => {
                         onClick={() =>
                           setAllowMultipleFiles(!allowMultipleFiles)
                         }
+                        onMouseDown={(e) => e.stopPropagation()}
                         className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 outline-none ${
                           allowMultipleFiles ? "bg-indigo-600" : "bg-slate-300"
                         }`}
@@ -3687,6 +3830,7 @@ const ProgramDetails = () => {
                         onClick={() =>
                           setAllowLateSubmission(!allowLateSubmission)
                         }
+                        onMouseDown={(e) => e.stopPropagation()}
                         className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 outline-none ${
                           allowLateSubmission ? "bg-indigo-600" : "bg-slate-300"
                         }`}
@@ -3713,6 +3857,8 @@ const ProgramDetails = () => {
                             type="number"
                             value={latePenalty}
                             onChange={(e) => setLatePenalty(e.target.value)}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onClick={(e) => e.stopPropagation()}
                             placeholder="10%"
                             className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-indigo-500 bg-white text-slate-800"
                           />
@@ -3728,6 +3874,8 @@ const ProgramDetails = () => {
                           onChange={(e) =>
                             setMaxLateDays(Number(e.target.value))
                           }
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onClick={(e) => e.stopPropagation()}
                           placeholder="3"
                           className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-indigo-500 bg-white text-slate-800"
                         />
@@ -3756,6 +3904,8 @@ const ProgramDetails = () => {
                   <select
                     value={attemptsAllowed}
                     onChange={(e) => setAttemptsAllowed(e.target.value)}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
                     className="w-full rounded-xl border border-slate-200 p-3 text-sm bg-slate-50/50 text-slate-800 outline-none focus:border-indigo-500 transition-all cursor-pointer"
                   >
                     <option value="1">1 Attempt</option>
@@ -3774,6 +3924,7 @@ const ProgramDetails = () => {
                   setShowAssignmentModal(false);
                   resetAssignmentForm();
                 }}
+                onMouseDown={(e) => e.stopPropagation()}
                 className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 border border-transparent transition-all"
                 disabled={savingAssignment}
               >
@@ -3783,6 +3934,7 @@ const ProgramDetails = () => {
               <button
                 type="button"
                 onClick={saveAssignment}
+                onMouseDown={(e) => e.stopPropagation()}
                 className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-700 bg-white border border-slate-300 shadow-xs hover:bg-slate-50 transition-all"
                 disabled={savingAssignment}
               >
@@ -3792,6 +3944,7 @@ const ProgramDetails = () => {
               <button
                 type="button"
                 onClick={saveAssignment}
+                onMouseDown={(e) => e.stopPropagation()}
                 className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 shadow-md shadow-emerald-500/20 active:scale-98 transition-all flex items-center gap-1.5"
                 disabled={savingAssignment}
               >
@@ -3822,6 +3975,7 @@ const ProgramDetails = () => {
                   setShowSurveyChoiceModal(false);
                   setShowSurveyModal(true);
                 }}
+                onMouseDown={(e) => e.stopPropagation()}
                 className="cursor-pointer border rounded-2xl p-6 hover:border-blue-600"
               >
                 <h3 className="font-bold text-lg">Create Blank Survey</h3>
@@ -3835,6 +3989,7 @@ const ProgramDetails = () => {
                   setShowSurveyChoiceModal(false);
                   setShowSurveyGallery(true);
                 }}
+                onMouseDown={(e) => e.stopPropagation()}
                 className="cursor-pointer border rounded-2xl p-6 hover:border-green-600"
               >
                 <h3 className="font-bold text-lg">Reuse Existing Survey</h3>
@@ -3847,6 +4002,7 @@ const ProgramDetails = () => {
             <div className="flex justify-end mt-6">
               <button
                 onClick={() => setShowSurveyChoiceModal(false)}
+                onMouseDown={(e) => e.stopPropagation()}
                 className="px-4 py-2 border rounded-xl"
               >
                 Cancel
@@ -3872,6 +4028,7 @@ const ProgramDetails = () => {
               <h2 className="text-2xl font-bold">Quiz Results</h2>
               <button
                 onClick={() => setShowResultModal(false)}
+                onMouseDown={(e) => e.stopPropagation()}
                 className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg"
               >
                 Close
