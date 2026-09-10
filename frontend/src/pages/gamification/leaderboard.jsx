@@ -17,6 +17,34 @@ const roleId = Number(localStorage.getItem("role_id"));
 const isAdmin = roleId === 1 || roleId === 2;
 const currentUserId = Number(localStorage.getItem("user_id"));
 
+const leaderboardTitles = {
+  curos: {
+    1: "Curo Champion",
+    2: "Curo Achiever",
+    3: "Curo Star",
+  },
+  completion: {
+    1: "Completion Champion",
+    2: "Completion Achiever",
+    3: "Completion Star",
+  },
+  retention: {
+    1: "Retention Champion",
+    2: "Retention Achiever",
+    3: "Retention Star",
+  },
+  application: {
+    1: "Application Champion",
+    2: "Application Achiever",
+    3: "Application Star",
+  },
+  streak: {
+    1: "Streak Champion",
+    2: "Streak Achiever",
+    3: "Streak Star",
+  },
+};
+
 const LeaderboardTable = ({
   data,
   title,
@@ -25,6 +53,7 @@ const LeaderboardTable = ({
   error,
   onRetry,
   isStreak = false,
+  category,
 }) => {
   if (loading) {
     return (
@@ -95,6 +124,9 @@ const LeaderboardTable = ({
     score: user.score || 0,
   }));
 
+  const getLeaderboardTitle = (rank) =>
+  leaderboardTitles[category]?.[rank] || "";
+
   const displayData = isAdmin
     ? currentData
     : currentData.filter((user) => user.rank <= 3 || user.id === currentUserId);
@@ -113,9 +145,12 @@ const LeaderboardTable = ({
                 🥈
               </div>
               <h3 className="text-sm font-semibold text-[#1E1B4B]">2nd</h3>
-              <p className="text-[#1E1B4B] font-medium text-sm truncate w-full px-2">
-                {currentData[1].name}
-              </p>
+<p className="text-xs font-semibold text-[#693C83] mt-1">
+  {getLeaderboardTitle(2)}
+</p>
+<p className="text-[#1E1B4B] font-medium text-sm truncate w-full px-2 mt-1">
+  {currentData[1].name}
+</p>
               <p className="text-2xl font-bold text-[#4F4679] mt-1">
                 {currentData[1].score}
               </p>
@@ -134,9 +169,12 @@ const LeaderboardTable = ({
                 🥇
               </div>
               <h3 className="text-base font-bold text-[#1E1B4B]">1st</h3>
-              <p className="text-[#1E1B4B] font-semibold text-base truncate w-full px-2">
-                {currentData[0].name}
-              </p>
+<p className="text-sm font-bold text-[#693C83] mt-1">
+  {getLeaderboardTitle(1)}
+</p>
+<p className="text-[#1E1B4B] font-semibold text-base truncate w-full px-2 mt-1">
+  {currentData[0].name}
+</p>
               <p className="text-3xl font-bold text-[#F59E0B] mt-1">
                 {currentData[0].score}
               </p>
@@ -152,9 +190,12 @@ const LeaderboardTable = ({
                 🥉
               </div>
               <h3 className="text-sm font-semibold text-[#1E1B4B]">3rd</h3>
-              <p className="text-[#1E1B4B] font-medium text-sm truncate w-full px-2">
-                {currentData[2].name}
-              </p>
+<p className="text-xs font-semibold text-[#693C83] mt-1">
+  {getLeaderboardTitle(3)}
+</p>
+<p className="text-[#1E1B4B] font-medium text-sm truncate w-full px-2 mt-1">
+  {currentData[2].name}
+</p>
               <p className="text-2xl font-bold text-[#4F4679] mt-1">
                 {currentData[2].score}
               </p>
@@ -746,6 +787,7 @@ const Leaderboard = () => {
           <LeaderboardTable
             data={curoData}
             title="Leaderboard Rankings"
+            category="curos"
             scoreLabel="Curos"
             loading={loading}
             error={fetchError}
@@ -758,6 +800,7 @@ const Leaderboard = () => {
             data={streakData}
             title="Streak Leaderboard Rankings"
             scoreLabel="Days"
+            category="streak"
             loading={streakLoading}
             error={fetchError}
             onRetry={refreshLeaderboardData}
@@ -770,6 +813,7 @@ const Leaderboard = () => {
             data={completionData}
             title="Completion Leaderboard Rankings"
             scoreLabel="Programs"
+            category="completion"
             loading={completionLoading}
             error={fetchError}
             onRetry={refreshLeaderboardData}
@@ -780,6 +824,7 @@ const Leaderboard = () => {
           <LeaderboardTable
             data={retentionData}
             title="Retention Leaderboard Rankings"
+            category="retention"
             scoreLabel="Quizzes"
             loading={retentionLoading}
             error={fetchError}
@@ -791,6 +836,7 @@ const Leaderboard = () => {
           <LeaderboardTable
             data={applicationData}
             title="Application Leaderboard Rankings"
+            category="application"
             scoreLabel="Checks"
             loading={applicationLoading}
             error={fetchError}
