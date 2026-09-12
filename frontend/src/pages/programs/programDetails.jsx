@@ -140,40 +140,9 @@ const ProgramDetails = () => {
   const { id: programId } = useParams();
   const navigate = useNavigate();
   const editorContainerRef = useRef(null);
-  useEffect(() => {
-  const container = editorContainerRef.current;
-  if (!container) return;
-
-  const handleGlobalKeyDown = (e) => {
-    // If the event target is inside our editor container, stop it from reaching other listeners
-    if (container.contains(e.target)) {
-      e.stopPropagation();
-      // Do NOT call preventDefault() – let the browser handle character insertion
-    }
-  };
-
-  // Attach in capture phase so it runs before any other document listener
-  document.addEventListener('keydown', handleGlobalKeyDown, true);
-
-  return () => {
-    document.removeEventListener('keydown', handleGlobalKeyDown, true);
-  };
-}, []);
-  const inputRef = useRef(null);
-  useEffect(() => {
-  const input = inputRef.current;
-  if (!input) return;
-
-  const handleKeyDownCapture = (e) => {
-    e.stopPropagation(); // stops the event from reaching the document
-  };
-
-  input.addEventListener('keydown', handleKeyDownCapture, true); // capture phase
-
-  return () => {
-    input.removeEventListener('keydown', handleKeyDownCapture, true);
-  };
-}, []);
+  // Mirror ref so fetchProgram can read the freshest selectedModule without
+  // depending on it (which would recreate the callback and clobber edits).
+  const selectedModuleRef = useRef(null);
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -319,6 +288,11 @@ const ProgramDetails = () => {
     },
   ]);
 
+  // Keep the mirror ref in sync with the state.
+  useEffect(() => {
+    selectedModuleRef.current = selectedModule;
+  }, [selectedModule]);
+
   // ============ HELPER FUNCTIONS ============
   const extractYoutubeId = (url) => {
     if (!url) return "";
@@ -396,11 +370,11 @@ const ProgramDetails = () => {
 
   // ============ FETCH FUNCTIONS ============
   const fetchProgram = useCallback(
-    async (updateSelection = false, targetModuleId = null) => {
+    async (updateSelection = false, targetModuleId = null, options = {}) => {
       if (!programId) return;
-
+      const showFullLoader = options.showFullLoader ?? false;
       try {
-        setLoading(true);
+        if (showFullLoader) setLoading(true);
         const response = await axios.get(
           `${API_BASE_URL}/programs/${programId}`,
         );
@@ -411,6 +385,7 @@ const ProgramDetails = () => {
 
         if (fetchedModules.length === 0) {
           setSelectedModule(null);
+          selectedModuleRef.current = null;
           setSelectedContent(null);
           setEditModuleTitle("");
           setEditModuleDescription("");
@@ -419,35 +394,36 @@ const ProgramDetails = () => {
         }
 
         // ---- selectedModule, without depending on selectedModule ----
-        setSelectedModule((prevSelected) => {
-          let nextModule;
+        const prevSelected = selectedModuleRef.current;
 
-          if (updateSelection && targetModuleId) {
-            nextModule =
-              fetchedModules.find((m) => m.id === targetModuleId) ||
-              fetchedModules[0];
-          } else if (!prevSelected) {
-            nextModule = fetchedModules[0];
-          } else {
-            nextModule =
-              fetchedModules.find((m) => m.id === prevSelected.id) ||
-              fetchedModules[0];
-          }
+        let nextModule;
+        if (updateSelection && targetModuleId) {
+          nextModule =
+            fetchedModules.find((m) => m.id === targetModuleId) ||
+            fetchedModules[0];
+        } else if (!prevSelected) {
+          nextModule = fetchedModules[0];
+        } else {
+          nextModule =
+            fetchedModules.find((m) => m.id === prevSelected.id) ||
+            fetchedModules[0];
+        }
 
-          // Only touch the edit-form fields when the selected module
-          // actually changed. This is what stops keystrokes from being
-          // wiped out by background refreshes.
-          const moduleChanged =
-            !prevSelected || prevSelected.id !== nextModule.id;
-          if (moduleChanged) {
-            setEditModuleTitle(nextModule.title);
-            setEditModuleDescription(nextModule.description || "");
-            setEditModuleCuros(nextModule.curos || 0);
-            setHasUnsavedChanges(false);
-          }
+        const moduleChanged =
+          !prevSelected || prevSelected.id !== nextModule.id;
 
-          return nextModule;
-        });
+        setSelectedModule(nextModule);
+        selectedModuleRef.current = nextModule;
+
+        // Only touch the edit-form fields when the selected module actually
+        // changed. This is what stops keystrokes from being wiped out by
+        // background refreshes.
+        if (moduleChanged) {
+          setEditModuleTitle(nextModule.title);
+          setEditModuleDescription(nextModule.description || "");
+          setEditModuleCuros(nextModule.curos || 0);
+          setHasUnsavedChanges(false);
+        }
 
         // ---- selectedContent, without depending on selectedContent ----
         setSelectedContent((prevContent) => {
@@ -504,7 +480,7 @@ const ProgramDetails = () => {
       } catch (error) {
         handleApiError(error);
       } finally {
-        setLoading(false);
+        if (showFullLoader) setLoading(false);
       }
     },
     [programId], // ← ONLY this. This is the actual fix.
@@ -548,12 +524,12 @@ const ProgramDetails = () => {
 
   // ============ EFFECTS ============
   useEffect(() => {
-  if (programId) {
-    fetchProgram();
-    fetchProgramValidationData();
-  }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [programId]);
+    if (programId) {
+      fetchProgram(false, null, { showFullLoader: true });
+      fetchProgramValidationData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [programId]);
 
   // ============ PROGRAM PUBLISHING ============
   const handlePublishProgram = async () => {
@@ -772,8 +748,21 @@ const ProgramDetails = () => {
         description: "Default program structure block overview details.",
         curos: 0,
       });
+
+      const created = response.data;
+
+      // Prime the editor state immediately so the new module is visible
+      // in the form without waiting for the refetch to populate it.
       setSelectedContent(null);
-      await fetchProgram(true, response.data?.id);
+      setSelectedModule(created);
+      selectedModuleRef.current = created;
+      setEditModuleTitle(created.title || "");
+      setEditModuleDescription(created.description || "");
+      setEditModuleCuros(created.curos || 0);
+      setHasUnsavedChanges(false);
+
+      // Silent background refresh (no full-page loader, no editor clobber).
+      await fetchProgram(true, created.id, { showFullLoader: false });
     } catch (error) {
       handleApiError(error);
     } finally {
@@ -1687,6 +1676,7 @@ const ProgramDetails = () => {
                         onDelete={deleteModule}
                         onSelect={(module) => {
                           setSelectedModule(module);
+                          selectedModuleRef.current = module;
                           setEditModuleTitle(module.title);
                           setEditModuleDescription(module.description || "");
                           setEditModuleCuros(module.curos || 0);
@@ -2585,21 +2575,13 @@ const ProgramDetails = () => {
                         Module Name
                       </label>
                       <input
-                       ref={inputRef}
-                        value={selectedModule ? editModuleTitle : ""}
+                        value={editModuleTitle}
+                        disabled={!selectedModule}
                         onChange={(e) => {
                           setEditModuleTitle(e.target.value);
                           setHasUnsavedChanges(true);
                         }}
-                        onKeyDown={(e) => {
-                          e.stopPropagation();
-                          // Allow typing by not stopping propagation
-                          // Only stop propagation for Enter key if needed
-                          if (e.key === "Enter") {
-                            e.stopPropagation();
-                          }
-                        }}
-                        className="w-full rounded-xl border-2 border-gray-200 p-4 bg-white font-semibold text-lg outline-none focus:border-[#1E1B4B] focus:ring-4 focus:ring-[#1E1B4B]/10 transition-all"
+                        className="w-full rounded-xl border-2 border-gray-200 p-4 bg-white font-semibold text-lg outline-none focus:border-[#1E1B4B] focus:ring-4 focus:ring-[#1E1B4B]/10 transition-all disabled:bg-gray-50 disabled:text-gray-400"
                         placeholder="Enter module name..."
                       />
                       {hasUnsavedChanges && (
@@ -2614,20 +2596,13 @@ const ProgramDetails = () => {
                         Module Description
                       </label>
                       <textarea
-                       ref={inputRef}
-                        value={selectedModule ? editModuleDescription : ""}
+                        value={editModuleDescription}
+                        disabled={!selectedModule}
                         onChange={(e) => {
                           setEditModuleDescription(e.target.value);
                           setHasUnsavedChanges(true);
                         }}
-                        onKeyDown={(e) => {
-                          e.stopPropagation();
-                          // Don't stop propagation for typing
-                          if (e.key === "Enter" && !e.shiftKey) {
-                            // Let the textarea handle Enter normally
-                          }
-                        }}
-                        className="w-full rounded-xl border-2 border-gray-200 p-4 bg-white outline-none focus:border-[#1E1B4B] focus:ring-4 focus:ring-[#1E1B4B]/10 transition-all resize-none"
+                        className="w-full rounded-xl border-2 border-gray-200 p-4 bg-white outline-none focus:border-[#1E1B4B] focus:ring-4 focus:ring-[#1E1B4B]/10 transition-all resize-none disabled:bg-gray-50 disabled:text-gray-400"
                         rows={3}
                         placeholder="Provide a general summary/description for this module..."
                       />
@@ -2638,18 +2613,15 @@ const ProgramDetails = () => {
                         Module Completion Curos
                       </label>
                       <input
-                       ref={inputRef}
                         type="number"
-                        value={selectedModule ? editModuleCuros : ""}
+                        min="0"
+                        value={editModuleCuros}
+                        disabled={!selectedModule}
                         onChange={(e) => {
                           setEditModuleCuros(e.target.value);
                           setHasUnsavedChanges(true);
                         }}
-                        onKeyDown={(e) => {
-                          e.stopPropagation();
-                          // Allow typing
-                        }}
-                        className="w-full rounded-xl border-2 border-gray-200 p-4 bg-white font-semibold text-lg outline-none focus:border-[#1E1B4B] focus:ring-4 focus:ring-[#1E1B4B]/10 transition-all"
+                        className="w-full rounded-xl border-2 border-gray-200 p-4 bg-white font-semibold text-lg outline-none focus:border-[#1E1B4B] focus:ring-4 focus:ring-[#1E1B4B]/10 transition-all disabled:bg-gray-50 disabled:text-gray-400"
                         placeholder="Enter curos awarded for module completion"
                       />
                     </div>
