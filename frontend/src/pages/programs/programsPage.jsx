@@ -18,8 +18,10 @@ const ProgramsPage = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [tagFilter, setTagFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
   const [programs, setPrograms] = useState([]);
   const [allTags, setAllTags] = useState([]);
+  const [allCategories, setAllCategories] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [programToDelete, setProgramToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -37,6 +39,7 @@ const ProgramsPage = () => {
       setPrograms(data.map((p) => ({ ...p, showMenu: false })));
 
       const tagsSet = new Set();
+      const categoriesSet = new Set();
       data.forEach((program) => {
         if (program.tags) {
           const tags = program.tags
@@ -45,8 +48,16 @@ const ProgramsPage = () => {
             .filter((tag) => tag);
           tags.forEach((tag) => tagsSet.add(tag));
         }
+        if (program.category) {
+          const categories = program.category
+            .split(",")
+            .map((category) => category.trim())
+            .filter((category) => category);
+          categories.forEach((category) => categoriesSet.add(category));
+        }
       });
       setAllTags(Array.from(tagsSet));
+      setAllCategories(Array.from(categoriesSet));
     } catch (error) {
       console.error(error);
     } finally {
@@ -172,6 +183,18 @@ const ProgramsPage = () => {
                 </option>
               ))}
             </select>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="rounded-xl border border-gray-200 px-4 py-3 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/10 outline-none transition-all"
+            >
+              <option value="">All Categories</option>
+              {allCategories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -189,7 +212,14 @@ const ProgramsPage = () => {
                     .split(",")
                     .map((tag) => tag.trim())
                     .includes(tagFilter));
-              return matchesSearch && matchesTag;
+              const matchesCategory =
+                !categoryFilter ||
+                (program.category &&
+                  program.category
+                    .split(",")
+                    .map((category) => category.trim())
+                    .includes(categoryFilter));
+              return matchesSearch && matchesTag && matchesCategory;
             })
             .map((program) => (
               <div

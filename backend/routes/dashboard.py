@@ -161,12 +161,12 @@ def get_franchisee_dashboard(
 ):
     """
     Franchisee Dashboard
-    Role IDs: 4 (Franchise Partner), 6 (Franchise Developer)
+    Role IDs: 4 (Franchise Partner) only
     """
-    if role_id not in [4, 6]:
+    if role_id != 4:
         raise HTTPException(
             status_code=403,
-            detail="Access denied. Franchise Partner or Franchise Developer privileges required."
+            detail="Access denied. Franchise Partner privileges required."
         )
 
     return get_franchisee_dashboard_data(db, user_id)
@@ -222,17 +222,22 @@ def get_dashboard_by_role(
     if role_id in [1, 2]:  # Admin or Master Admin
         response["available_dashboards"] = ["admin"]
         response["admin_dashboard"] = get_admin_dashboard(user_id, role_id, db)
-        
-    elif role_id in [3, 6]:  # Team Leader or Franchise Developer
+
+    elif role_id == 3:  # Team Leader
         response["available_dashboards"] = ["team_leader", "learner"]
         response["team_leader_dashboard"] = get_team_leader_dashboard(user_id, role_id, db)
         response["learner_dashboard"] = get_learner_dashboard_data(db, user_id)
-        
-    elif role_id in [4, 6]:  # Franchise Partner or Developer (Optimized by combining cases)
+
+    elif role_id == 6:  # Franchise Developer - should see team leader dashboard
+        response["available_dashboards"] = ["team_leader", "learner"]
+        response["team_leader_dashboard"] = get_team_leader_dashboard(user_id, role_id, db)
+        response["learner_dashboard"] = get_learner_dashboard_data(db, user_id)
+
+    elif role_id == 4:  # Franchise Partner
         response["available_dashboards"] = ["franchisee", "learner"]
         response["franchisee_dashboard"] = get_franchisee_dashboard(user_id, role_id, db)
         response["learner_dashboard"] = get_learner_dashboard_data(db, user_id)
-        
+
     elif role_id in [5, 7]:  # Franchise Employee or Head Office Staff
         response["available_dashboards"] = ["learner"]
         response["learner_dashboard"] = get_learner_dashboard_data(db, user_id)

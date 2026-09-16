@@ -76,7 +76,17 @@ const RoleManagementPage = () => {
           analytics: role.analytics ?? false,
           settings: role.settings ?? false,
         },
-        users: role.users || [],
+        users: (role.users || []).map((user) => ({
+          ...user,
+          permissions: user.permissions || {
+            dashboard: false,
+            programs: false,
+            reports: false,
+            analytics: false,
+            settings: false,
+          },
+        })),
+        userCount: Array.isArray(role.users) ? role.users.length : 0,
         icon: <Users size={24} className="text-[#693C83]" />,
         description: "",
       }));
@@ -97,17 +107,32 @@ const RoleManagementPage = () => {
 
     const newValue = !role.permissions[permissionId];
 
-    try {
-      // The backend expects { permission: "name", value: true/false }
-      await updateRolePermission(roleId, {
-        permission: permissionId,
-        value: newValue,
-      });
+    // Optimistic update - update local state immediately
+    setRoles(
+      roles.map((r) => {
+        if (r.id === roleId) {
+          return {
+            ...r,
+            permissions: {
+              ...r.permissions,
+              [permissionId]: newValue,
+            },
+          };
+        }
+        return r;
+      })
+    );
 
-      // Refresh roles to get updated permissions
+    try {
+      // The backend expects permission and value as separate parameters
+      await updateRolePermission(roleId, permissionId, newValue);
+
+      // Refresh roles to get updated permissions from backend
       await fetchRoles();
     } catch (err) {
       console.error("Toggle permission error:", err);
+      // Revert optimistic update on error
+      await fetchRoles();
       alert("Failed to update permission. Please try again.");
     }
   };
@@ -314,7 +339,7 @@ const RoleManagementPage = () => {
                           {role.name}
                         </p>
                         <p className="text-[#4F4679] text-xs">
-                          {role.users.length} users
+                          {role.userCount} users
                         </p>
                       </div>
                     </div>

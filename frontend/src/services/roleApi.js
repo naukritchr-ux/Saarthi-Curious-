@@ -23,8 +23,8 @@ export const createRole = async (roleData) => {
 export const updateRolePermission = async (id, permission, value) => {
   const url = appendActorParams(`${API}/roles/${id}/permissions`);
   const response = await axios.put(url, {
-    permission,
-    value,
+    permission: permission,
+    value: value,
   });
 
   return response.data;

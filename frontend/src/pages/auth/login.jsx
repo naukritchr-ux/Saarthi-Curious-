@@ -245,7 +245,7 @@ export default function LoginPage() {
                           3: "/team-leader",
                           4: "/franchiseePartner",
                           5: "/learner",
-                          6: "/franchiseePartner",
+                          6: "/team-leader",
                           7: "/head-office",
                         };
 

@@ -22,8 +22,8 @@ const groupOptions = [
   { label: "Team Leaders", type: "role", roleId: 3 },
   { label: "Franchise Partners", type: "role", roleId: 4 },
   { label: "Franchise Employees", type: "role", roleId: 5 },
-  { label: "Head Office Staff", type: "role", roleId: 6 },
-  { label: "Franchise Developers", type: "role", roleId: 7 },
+  { label: "Franchise Developers", type: "role", roleId: 6 },
+  { label: "Head Office Staff", type: "role", roleId: 7 },
 ];
 
 // ============ UTILITY FUNCTIONS ============
@@ -436,6 +436,8 @@ const handleToggleRecipient = (recipient) => {
     // ROLE / INDIVIDUAL USER
     // =========================
 
+    // If "All Users" is currently selected and user tries to select something else,
+    // first deselect "All Users"
     const withoutAll = prev.filter(
       (item) => item.type !== "all"
     );
@@ -999,16 +1001,13 @@ const handleToggleRecipient = (recipient) => {
                                 option.label === "All Users"
                                   ? "hover:bg-[#F3F0FF]"
                                   : isAllUsersSelected
-                                    ? "cursor-not-allowed opacity-60"
+                                    ? "opacity-60"
                                     : "hover:bg-[#F3F0FF]"
                               }`}
                             >
                               <input
                                 type="checkbox"
                                 checked={isSelected}
-                                disabled={
-                                  option.label !== "All Users" && isAllUsersSelected
-                                }
                                 onChange={() =>
                                   handleToggleRecipient(recipient)
                                 }
@@ -1049,14 +1048,13 @@ const handleToggleRecipient = (recipient) => {
                                   key={key}
                                   className={`flex items-center gap-3 rounded-2xl px-3 py-2 text-sm transition ${
                                     isAllUsersSelected
-                                      ? "cursor-not-allowed opacity-60"
+                                      ? "opacity-60"
                                       : "hover:bg-[#F3F0FF]"
                                   }`}
                                 >
                                   <input
                                     type="checkbox"
                                     checked={isSelected}
-                                    disabled={isAllUsersSelected}
                                     onChange={() =>
                                       handleToggleRecipient(recipient)
                                     }

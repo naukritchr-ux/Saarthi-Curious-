@@ -6,7 +6,10 @@ const UserEditModal = ({
   isSaving,
   reportingManagers,
   teamLeaders,
+  roles,
 }) => {
+  // Check if role is one of the standard 7 roles
+  const isStandardRole = [1, 2, 3, 4, 5, 6, 7].includes(user.role_id);
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-[#0F172A]/60 p-4 backdrop-blur-sm md:p-6">
       <div className="mx-auto flex min-h-full max-w-2xl items-center justify-center py-6">
@@ -47,13 +50,11 @@ const UserEditModal = ({
                 onChange={(e) => onChange("role_id", Number(e.target.value))}
                 className="mt-2 w-full rounded-2xl border border-[#D9CFE8] bg-[#F8F5FC] px-4 py-3 text-sm outline-none"
               >
-                <option value={1}>Master Admin</option>
-                <option value={2}>Admin</option>
-                <option value={3}>Team Leader</option>
-                <option value={4}>Franchise Partner</option>
-                <option value={5}>Franchise Employee</option>
-                <option value={6}>Franchise Developer</option>
-                <option value={7}>Head Office Staff</option>
+                {roles?.map((role) => (
+                  <option key={role.id} value={role.id}>
+                    {role.role_name}
+                  </option>
+                ))}
               </select>
             </label>
 
@@ -87,45 +88,49 @@ const UserEditModal = ({
               />
             </label>
 
-            <label className="text-sm text-[#1E1B4B]">
-              Reporting Manager
-              <select
-                value={user.reporting_manager || ""}
-                onChange={(e) => {
-                  const selectedRM = reportingManagers?.find(
-                    (tl) => tl.user_id === parseInt(e.target.value),
-                  );
-                  onChange(
-                    "reporting_manager",
-                    selectedRM ? selectedRM.full_name : "",
-                  );
-                }}
-                className="mt-2 w-full rounded-2xl border border-[#D9CFE8] bg-[#F8F5FC] px-4 py-3 text-sm outline-none"
-              >
-                <option value="">Select Reporting Manager</option>
-                {reportingManagers?.map((tl) => (
-                  <option key={tl.user_id} value={tl.user_id}>
-                    {tl.full_name}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {isStandardRole && (
+              <label className="text-sm text-[#1E1B4B]">
+                Reporting Manager
+                <select
+                  value={user.reporting_manager || ""}
+                  onChange={(e) => {
+                    const selectedRM = reportingManagers?.find(
+                      (tl) => tl.user_id === parseInt(e.target.value),
+                    );
+                    onChange(
+                      "reporting_manager",
+                      selectedRM ? selectedRM.full_name : "",
+                    );
+                  }}
+                  className="mt-2 w-full rounded-2xl border border-[#D9CFE8] bg-[#F8F5FC] px-4 py-3 text-sm outline-none"
+                >
+                  <option value="">Select Reporting Manager</option>
+                  {reportingManagers?.map((tl) => (
+                    <option key={tl.user_id} value={tl.user_id}>
+                      {tl.full_name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
 
-            <label className="text-sm text-[#1E1B4B]">
-              Team Leader
-              <select
-                value={user.Team_Leader_id || ""}
-                onChange={(e) => onChange("Team_Leader_id", e.target.value)}
-                className="mt-2 w-full rounded-2xl border border-[#D9CFE8] bg-[#F8F5FC] px-4 py-3 text-sm outline-none"
-              >
-                <option value="">Select Team Leader</option>
-                {teamLeaders?.map((tl) => (
-                  <option key={tl.user_id} value={tl.user_id}>
-                    {tl.full_name}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {isStandardRole && (
+              <label className="text-sm text-[#1E1B4B]">
+                Team Leader
+                <select
+                  value={user.Team_Leader_id || ""}
+                  onChange={(e) => onChange("Team_Leader_id", e.target.value)}
+                  className="mt-2 w-full rounded-2xl border border-[#D9CFE8] bg-[#F8F5FC] px-4 py-3 text-sm outline-none"
+                >
+                  <option value="">Select Team Leader</option>
+                  {teamLeaders?.map((tl) => (
+                    <option key={tl.user_id} value={tl.user_id}>
+                      {tl.full_name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
 
             <label className="text-sm text-[#1E1B4B] md:col-span-2">
               New Password (optional)

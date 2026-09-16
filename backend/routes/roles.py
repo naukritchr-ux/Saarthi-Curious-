@@ -5,7 +5,7 @@ from typing import Optional
 from pydantic import BaseModel
 
 from database import get_db
-from models import Role
+from models import Role, User
 from routes.audit_helpers import create_audit_log
 
 router = APIRouter()
@@ -39,8 +39,38 @@ def get_roles(
             "reports": role.reports,
             "analytics": role.analytics,
             "settings": role.settings,
+            "users": [
+                {
+                    "id": user.user_id,
+                    "name": user.full_name,
+                    "email": user.email,
+                    "is_active": user.is_active
+                }
+                for user in db.query(User).filter(User.role_id == role.id).all()
+            ]
         }
         for role in roles
+    ])
+
+
+@router.get("/roles/{id}/users")
+def get_role_users(
+    id: int,
+    db: Session = Depends(get_db)
+):
+    role = db.query(Role).filter(Role.id == id).first()
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+    
+    users = db.query(User).filter(User.role_id == id).all()
+    return jsonable_encoder([
+        {
+            "id": user.user_id,
+            "name": user.full_name,
+            "email": user.email,
+            "is_active": user.is_active
+        }
+        for user in users
     ])
 
 
@@ -127,6 +157,14 @@ def update_permission(
 
     permission = data.get("permission")
     value = data.get("value")
+
+    # Debug logging
+    print(f"DEBUG: permission type: {type(permission)}, value: {permission}")
+    print(f"DEBUG: value type: {type(value)}, value: {value}")
+
+    # Validate permission is a string, not a dict
+    if not isinstance(permission, str):
+        raise HTTPException(status_code=400, detail=f"Invalid permission format: expected string, got {type(permission)}")
 
     if permission not in VALID_PERMISSIONS:
         raise HTTPException(status_code=400, detail="Invalid permission")

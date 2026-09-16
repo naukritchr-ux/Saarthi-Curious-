@@ -99,9 +99,20 @@ const UserManagementPage = () => {
     queryFn: fetchTeamLeaders,
   });
 
+  const { data: rolesData } = useQuery({
+    queryKey: ["roles"],
+    queryFn: async () => {
+      const response = await api.get("/roles");
+      return response.data;
+    },
+  });
+
   // Filter reporting managers based on selected role
   const filteredReportingManagers = useMemo(() => {
     if (!data) return [];
+
+    // For non-standard roles (IDs > 7), return empty array
+    if (roleId > 7) return [];
 
     switch (roleId) {
       case 5: // Franchise Employee → show Franchise Partners
@@ -117,10 +128,12 @@ const UserManagementPage = () => {
         return data.filter((user) => user.role_id === 2 && user.is_active);
       case 2: // Admin → show Master Admin
         return data.filter((user) => user.role_id === 1 && user.is_active);
+      case 1: // Master Admin → no reporting manager
+        return [];
       default:
         return [];
     }
-  }, [data, roleId]);
+  }, [data, roleId, currentRoleId]);
 
   // Auto-select reporting manager when role changes
   useEffect(() => {
@@ -493,6 +506,7 @@ const UserManagementPage = () => {
             }}
             reportingManagers={filteredReportingManagers}
             teamLeaders={teamLeadersData}
+            roles={rolesData}
           />
         )}
 
@@ -599,6 +613,7 @@ const UserManagementPage = () => {
             isSaving={isSavingEdit}
             reportingManagers={reportingManagersData}
             teamLeaders={teamLeadersData}
+            roles={rolesData}
           />
         )}
       </div>

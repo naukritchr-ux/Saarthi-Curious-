@@ -168,7 +168,6 @@ const NotificationBell = () => {
         return;
       }
 
-<<<<<<< HEAD
 // Application Check Rejected → Open Application Check for reattempt
 // Admin → Application Check Submitted
 if (item.title === "Application Check Submitted") {
@@ -193,16 +192,6 @@ if (item.program_id) {
     navigate(`/program/${item.program_id}`);
   }
 }
-=======
-      // Application Check Rejected → Open Application Check for reattempt
-      if (
-        item.title === "Application Check Rejected" &&
-        item.application_check_id
-      ) {
-        navigate(`/application-check/${item.application_check_id}`);
-        return;
-      }
->>>>>>> 9e642ec5dd0e789aa881f8491a306cf4c5d0bce3
 
       // Normal program notification
       if (item.program_id) {

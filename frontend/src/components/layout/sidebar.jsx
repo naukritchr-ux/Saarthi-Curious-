@@ -336,7 +336,7 @@ const Sidebar = ({ isExpanded, onMouseEnter, onMouseLeave, onNavigate }) => {
             />
           ) : null}
 
-          {roleId === 4 || roleId === 6 ? (
+          {roleId === 4 ? (
             <NavItem
               icon={LayoutDashboard}
               label="Franchise Dashboard"
