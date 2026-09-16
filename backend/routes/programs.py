@@ -2445,7 +2445,7 @@ def create_module_quiz(
         quiz_type=quiz_type,
         unlock_type=unlock_type,
         passing_percentage=passing_percentage,
-        result_template=result_template,
+        result_template_id=result_template,
     )
 
     try:
