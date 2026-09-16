@@ -182,7 +182,11 @@ if (
 
 // Normal program notification
 if (item.program_id) {
-  navigate(`/program/${item.program_id}`);
+  if (item.role_id === 1 || item.role_id === 2) {
+    navigate(`/programs/${item.program_id}`);
+  } else {
+    navigate(`/program/${item.program_id}`);
+  }
 }
 
     } catch (err) {

@@ -18,12 +18,12 @@ import {
 
 // ============ CONSTANTS ============
 const groupOptions = [
-  "All Users",
-  "Team Leaders",
-  "Franchise Partners",
-  "Franchise Employees",
-  "Head Office Staff",
-  "Franchise Developers",
+  { label: "All Users", type: "all" },
+  { label: "Team Leaders", type: "role", roleId: 3 },
+  { label: "Franchise Partners", type: "role", roleId: 4 },
+  { label: "Franchise Employees", type: "role", roleId: 5 },
+  { label: "Head Office Staff", type: "role", roleId: 6 },
+  { label: "Franchise Developers", type: "role", roleId: 7 },
 ];
 
 // ============ UTILITY FUNCTIONS ============
@@ -221,6 +221,7 @@ const NotificationScriptsPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingScript, setEditingScript] = useState(null);
   const [users, setUsers] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [isAudienceOpen, setIsAudienceOpen] = useState(false);
   const [recipientSearch, setRecipientSearch] = useState("");
   const [selectedRecipients, setSelectedRecipients] = useState([
@@ -255,18 +256,65 @@ const NotificationScriptsPage = () => {
   }, []);
 
   const fetchUsers = useCallback(async () => {
-    try {
-      const response = await axios.get(`${API_BASE}/users`);
-      setUsers(response.data || []);
-    } catch (error) {
-      console.error("Error fetching users:", error);
+  try {
+    const token = localStorage.getItem("token");
+
+    console.log("Token available:", !!token);
+
+    const response = await axios.get(`${API_BASE}/users`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    console.log("Users API response:", response.data);
+
+    if (Array.isArray(response.data)) {
+      setUsers(response.data);
+    } else {
+      setUsers([]);
+      console.error("Unexpected users response:", response.data);
     }
-  }, []);
+  } catch (error) {
+    console.error(
+      "Error fetching users:",
+      error.response?.data || error.message
+    );
+    setUsers([]);
+  }
+}, []);
+
+const fetchRoles = useCallback(async () => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const response = await axios.get(`${API_BASE}/roles`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    console.log("Roles API response:", response.data);
+
+    if (Array.isArray(response.data)) {
+      setRoles(response.data);
+    } else {
+      setRoles([]);
+    }
+  } catch (error) {
+    console.error(
+      "Error fetching roles:",
+      error.response?.data || error.message
+    );
+    setRoles([]);
+  }
+}, []);
 
   // ============ EFFECTS ============
   useEffect(() => {
     fetchScripts();
     fetchUsers();
+    fetchRoles();
   }, [fetchScripts, fetchUsers]);
 
   useEffect(() => {
@@ -284,6 +332,30 @@ const NotificationScriptsPage = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+
+const isAllUsersSelected = selectedRecipients.some(
+  (recipient) => recipient.type === "all"
+);
+
+const selectedRoleIds = selectedRecipients
+  .filter((recipient) => recipient.type === "role")
+  .map((recipient) => recipient.roleId);
+
+const filteredUsers = users.filter((user) => {
+  // All Users → show everyone
+  if (isAllUsersSelected) {
+    return true;
+  }
+
+  // No role selected → show everyone
+  if (selectedRoleIds.length === 0) {
+    return true;
+  }
+
+  // Role selected → show only users with that role
+  return selectedRoleIds.includes(user.role_id);
+});
 
   // ============ DERIVED STATE ============
   const morningScripts = scripts.filter(
@@ -319,10 +391,6 @@ const NotificationScriptsPage = () => {
     return `${recipients.length} selected`;
   };
 
-  const isAllUsersSelected = selectedRecipients.some(
-    (recipient) => recipient.type === "all",
-  );
-
   const isRecipientSelected = (target) =>
     selectedRecipients.some(
       (recipient) =>
@@ -330,51 +398,75 @@ const NotificationScriptsPage = () => {
         String(recipient.value) === String(target.value),
     );
 
-  const handleToggleRecipient = (recipient) => {
-    setSelectedRecipients((prev) => {
-      // "All Users" is exclusive.
-      if (recipient.type === "all") {
-        const finalSelection = [{ type: "all", value: "All Users" }];
-
-        setNewScript((prevState) => ({
-          ...prevState,
-          audience: getAudienceText(finalSelection),
-        }));
-
-        return finalSelection;
-      }
-
-      // If selecting a role/user, remove "All Users".
-      const withoutAll = prev.filter((item) => item.type !== "all");
-
-      const alreadySelected = withoutAll.some(
-        (item) =>
-          item.type === recipient.type &&
-          String(item.value) === String(recipient.value),
+const handleToggleRecipient = (recipient) => {
+  setSelectedRecipients((prev) => {
+    // =========================
+    // ALL USERS
+    // =========================
+    if (recipient.type === "all") {
+      const alreadySelected = prev.some(
+        (item) => item.type === "all"
       );
 
-      const next = alreadySelected
-        ? withoutAll.filter(
-            (item) =>
-              !(
-                item.type === recipient.type &&
-                String(item.value) === String(recipient.value)
-              ),
-          )
-        : [...withoutAll, recipient];
+      if (alreadySelected) {
+        setNewScript((prevState) => ({
+          ...prevState,
+          audience: "",
+        }));
 
-      const finalSelection =
-        next.length === 0 ? [{ type: "all", value: "All Users" }] : next;
+        return [];
+      }
+
+      const finalSelection = [
+        {
+          type: "all",
+          value: "All Users",
+        },
+      ];
 
       setNewScript((prevState) => ({
         ...prevState,
-        audience: getAudienceText(finalSelection),
+        audience: "All Users",
       }));
 
       return finalSelection;
-    });
-  };
+    }
 
+    // =========================
+    // ROLE / INDIVIDUAL USER
+    // =========================
+
+    const withoutAll = prev.filter(
+      (item) => item.type !== "all"
+    );
+
+    const alreadySelected = withoutAll.some(
+      (item) =>
+        item.type === recipient.type &&
+        String(item.value) === String(recipient.value)
+    );
+
+    const next = alreadySelected
+      ? withoutAll.filter(
+          (item) =>
+            !(
+              item.type === recipient.type &&
+              String(item.value) === String(recipient.value)
+            )
+        )
+      : [...withoutAll, recipient];
+
+    setNewScript((prevState) => ({
+      ...prevState,
+      audience:
+        next.length === 0
+          ? ""
+          : getAudienceText(next),
+    }));
+
+    return next;
+  });
+};
   const resetAudienceSelection = () => {
     setSelectedRecipients([{ type: "all", value: "All Users" }]);
     setNewScript((prev) => ({
@@ -893,16 +985,18 @@ const NotificationScriptsPage = () => {
 
                       <div className="space-y-2">
                         {groupOptions.map((option) => {
-                          const recipient = {
-                            type: option === "All Users" ? "all" : "role",
-                            value: option,
-                          };
-                          const isSelected = isRecipientSelected(recipient);
+  const recipient = {
+    type: option.type,
+    value: option.label,
+    ...(option.roleId && { roleId: option.roleId }),
+  };
+
+  const isSelected = isRecipientSelected(recipient);
                           return (
                             <label
                               key={option}
                               className={`flex items-center gap-3 rounded-2xl px-3 py-2 text-sm transition ${
-                                option === "All Users"
+                                option.label === "All Users"
                                   ? "hover:bg-[#F3F0FF]"
                                   : isAllUsersSelected
                                     ? "cursor-not-allowed opacity-60"
@@ -913,14 +1007,14 @@ const NotificationScriptsPage = () => {
                                 type="checkbox"
                                 checked={isSelected}
                                 disabled={
-                                  option !== "All Users" && isAllUsersSelected
+                                  option.label !== "All Users" && isAllUsersSelected
                                 }
                                 onChange={() =>
                                   handleToggleRecipient(recipient)
                                 }
                                 className="h-4 w-4 rounded border-[#D9CFE8] text-[#693C83] focus:ring-[#693C83]"
                               />
-                              <span>{option}</span>
+                              <span>{option.label}</span>
                             </label>
                           );
                         })}
@@ -931,8 +1025,8 @@ const NotificationScriptsPage = () => {
                           Users
                         </p>
                         <div className="max-h-56 space-y-2 overflow-y-auto pr-2">
-                          {users
-                            .filter((user) => {
+                          {filteredUsers
+  .filter((user) => {
                               const searchTerm = recipientSearch.toLowerCase();
                               const label = getUserLabel(user).toLowerCase();
                               const email = (user.email || "").toLowerCase();
@@ -981,7 +1075,7 @@ const NotificationScriptsPage = () => {
                                 </label>
                               );
                             })}
-                          {users.filter((user) => {
+                          {filteredUsers.filter((user) => {
                             const searchTerm = recipientSearch.toLowerCase();
                             const label = getUserLabel(user).toLowerCase();
                             const email = (user.email || "").toLowerCase();
