@@ -61,7 +61,6 @@ def create_user(
     actor_id: Optional[int] = Query(None),
     actor_name: Optional[str] = Query(None)
 ):
-    # Only admins and Franchise Developers can create users.
     current_user = db.query(User).filter(User.user_id == current_user_id).first()
     if not current_user or current_user.role_id not in [1, 2, 6]:
         raise HTTPException(
@@ -69,6 +68,7 @@ def create_user(
             detail="Only Master Admin, Admin, and Franchise Developer can create users"
         )
 
+    # Franchise Developer can only create Franchise Partner (4) and Franchise Employee (5)
     if current_user.role_id == 6 and user.role_id not in [4, 5]:
         raise HTTPException(
             status_code=403,
@@ -77,24 +77,38 @@ def create_user(
 
     team_leader_id = user.Team_Leader_id
     reporting_manager = user.reporting_manager
+
     if current_user.role_id == 6:
-        if team_leader_id and team_leader_id != current_user.user_id:
+        # FD must always be the Team Leader of the users they create
+        if team_leader_id is not None and team_leader_id != current_user.user_id:
             raise HTTPException(
                 status_code=403,
-                detail="Franchise Developers can only assign users within their own scope"
+                detail="Franchise Developers can only assign users to themselves"
             )
         team_leader_id = current_user.user_id
+
+        # FP (role 4) reports to the FD; FE (role 5) reporting_manager
+        # should be a Franchise Partner under this FD
         if user.role_id == 4:
             reporting_manager = current_user.full_name
-    existing_user = db.query(User).filter(
-        User.email == user.email
-    ).first()
+        elif user.role_id == 5:
+            # Validate that the reporting_manager is an FP under this FD
+            if reporting_manager:
+                fp = db.query(User).filter(
+                    User.full_name == reporting_manager,
+                    User.role_id == 4,
+                    User.Team_Leader_id == current_user.user_id,
+                    User.is_active == True
+                ).first()
+                if not fp:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Franchise Employees must report to a Franchise Partner under your scope"
+                    )
 
+    existing_user = db.query(User).filter(User.email == user.email).first()
     if existing_user:
-        raise HTTPException(
-            status_code=400,
-            detail="Email already exists"
-        )
+        raise HTTPException(status_code=400, detail="Email already exists")
 
     # Validate Team_Leader_id if provided
     if team_leader_id:
@@ -103,7 +117,6 @@ def create_user(
             User.role_id.in_([3, 6]),
             User.is_active == True
         ).first()
-
         if not team_leader:
             raise HTTPException(
                 status_code=400,
@@ -111,9 +124,7 @@ def create_user(
             )
 
     try:
-        hashed_password = hash_password(
-            user.password
-        )
+        hashed_password = hash_password(user.password)
 
         new_user = User(
             full_name=user.full_name,
@@ -129,7 +140,7 @@ def create_user(
         )
 
         db.add(new_user)
-        db.flush()  # Generates new_user.user_id without committing
+        db.flush()
 
         new_streak = LearningStreak(
             user_id=new_user.user_id,
@@ -139,13 +150,10 @@ def create_user(
             last_activity_date=None,
             updated_at=datetime.utcnow()
         )
-
         db.add(new_streak)
         db.commit()
-
         db.refresh(new_user)
 
-        # Create audit log
         create_audit_log(
             db=db,
             request=request,
@@ -156,19 +164,18 @@ def create_user(
             entity_id=new_user.user_id,
             message=f"Created new user: {new_user.full_name} ({new_user.email})",
             metadata={
-                "user_id": int(new_user.user_id) if new_user.user_id else None,
-                "full_name": str(new_user.full_name) if new_user.full_name else None,
-                "email": str(new_user.email) if new_user.email else None,
-                "role_id": int(new_user.role_id) if new_user.role_id else None,
-                "city": str(new_user.city) if new_user.city else None
+                "user_id": int(new_user.user_id),
+                "full_name": str(new_user.full_name),
+                "email": str(new_user.email),
+                "role_id": int(new_user.role_id),
+                "city": str(new_user.city) if new_user.city else None,
+                "created_by_role": int(current_user.role_id),
+                "created_by": int(current_user.user_id)
             }
         )
 
         try:
-            send_welcome_email(
-                user.email,
-                user.password
-            )
+            send_welcome_email(user.email, user.password)
         except Exception as e:
             print("EMAIL ERROR:", e)
 
@@ -177,11 +184,11 @@ def create_user(
             "user_id": new_user.user_id
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # Get All Users

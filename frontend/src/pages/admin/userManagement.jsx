@@ -28,6 +28,8 @@ import {
 const UserManagementPage = () => {
   // Get current user role
   const currentRoleId = parseInt(localStorage.getItem("role_id") || "1");
+  const currentUserId = parseInt(localStorage.getItem("user_id") || "0");
+  const currentUserName = localStorage.getItem("user_name") || "";
   const canAddUser = [1, 2, 6].includes(currentRoleId);
   const canEditUser = [1, 2].includes(currentRoleId); // Only Admin and Master Admin can edit users
 
@@ -107,33 +109,56 @@ const UserManagementPage = () => {
     },
   });
 
+  // Franchise Partners under this Franchise Developer — derived from /users
+  const franchisePartners = useMemo(() => {
+    if (!data) return [];
+    if (currentRoleId !== 6) return [];
+    return data
+      .filter((u) => u.role_id === 4 && u.is_active)
+      .map((u) => ({
+        user_id: u.user_id,
+        full_name: u.full_name,
+        email: u.email,
+      }));
+  }, [data, currentRoleId]);
+
   // Filter reporting managers based on selected role
   const filteredReportingManagers = useMemo(() => {
     if (!data) return [];
 
-    // For non-standard roles (IDs > 7), return empty array
+    // Franchise Developer creating a Franchise Employee → only FPs under them
+    if (currentRoleId === 6) {
+      if (roleId === 5) return franchisePartners; // FP list under this FD
+      return []; // FP being created by FD → no RM field needed
+    }
+
     if (roleId > 7) return [];
 
     switch (roleId) {
-      case 5: // Franchise Employee → show Franchise Partners
+      case 5: // Franchise Employee → Franchise Partners
         return data.filter((user) => user.role_id === 4 && user.is_active);
-      case 4: // Franchise Partner → show Team Leader or Developer
+
+      case 4: // Franchise Partner → Team Leader OR Franchise Developer
+        // Admin can assign to either role 3 or role 6
         return data.filter(
-          (user) =>
-            user.role_id === (currentRoleId === 6 ? 6 : 3) && user.is_active,
+          (user) => [3, 6].includes(user.role_id) && user.is_active,
         );
-      case 6: // Franchise Developer → show Admins
-      case 7: // Head Office Staff → show Admins
-      case 3: // Team Leader → show Admins
+
+      case 6: // Franchise Developer → Admin
+      case 7: // Head Office Staff → Admin
+      case 3: // Team Leader → Admin
         return data.filter((user) => user.role_id === 2 && user.is_active);
-      case 2: // Admin → show Master Admin
+
+      case 2:
         return data.filter((user) => user.role_id === 1 && user.is_active);
-      case 1: // Master Admin → no reporting manager
+
+      case 1:
         return [];
+
       default:
         return [];
     }
-  }, [data, roleId, currentRoleId]);
+  }, [data, roleId, currentRoleId, franchisePartners]);
 
   // Auto-select reporting manager when role changes
   useEffect(() => {
@@ -347,22 +372,58 @@ const UserManagementPage = () => {
   const handleSaveUser = async () => {
     try {
       setEmailError("");
+
+      // ---------- Validation ----------
+      if (!fullName.trim()) {
+        alert("Full name is required");
+        return;
+      }
+      if (!email.trim()) {
+        setEmailError("Email is required");
+        return;
+      }
+      if (!password) {
+        alert("Password is required");
+        return;
+      }
+
+      // ---------- Build payload ----------
+      const payload = {
+        full_name: fullName.trim(),
+        email: email.trim(),
+        city: city || null,
+        role_id: roleId,
+        password,
+        date_of_joining: dateOfJoining || null,
+        reporting_manager: reportingManager || null,
+        Team_Leader_id: teamLeaderId ? parseInt(teamLeaderId) : null,
+      };
+
+      // Franchise Developer overrides
+      if (currentRoleId === 6) {
+        payload.Team_Leader_id = currentUserId; // Always self
+
+        if (roleId === 4) {
+          // FP: backend will set reporting_manager = FD's name, but send it too
+          payload.reporting_manager = currentUserName;
+        } else if (roleId === 5) {
+          // FE: RM must be an FP under this FD — already selected in dropdown
+          if (!reportingManager) {
+            alert("Please select a Franchise Partner as the Reporting Manager");
+            return;
+          }
+        }
+      }
+
+      // ---------- API call ----------
+      const url = appendActorParams("/users");
+      await api.post(url, payload);
+
+      // ---------- Success ----------
       alert("User Created Successfully");
       setShowCreatePanel(false);
 
-      const url = appendActorParams("/users");
-
-      await api.post(url, {
-        full_name: fullName,
-        email: email,
-        city: city,
-        reporting_manager: reportingManager,
-        Team_Leader_id: teamLeaderId ? parseInt(teamLeaderId) : null,
-        role_id: roleId,
-        password: password,
-        date_of_joining: dateOfJoining,
-      });
-
+      // Reset form
       setFullName("");
       setEmail("");
       setPassword("");
@@ -370,16 +431,18 @@ const UserManagementPage = () => {
       setReportingManager("");
       setReportingManagerId("");
       setTeamLeaderId("");
-      setRoleId(5);
+      setRoleId(currentRoleId === 6 ? 4 : 5);
       setDateOfJoining("");
+
       refetch();
     } catch (error) {
       console.log("ERROR:", error);
-      if (error.response?.data?.detail === "Email already exists") {
+      const detail = error.response?.data?.detail;
+      if (detail === "Email already exists") {
         setEmailError("Email already exists");
         return;
       }
-      alert(JSON.stringify(error.response?.data));
+      alert(detail || "Failed to create user");
     }
   };
 
@@ -507,6 +570,9 @@ const UserManagementPage = () => {
             reportingManagers={filteredReportingManagers}
             teamLeaders={teamLeadersData}
             roles={rolesData}
+            currentUserRole={currentRoleId}
+            currentUserId={currentUserId}
+            franchisePartners={franchisePartners}
           />
         )}
 
