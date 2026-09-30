@@ -1052,6 +1052,7 @@ class Report(Base):
     period_end = Column(Date, nullable=True)
     status = Column(String, default="completed")
     ai_summary = Column(JSON, nullable=True)
+    program_id = Column(Integer, ForeignKey("programs.id"), nullable=True)
 
     generator = relationship("User", foreign_keys=[generated_by])
     target_user = relationship("User", foreign_keys=[generated_for])

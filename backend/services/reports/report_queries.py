@@ -4,7 +4,7 @@ from datetime import datetime, date
 from typing import Dict, Any, Optional
 from models import (
     User, UserProgramProgress, QuizAttempt, UserBadge, LearningStreak,
-    ModuleCompletion, UserVideoProgress, Program, Module
+    ModuleCompletion, UserVideoProgress, Program, Module, Quiz
 )
 
 

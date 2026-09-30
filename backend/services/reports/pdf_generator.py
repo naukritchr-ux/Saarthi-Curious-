@@ -86,17 +86,181 @@ class PDFGenerator:
         return template.render(**context)
     
     def html_to_pdf(self, html_content: str) -> bytes:
-        """Convert HTML string to PDF bytes using WeasyPrint."""
+        """Convert HTML string to PDF bytes using reportlab."""
         try:
-            from weasyprint import HTML
-            html_obj = HTML(string=html_content)
-            pdf_bytes = html_obj.write_pdf()
+            from reportlab.lib.pagesizes import letter
+            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+            from reportlab.lib import colors
+            from reportlab.lib.units import inch
+            from reportlab.lib.enums import TA_CENTER, TA_LEFT
+            from reportlab.pdfbase import pdfmetrics
+            from reportlab.pdfbase.ttfonts import TTFont
+            from bs4 import BeautifulSoup
+            import io
+            
+            # Parse HTML content
+            soup = BeautifulSoup(html_content, 'html.parser')
+            
+            # Create PDF buffer
+            buffer = io.BytesIO()
+            doc = SimpleDocTemplate(
+                buffer,
+                pagesize=letter,
+                rightMargin=72,
+                leftMargin=72,
+                topMargin=72,
+                bottomMargin=18
+            )
+            styles = getSampleStyleSheet()
+            story = []
+            
+            # Custom styles
+            title_style = ParagraphStyle(
+                'CustomTitle',
+                parent=styles['Heading1'],
+                fontSize=24,
+                textColor=colors.HexColor('#693c83'),
+                alignment=TA_CENTER,
+                spaceAfter=20
+            )
+            
+            subtitle_style = ParagraphStyle(
+                'CustomSubtitle',
+                parent=styles['Heading2'],
+                fontSize=14,
+                textColor=colors.HexColor('#4f4679'),
+                alignment=TA_CENTER,
+                spaceAfter=30
+            )
+            
+            section_title_style = ParagraphStyle(
+                'SectionTitle',
+                parent=styles['Heading2'],
+                fontSize=18,
+                textColor=colors.HexColor('#693c83'),
+                spaceBefore=20,
+                spaceAfter=15
+            )
+            
+            # Extract title
+            title = soup.find('h1')
+            if title:
+                story.append(Paragraph(title.get_text(), title_style))
+            
+            # Extract subtitle
+            subtitle = soup.find(class_='subtitle')
+            if subtitle:
+                story.append(Paragraph(subtitle.get_text(), subtitle_style))
+            
+            # Extract meta information
+            meta = soup.find(class_='meta')
+            if meta:
+                story.append(Paragraph(meta.get_text(), styles['Normal']))
+                story.append(Spacer(1, 0.3 * inch))
+            
+            # Extract sections
+            sections = soup.find_all(class_='section')
+            for section in sections:
+                section_title = section.find('h2')
+                if section_title:
+                    story.append(Paragraph(section_title.get_text(), section_title_style))
+                
+                # Extract summary cards as a table
+                summary_grid = section.find(class_='summary-grid')
+                if summary_grid:
+                    cards = summary_grid.find_all(class_='summary-card')
+                    card_data = []
+                    for i in range(0, len(cards), 2):
+                        row = []
+                        for j in range(i, min(i + 2, len(cards))):
+                            card = cards[j]
+                            label = card.find(class_='label')
+                            value = card.find(class_='value')
+                            if label and value:
+                                row.append(f"<b>{label.get_text()}</b><br/>{value.get_text()}")
+                        if row:
+                            card_data.append(row)
+                    
+                    if card_data:
+                        card_table = Table(card_data, colWidths=[2.5 * inch, 2.5 * inch])
+                        card_table.setStyle(TableStyle([
+                            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f1ecf7')),
+                            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                            ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#d9cfe8')),
+                            ('FONTSIZE', (0, 0), (-1, -1), 10),
+                        ]))
+                        story.append(card_table)
+                        story.append(Spacer(1, 0.2 * inch))
+                
+                # Extract tables
+                tables = section.find_all('table')
+                for table in tables:
+                    rows = []
+                    for tr in table.find_all('tr'):
+                        row = []
+                        for cell in tr.find_all(['th', 'td']):
+                            cell_text = cell.get_text().strip()
+                            row.append(cell_text)
+                        if row:
+                            rows.append(row)
+                    
+                    if rows:
+                        t = Table(rows, colWidths=[2 * inch, 2 * inch, 1 * inch])
+                        t.setStyle(TableStyle([
+                            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#693c83')),
+                            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                            ('FONTSIZE', (0, 0), (-1, 0), 10),
+                            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                            ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+                            ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#d9cfe8')),
+                            ('FONTSIZE', (0, 1), (-1, -1), 9),
+                        ]))
+                        story.append(t)
+                        story.append(Spacer(1, 0.2 * inch))
+                
+                # Handle AI section
+                ai_section = section.find(class_='ai-section')
+                if ai_section:
+                    story.append(PageBreak())
+                    ai_title = ai_section.find('h2')
+                    if ai_title:
+                        story.append(Paragraph(ai_title.get_text(), section_title_style))
+                    
+                    # Extract AI content
+                    paragraphs = ai_section.find_all(['p', 'h3', 'ul'])
+                    for elem in paragraphs:
+                        if elem.name == 'h3':
+                            story.append(Paragraph(elem.get_text(), styles['Heading3']))
+                        elif elem.name == 'p':
+                            story.append(Paragraph(elem.get_text(), styles['Normal']))
+                        elif elem.name == 'ul':
+                            for li in elem.find_all('li'):
+                                story.append(Paragraph(f"• {li.get_text()}", styles['Normal']))
+                        story.append(Spacer(1, 0.1 * inch))
+            
+            # Extract footer
+            footer = soup.find(class_='footer')
+            if footer:
+                story.append(PageBreak())
+                for p in footer.find_all('p'):
+                    story.append(Paragraph(p.get_text(), styles['Normal']))
+            
+            # Build PDF
+            doc.build(story)
+            pdf_bytes = buffer.getvalue()
+            buffer.close()
             return pdf_bytes
+            
         except ImportError:
             # Fallback for Windows - use alternative method
             return self._html_to_pdf_fallback(html_content)
         except Exception as e:
-            print(f"WeasyPrint error: {e}")
+            print(f"ReportLab error: {e}")
+            import traceback
+            traceback.print_exc()
             return self._html_to_pdf_fallback(html_content)
     
     def _html_to_pdf_fallback(self, html_content: str) -> bytes:

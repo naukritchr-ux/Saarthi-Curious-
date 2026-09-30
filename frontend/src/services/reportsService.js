@@ -197,13 +197,14 @@ export const previewReport = async (reportType, filters = {}, generatedFor = nul
 };
 
 // Generate report with PDF (for download)
-export const generateReport = async (reportType, filters = {}, generatedFor = null) => {
+export const generateReport = async (reportType, filters = {}, generatedFor = null, programId = null) => {
   try {
-    console.log("Making generate request:", { reportType, filters, generatedFor });
+    console.log("Making generate request:", { reportType, filters, generatedFor, programId });
     const response = await api.post("/reports/generate", {
       report_type: reportType,
       filters: filters,
       generated_for: generatedFor,
+      program_id: programId,
     });
 
     console.log("Generate response:", response.data);

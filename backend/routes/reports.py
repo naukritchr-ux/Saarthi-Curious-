@@ -38,6 +38,8 @@ class GenerateReportRequest(BaseModel):
     period_end: Optional[str] = None
     include_ai: bool = False
     generated_for: Optional[int] = None
+    program_id: Optional[int] = None
+    filters: Optional[dict] = None
 
 
 def get_user_from_db(db: Session, user_id: int) -> User:
@@ -153,6 +155,11 @@ async def generate_report(
         if request.period_end:
             period_end = date.fromisoformat(request.period_end)
 
+        # Extract program_id from filters if not provided directly
+        program_id = request.program_id
+        if not program_id and request.filters:
+            program_id = request.filters.get("generated_for")
+
         # Generate the report
         report = await report_service.generate_report(
             report_type=request.report_type,
@@ -161,7 +168,8 @@ async def generate_report(
             period_start=period_start,
             period_end=period_end,
             include_ai=request.include_ai,
-            generated_for=request.generated_for
+            generated_for=request.generated_for,
+            program_id=program_id
         )
 
         return {"report": report}
