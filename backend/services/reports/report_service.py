@@ -457,8 +457,7 @@ class ReportService:
         report_type: str,
         target_user_id: Optional[int],
         period_start: Optional[date],
-        period_end: Optional[date],
-        program_id: Optional[int] = None
+        period_end: Optional[date]
     ) -> Dict[str, Any]:
         """Get report data based on report type."""
         if report_type == "my_learning_report":
@@ -470,7 +469,7 @@ class ReportService:
         elif report_type == "organization_learning_report":
             return get_organization_learning_report(self.db, period_start, period_end)
         elif report_type == "program_performance_report":
-            return get_program_performance_report(self.db, program_id, period_start, period_end)
+            return get_program_performance_report(self.db, None, period_start, period_end)
         elif report_type == "learner_engagement_report":
             return get_learner_engagement_report(self.db, target_user_id, period_start, period_end)
         else:
@@ -621,8 +620,7 @@ class ReportService:
             "period_start": report.period_start.strftime("%Y-%m-%d") if report.period_start else None,
             "period_end": report.period_end.strftime("%Y-%m-%d") if report.period_end else None,
             "status": report.status,
-            "ai_summary": report.ai_summary,
-            "program_id": report.program_id
+            "ai_summary": report.ai_summary
         }
 
     def get_report_download_url(self, report_id: int) -> str:
@@ -641,8 +639,7 @@ class ReportService:
         period_start: Optional[date] = None,
         period_end: Optional[date] = None,
         include_ai: bool = False,
-        generated_for: Optional[int] = None,
-        program_id: Optional[int] = None
+        generated_for: Optional[int] = None
     ) -> Dict[str, Any]:
         """Generate a complete report with PDF."""
         if report_type not in self.REPORT_TYPES:
@@ -652,7 +649,7 @@ class ReportService:
             raise ValueError(f"Role {role_id} not authorized for report type {report_type}")
 
         target_user_id = generated_for or user_id
-        data = self._get_report_data(report_type, target_user_id, period_start, period_end, program_id)
+        data = self._get_report_data(report_type, target_user_id, period_start, period_end)
         
         # Generate AI insights if requested
         ai_summary = None
@@ -684,8 +681,7 @@ class ReportService:
             period_start=period_start,
             period_end=period_end,
             status="completed",
-            ai_summary=ai_summary,
-            program_id=program_id
+            ai_summary=ai_summary
         )
         self.db.add(report)
         self.db.commit()
@@ -718,8 +714,7 @@ class ReportService:
             report_type=report.report_type,
             target_user_id=report.generated_for,
             period_start=report.period_start,
-            period_end=report.period_end,
-            program_id=report.program_id
+            period_end=report.period_end
         )
         
         try:

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
 from sqlalchemy.orm import Session
 from datetime import date, datetime
 from typing import Optional, Dict, Any
@@ -19,6 +19,7 @@ from services.reports.report_queries import (
 from auth import get_current_user
 import traceback
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +39,6 @@ class GenerateReportRequest(BaseModel):
     period_end: Optional[str] = None
     include_ai: bool = False
     generated_for: Optional[int] = None
-    program_id: Optional[int] = None
     filters: Optional[dict] = None
 
 
@@ -155,11 +155,6 @@ async def generate_report(
         if request.period_end:
             period_end = date.fromisoformat(request.period_end)
 
-        # Extract program_id from filters if not provided directly
-        program_id = request.program_id
-        if not program_id and request.filters:
-            program_id = request.filters.get("generated_for")
-
         # Generate the report
         report = await report_service.generate_report(
             report_type=request.report_type,
@@ -168,8 +163,7 @@ async def generate_report(
             period_start=period_start,
             period_end=period_end,
             include_ai=request.include_ai,
-            generated_for=request.generated_for,
-            program_id=program_id
+            generated_for=request.generated_for
         )
 
         return {"report": report}
@@ -230,6 +224,21 @@ def download_report(
         
         # Get download URL
         download_url = report_service.get_report_download_url(report_id)
+        
+        # If using local fallback, return the file directly
+        if download_url.startswith("file://"):
+            storage_service = StorageService()
+            local_path = storage_service._get_local_path(report_model.storage_path)
+            
+            if not os.path.exists(local_path):
+                raise HTTPException(status_code=404, detail="PDF file not found")
+            
+            return FileResponse(
+                local_path,
+                media_type="application/pdf",
+                filename=f"report_{report_id}.pdf"
+            )
+        
         return {"download_url": download_url}
         
     except Exception as e:

@@ -6,7 +6,7 @@ from typing import Dict, Any, Optional
 
 
 class PDFGenerator:
-    """Generate PDF reports using Jinja2 templates and WeasyPrint"""
+    """Generate PDF reports using Jinja2 templates and ReportLab"""
     
     def __init__(self):
         template_dir = os.path.join(os.path.dirname(__file__), "report_templates")
@@ -94,8 +94,6 @@ class PDFGenerator:
             from reportlab.lib import colors
             from reportlab.lib.units import inch
             from reportlab.lib.enums import TA_CENTER, TA_LEFT
-            from reportlab.pdfbase import pdfmetrics
-            from reportlab.pdfbase.ttfonts import TTFont
             from bs4 import BeautifulSoup
             import io
             
@@ -206,7 +204,10 @@ class PDFGenerator:
                             rows.append(row)
                     
                     if rows:
-                        t = Table(rows, colWidths=[2 * inch, 2 * inch, 1 * inch])
+                        # Calculate column widths dynamically
+                        num_cols = len(rows[0]) if rows else 3
+                        col_widths = [(letter[0] - 144) / num_cols] * num_cols
+                        t = Table(rows, colWidths=col_widths)
                         t.setStyle(TableStyle([
                             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#693c83')),
                             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
@@ -265,24 +266,45 @@ class PDFGenerator:
     
     def _html_to_pdf_fallback(self, html_content: str) -> bytes:
         """
-        Fallback PDF generation for Windows using pdfkit.
+        Fallback PDF generation using simple text-based PDF creation.
         """
         try:
-            import pdfkit
-            # Try to find wkhtmltopdf path
-            wkhtmltopdf_path = os.getenv('WKHTMLTOPDF_PATH')
-            if wkhtmltopdf_path and os.path.exists(wkhtmltopdf_path):
-                config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
-                pdf_bytes = pdfkit.from_string(html_content, False, configuration=config)
-            else:
-                pdf_bytes = pdfkit.from_string(html_content, False)
+            from reportlab.lib.pagesizes import letter
+            from reportlab.lib.styles import getSampleStyleSheet
+            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+            from reportlab.lib.units import inch
+            import io
+            
+            # Create a simple PDF with the HTML content as text
+            buffer = io.BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=letter)
+            styles = getSampleStyleSheet()
+            story = []
+            
+            # Add title
+            story.append(Paragraph("Report Generated", styles['Heading1']))
+            story.append(Spacer(1, 0.2 * inch))
+            
+            # Add content as plain text
+            from bs4 import BeautifulSoup
+            soup = BeautifulSoup(html_content, 'html.parser')
+            text_content = soup.get_text()
+            
+            # Split into paragraphs and add
+            paragraphs = text_content.split('\n')
+            for para in paragraphs:
+                if para.strip():
+                    story.append(Paragraph(para.strip(), styles['Normal']))
+                    story.append(Spacer(1, 0.1 * inch))
+            
+            doc.build(story)
+            pdf_bytes = buffer.getvalue()
+            buffer.close()
             return pdf_bytes
-        except ImportError:
-            print("Neither WeasyPrint nor pdfkit available. HTML will be used as fallback.")
-            # Return HTML as bytes (browser can render it)
-            return html_content.encode('utf-8')
+            
         except Exception as e:
             print(f"PDF generation fallback error: {e}")
+            # Return HTML as bytes (browser can render it)
             return html_content.encode('utf-8')
     
     def generate_pdf(
@@ -296,14 +318,196 @@ class PDFGenerator:
         ai_summary: Optional[Dict[str, Any]] = None
     ) -> bytes:
         """Generate complete PDF from report data."""
-        html_content = self.render_report_html(
-            report_type=report_type,
-            data=data,
-            title=title,
-            subtitle=subtitle,
-            period_start=period_start,
-            period_end=period_end,
-            ai_summary=ai_summary
-        )
-        
-        return self.html_to_pdf(html_content)
+        try:
+            from reportlab.lib.pagesizes import letter
+            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+            from reportlab.lib import colors
+            from reportlab.lib.units import inch
+            from reportlab.lib.enums import TA_CENTER, TA_LEFT
+            import io
+            
+            # Create PDF buffer
+            buffer = io.BytesIO()
+            doc = SimpleDocTemplate(
+                buffer,
+                pagesize=letter,
+                rightMargin=72,
+                leftMargin=72,
+                topMargin=72,
+                bottomMargin=18
+            )
+            styles = getSampleStyleSheet()
+            story = []
+            
+            # Custom styles
+            title_style = ParagraphStyle(
+                'CustomTitle',
+                parent=styles['Heading1'],
+                fontSize=24,
+                textColor=colors.HexColor('#693c83'),
+                alignment=TA_CENTER,
+                spaceAfter=20
+            )
+            
+            subtitle_style = ParagraphStyle(
+                'CustomSubtitle',
+                parent=styles['Heading2'],
+                fontSize=14,
+                textColor=colors.HexColor('#4f4679'),
+                alignment=TA_CENTER,
+                spaceAfter=30
+            )
+            
+            section_title_style = ParagraphStyle(
+                'SectionTitle',
+                parent=styles['Heading2'],
+                fontSize=18,
+                textColor=colors.HexColor('#693c83'),
+                spaceBefore=20,
+                spaceAfter=15
+            )
+            
+            # Add title and subtitle
+            story.append(Paragraph(title, title_style))
+            story.append(Paragraph(subtitle, subtitle_style))
+            
+            # Add metadata
+            period_text = f"Period: {period_start or 'N/A'} to {period_end or 'N/A'}"
+            story.append(Paragraph(period_text, styles['Normal']))
+            story.append(Spacer(1, 0.3 * inch))
+            
+            # Add summary section
+            if 'summary' in data:
+                story.append(Paragraph("Summary", section_title_style))
+                summary = data['summary']
+                summary_data = []
+                for key, value in summary.items():
+                    if value is not None:
+                        summary_data.append([key.replace('_', ' ').title(), str(value)])
+                
+                if summary_data:
+                    summary_table = Table(summary_data, colWidths=[3 * inch, 2 * inch])
+                    summary_table.setStyle(TableStyle([
+                        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f1ecf7')),
+                        ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#d9cfe8')),
+                        ('FONTSIZE', (0, 0), (-1, -1), 10),
+                    ]))
+                    story.append(summary_table)
+                    story.append(Spacer(1, 0.2 * inch))
+            
+            # Add completed programs
+            if 'completed_programs' in data and data['completed_programs']:
+                story.append(Paragraph("Completed Programs", section_title_style))
+                program_rows = [["Program Name", "Completed Date", "Score"]]
+                for prog in data['completed_programs']:
+                    program_rows.append([
+                        prog.get('name', 'N/A'),
+                        prog.get('completed_date', 'N/A'),
+                        f"{prog.get('score', 0)}%"
+                    ])
+                
+                program_table = Table(program_rows, colWidths=[2.5 * inch, 1.5 * inch, 1 * inch])
+                program_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#693c83')),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                    ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, 0), 10),
+                    ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                    ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+                    ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#d9cfe8')),
+                    ('FONTSIZE', (0, 1), (-1, -1), 9),
+                ]))
+                story.append(program_table)
+                story.append(Spacer(1, 0.2 * inch))
+            
+            # Add quiz performance
+            if 'quiz_performance' in data:
+                story.append(Paragraph("Quiz Performance", section_title_style))
+                quiz = data['quiz_performance']
+                quiz_data = [
+                    ["Average Score", f"{quiz.get('average', 0)}%"],
+                    ["Highest Score", f"{quiz.get('highest', 0)}%"],
+                    ["Lowest Score", f"{quiz.get('lowest', 0)}%"],
+                    ["Total Attempts", str(quiz.get('total_attempts', 0))]
+                ]
+                
+                quiz_table = Table(quiz_data, colWidths=[3 * inch, 2 * inch])
+                quiz_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f1ecf7')),
+                    ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#d9cfe8')),
+                    ('FONTSIZE', (0, 0), (-1, -1), 10),
+                ]))
+                story.append(quiz_table)
+                story.append(Spacer(1, 0.2 * inch))
+            
+            # Add badges
+            if 'badges' in data and data['badges']:
+                story.append(Paragraph("Badges Earned", section_title_style))
+                badge_rows = [["Badge Name", "Earned Date"]]
+                for badge in data['badges']:
+                    badge_rows.append([
+                        badge.get('name', 'N/A'),
+                        badge.get('earned_date', 'N/A')
+                    ])
+                
+                badge_table = Table(badge_rows, colWidths=[3 * inch, 2 * inch])
+                badge_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#693c83')),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                    ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, 0), 10),
+                    ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                    ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+                    ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#d9cfe8')),
+                    ('FONTSIZE', (0, 1), (-1, -1), 9),
+                ]))
+                story.append(badge_table)
+                story.append(Spacer(1, 0.2 * inch))
+            
+            # Add AI summary if present
+            if ai_summary:
+                story.append(PageBreak())
+                story.append(Paragraph("AI Learning Insights", section_title_style))
+                
+                if 'executive_summary' in ai_summary:
+                    story.append(Paragraph("Executive Summary", styles['Heading3']))
+                    story.append(Paragraph(ai_summary['executive_summary'], styles['Normal']))
+                    story.append(Spacer(1, 0.1 * inch))
+                
+                for section in ['key_insights', 'strengths', 'areas_needing_attention', 'recommendations']:
+                    if section in ai_summary and ai_summary[section]:
+                        section_title = section.replace('_', ' ').title()
+                        story.append(Paragraph(section_title, styles['Heading3']))
+                        for item in ai_summary[section]:
+                            story.append(Paragraph(f"• {item}", styles['Normal']))
+                        story.append(Spacer(1, 0.1 * inch))
+            
+            # Add footer
+            story.append(PageBreak())
+            story.append(Paragraph("Saarthi Curious Learning Management System", styles['Normal']))
+            story.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", styles['Normal']))
+            
+            # Build PDF
+            doc.build(story)
+            pdf_bytes = buffer.getvalue()
+            buffer.close()
+            return pdf_bytes
+            
+        except Exception as e:
+            print(f"Direct PDF generation error: {e}")
+            import traceback
+            traceback.print_exc()
+            # Fallback to HTML method
+            html_content = self.render_report_html(
+                report_type=report_type,
+                data=data,
+                title=title,
+                subtitle=subtitle,
+                period_start=period_start,
+                period_end=period_end,
+                ai_summary=ai_summary
+            )
+            return self.html_to_pdf(html_content)
