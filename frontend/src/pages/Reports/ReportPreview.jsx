@@ -352,6 +352,68 @@ const ReportPreview = ({
             </p>
           </div>
         ))}
+        {(data.top_performers || data.topPerformers)?.length > 0 && (
+          <div>
+            <h4 className="font-semibold text-[#1E1B4B] mb-3">
+              Top Performers
+            </h4>
+            <div className="space-y-2">
+              {(data.top_performers || data.topPerformers || []).map(
+                (performer, idx) => (
+                  <div
+                    key={idx}
+                    className="flex justify-between items-center bg-[#F1ECF7] p-3 rounded-lg"
+                  >
+                    <div>
+                      <p className="font-medium text-[#1E1B4B]">
+                        {performer.name}
+                      </p>
+                      <p className="text-xs text-[#4F4679]">
+                        {performer.programs_completed ||
+                          performer.programsCompleted}{" "}
+                        programs
+                      </p>
+                    </div>
+                    <span className="text-sm font-semibold text-[#10B981]">
+                      {performer.avg_score || performer.avgScore}%
+                    </span>
+                  </div>
+                ),
+              )}
+            </div>
+          </div>
+        )}
+
+        {(data.pending_employees || data.pendingEmployees)?.length > 0 && (
+          <div>
+            <h4 className="font-semibold text-[#1E1B4B] mb-3">
+              Pending Employees
+            </h4>
+            <div className="space-y-2">
+              {(data.pending_employees || data.pendingEmployees || []).map(
+                (employee, idx) => (
+                  <div
+                    key={idx}
+                    className="flex justify-between items-center bg-[#F1ECF7] p-3 rounded-lg"
+                  >
+                    <div>
+                      <p className="font-medium text-[#1E1B4B]">
+                        {employee.name}
+                      </p>
+                      <p className="text-xs text-[#4F4679]">
+                        {employee.pending_programs || employee.pendingPrograms}{" "}
+                        pending
+                      </p>
+                    </div>
+                    <span className="text-xs text-[#F59E0B]">
+                      {employee.last_activity || employee.lastActivity}
+                    </span>
+                  </div>
+                ),
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {(data.top_programs || data.topPrograms) && (
@@ -524,6 +586,32 @@ const ReportPreview = ({
 
     // Handle both camelCase and snake_case from backend
     const summary = reportData.summary || {};
+
+    if (
+      summary.completed_programs !== undefined ||
+      summary.completedPrograms !== undefined
+    ) {
+      return renderPersonalReport(reportData);
+    }
+    if (
+      summary.total_employees !== undefined ||
+      summary.totalEmployees !== undefined
+    ) {
+      return renderTeamReport(reportData);
+    }
+    if (
+      summary.total_franchises !== undefined ||
+      summary.totalFranchises !== undefined ||
+      summary.total_learners !== undefined ||
+      summary.totalLearners !== undefined ||
+      summary.total_programs !== undefined ||
+      summary.totalPrograms !== undefined ||
+      summary.avg_daily_active !== undefined ||
+      summary.avgDailyActive !== undefined
+    ) {
+      return renderOrgReport(reportData);
+    }
+    return <p className="text-[#4F4679]">Report data format not recognized.</p>;
 
     if (
       summary.completed_programs !== undefined ||

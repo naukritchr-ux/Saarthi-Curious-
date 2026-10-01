@@ -30,6 +30,7 @@ class PDFGenerator:
             "my_learning_report": "employee.html",
             "team_progress_report": "team.html",
             "franchise_performance_report": "franchise.html",
+            "franchise_learning_report": "franchise.html",
             "organization_learning_report": "organization.html",
             "program_performance_report": "organization.html",
             "learner_engagement_report": "organization.html",
@@ -54,6 +55,9 @@ class PDFGenerator:
             "active_learners": 0,
             "total_programs": 0,
         })
+        normalized_data.setdefault("franchise_comparison", [])
+        normalized_data.setdefault("top_performers", [])
+        normalized_data.setdefault("pending_employees", [])
 
         for key, value in list(normalized_data["summary"].items()):
             if value is None:

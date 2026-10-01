@@ -1,12 +1,14 @@
+import copy
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from typing import Dict, Any, Optional, List
 from models import Report, User
 from .report_queries import (
     get_user_learning_report,
     get_team_progress_report,
     get_franchise_performance_report,
+    get_franchise_learning_report,
     get_organization_learning_report,
     get_program_performance_report,
     get_learner_engagement_report
@@ -21,125 +23,99 @@ from services.ai.groq_provider import GroqProvider
 
 class ReportService:
     """Orchestration layer for report generation"""
-    
-    # Canonical report catalog (A-G) with exact role visibility matrix
+
+    # ----------------------------------------------------------
+    # Report catalog — 6 reports matching the RBAC matrix
+    # ----------------------------------------------------------
     REPORT_CATALOG = {
-        "A": {
-            "id": "my_learning_report",
-            "title": "My Learning Report",
-            "subtitle": "Personal Learning Progress",
-            "description": "Personal learning progress and achievements",
-            "roles": [3, 4, 5, 6, 7],
-            "filter_schema": {
-                "scope": {"type": "fixed", "value": "self"},
-                "time_range": {
-                    "type": "select",
-                    "options": ["today", "last_month", "all_time"],
-                    "default": "all_time"
-                },
-                "custom_range": {"type": "date_range", "enabled": False}
-            }
-        },
-        "B": {
-            "id": "team_progress_report",
-            "title": "Team Progress Report",
-            "subtitle": "Team Learning Overview",
-            "description": "Overview of team learning progress",
-            "roles": [1, 2, 3, 6],
-            "filter_schema": {
-                "scope": {
-                    "type": "user_select",
-                    "role_filter": "team_leader",
-                    "default": "self"
-                },
-                "time_range": {
-                    "type": "select",
-                    "options": ["today", "last_month", "all_time", "custom"],
-                    "default": "all_time"
-                },
-                "custom_range": {"type": "date_range", "enabled": True}
-            }
-        },
-        "C": {
-            "id": "franchise_performance_report",
-            "title": "Franchise Performance Report",
-            "subtitle": "Franchise Performance Metrics",
-            "description": "Aggregate performance metrics",
-            "roles": [1, 2, 3, 4, 6],
-            "filter_schema": {
-                "scope": {
-                    "type": "user_select",
-                    "role_filter": "franchise_user",
-                    "default": "self"
-                },
-                "time_range": {
-                    "type": "select",
-                    "options": ["today", "last_month", "all_time", "custom"],
-                    "default": "all_time"
-                },
-                "custom_range": {"type": "date_range", "enabled": True}
-            }
-        },
-        "E": {
+        "org_learning": {
             "id": "organization_learning_report",
             "title": "Organization Learning Report",
-            "subtitle": "Organization Learning Analytics",
-            "description": "Detailed organization analytics",
+            "subtitle": "Organization-wide Learning Analytics",
+            "description": "Complete organization-wide learning metrics",
             "roles": [1, 2],
             "filter_schema": {
                 "scope": {"type": "fixed", "value": "organization"},
-                "time_range": {
-                    "type": "select",
-                    "options": ["today", "last_month", "all_time", "custom"],
-                    "default": "all_time"
-                },
-                "custom_range": {"type": "date_range", "enabled": True}
-            }
+                "time_range": {"type": "select",
+                               "options": ["today", "last_month", "all_time", "custom"],
+                               "default": "all_time"},
+                "custom_range": {"type": "date_range", "enabled": True},
+            },
         },
-        "F": {
-            "id": "program_performance_report",
-            "title": "Program Performance Report",
-            "subtitle": "Program Performance Metrics",
-            "description": "Program completion and performance",
-            "roles": [1, 2],
+        "franchise_performance": {
+            "id": "franchise_performance_report",
+            "title": "Franchise Performance Report",
+            "subtitle": "Franchise Performance Metrics",
+            "description": "Compare performance across franchises and their employees",
+            "roles": [1, 2, 4, 6],
             "filter_schema": {
-                "scope": {
-                    "type": "user_select",
-                    "role_filter": "program",
-                    "default": "all"
-                },
-                "time_range": {
-                    "type": "select",
-                    "options": ["today", "last_month", "all_time", "custom"],
-                    "default": "all_time"
-                },
-                "custom_range": {"type": "date_range", "enabled": True}
-            }
+                "scope": {"type": "franchise_select", "default": "all", "allow_all": True},
+                "time_range": {"type": "select",
+                               "options": ["today", "last_month", "all_time", "custom"],
+                               "default": "all_time"},
+                "custom_range": {"type": "date_range", "enabled": True},
+            },
         },
-        "G": {
+        "learner_engagement": {
             "id": "learner_engagement_report",
             "title": "Learner Engagement Report",
-            "subtitle": "Learner Engagement Metrics",
-            "description": "Engagement metrics and activity",
-            "roles": [1, 2, 3, 4, 6],
+            "subtitle": "Individual Learner Engagement",
+            "description": "Track engagement for individual learners",
+            "roles": [1, 2, 3, 4],
             "filter_schema": {
-                "scope": {
-                    "type": "user_select",
-                    "role_filter": "learner",
-                    "default": "all"
-                },
-                "time_range": {
-                    "type": "select",
-                    "options": ["today", "last_month", "all_time", "custom"],
-                    "default": "all_time"
-                },
-                "custom_range": {"type": "date_range", "enabled": True}
-            }
-        }
+                "scope": {"type": "learner_select", "default": "all", "allow_all": True},
+                "time_range": {"type": "select",
+                               "options": ["today", "last_month", "all_time", "custom"],
+                               "default": "all_time"},
+                "custom_range": {"type": "date_range", "enabled": True},
+            },
+        },
+        "my_learning": {
+            "id": "my_learning_report",
+            "title": "My Learning Report",
+            "subtitle": "Personal Learning Progress",
+            "description": "Your personal learning progress and achievements",
+            "roles": [3, 4, 5, 6, 7],
+            "filter_schema": {
+                "scope": {"type": "fixed", "value": "self"},
+                "time_range": {"type": "select",
+                               "options": ["today", "last_month", "all_time"],
+                               "default": "all_time"},
+                "custom_range": {"type": "date_range", "enabled": False},
+            },
+        },
+        "franchise_learning": {
+            "id": "franchise_learning_report",
+            "title": "Franchise Learning Report",
+            "subtitle": "Learners Under Your Franchise",
+            "description": "Learning progress of learners within your franchise",
+            "roles": [1, 2, 4, 6],
+            "filter_schema": {
+                "scope": {"type": "franchise_select", "default": "self", "allow_all": True},
+                "time_range": {"type": "select",
+                               "options": ["today", "last_month", "all_time", "custom"],
+                               "default": "all_time"},
+                "custom_range": {"type": "date_range", "enabled": True},
+            },
+        },
+        "team_progress": {
+            "id": "team_progress_report",
+            "title": "Team Progress Report",
+            "subtitle": "Team Learning Overview",
+            "description": "Overview of your team's learning progress",
+            "roles": [1, 2, 3, 6],
+            "filter_schema": {
+                "scope": {"type": "team_leader_select", "default": "self", "allow_all": False},
+                "time_range": {"type": "select",
+                               "options": ["today", "last_month", "all_time", "custom"],
+                               "default": "all_time"},
+                "custom_range": {"type": "date_range", "enabled": True},
+            },
+        },
     }
 
-    REPORT_TYPES = {catalog["id"]: catalog for catalog in REPORT_CATALOG.values()}
-    
+    REPORT_TYPES = {c["id"]: c for c in REPORT_CATALOG.values()}
+
     def __init__(self, db: Session):
         self.db = db
         self.pdf_generator = PDFGenerator()
@@ -148,9 +124,12 @@ class ReportService:
         self._groq_provider = None
         self.query_builder = QueryBuilder(db)
         self.computation_engine = ComputationEngine(db)
-    
+
+    # ==========================================
+    # AI providers
+    # ==========================================
+
     def _get_gemini_provider(self) -> Optional[GeminiProvider]:
-        """Lazy load Gemini provider"""
         if self._gemini_provider is None:
             try:
                 self._gemini_provider = GeminiProvider()
@@ -158,9 +137,8 @@ class ReportService:
                 print(f"Error initializing Gemini: {e}")
                 self._gemini_provider = None
         return self._gemini_provider
-    
+
     def _get_groq_provider(self) -> Optional[GroqProvider]:
-        """Lazy load Groq provider"""
         if self._groq_provider is None:
             try:
                 self._groq_provider = GroqProvider()
@@ -168,20 +146,11 @@ class ReportService:
                 print(f"Error initializing Groq: {e}")
                 self._groq_provider = None
         return self._groq_provider
-    
+
     async def _generate_ai_insights_with_fallback(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Generate AI insights using Gemini as primary and Groq as fallback.
-        """
         gemini = self._get_gemini_provider()
         groq = self._get_groq_provider()
-        
         errors = []
-
-        if gemini and getattr(gemini, "api_key", None) == "g_987key":
-            errors.append("Gemini API key is placeholder-only; AI summary disabled")
-        if groq and getattr(groq, "api_key", None) == "g_123key":
-            errors.append("Groq API key is placeholder-only; AI summary disabled")
 
         # Try Gemini first
         if gemini and await gemini.is_available():
@@ -191,15 +160,12 @@ class ReportService:
                 print("Gemini generation successful")
                 return result
             except Exception as e:
-                error_msg = f"Gemini failed: {str(e)}"
-                print(error_msg)
-                errors.append(error_msg)
+                errors.append(f"Gemini failed: {e}")
+        elif gemini:
+            errors.append("Gemini not available")
         else:
-            if gemini:
-                errors.append(f"Gemini not available: {gemini.get_error_message() if hasattr(gemini, 'get_error_message') else 'Unknown error'}")
-            else:
-                errors.append("Gemini provider not initialized")
-        
+            errors.append("Gemini provider not initialized")
+
         # Fallback to Groq
         if groq and await groq.is_available():
             try:
@@ -208,16 +174,15 @@ class ReportService:
                 print("Groq generation successful")
                 return result
             except Exception as e:
-                error_msg = f"Groq failed: {str(e)}"
-                print(error_msg)
-                errors.append(error_msg)
+                errors.append(f"Groq failed: {e}")
+        elif groq:
+            errors.append("Groq not available")
         else:
-            if groq:
-                errors.append(f"Groq not available: {groq.get_error_message() if hasattr(groq, 'get_error_message') else 'Unknown error'}")
-            else:
-                errors.append("Groq provider not initialized")
+            errors.append("Groq provider not initialized")
 
-        if all(getattr(provider, "api_key", None) in {"g_987key", "g_123key"} for provider in [gemini, groq] if provider is not None):
+        providers = [p for p in (gemini, groq) if p is not None]
+        if providers and all(getattr(p, "api_key", None) in {"g_987key", "g_123key"}
+                             for p in providers):
             return {
                 "executive_summary": "AI summary unavailable because placeholder API keys are currently configured.",
                 "key_insights": ["Add a real Gemini or Groq key to enable AI-generated report insights."],
@@ -229,20 +194,14 @@ class ReportService:
                 "notable_achievements": [],
                 "risks_or_concerns": []
             }
-        
-        # Both providers failed
-        error_summary = "; ".join(errors)
-        raise Exception(f"Both AI providers failed: {error_summary}")
+
+        raise Exception(f"Both AI providers failed: {'; '.join(errors)}")
 
     # ==========================================
-    # Report Availability and History Methods
+    # Report availability and history
     # ==========================================
 
     def get_available_reports(self, role_id: int, user_id: Optional[int] = None) -> List[Dict[str, Any]]:
-        """
-        Get report types available for a role with filter schema and scoped selector options.
-        """
-        # Get user's date of joining for dynamic time filters
         user = None
         date_of_joining = None
         if user_id:
@@ -251,363 +210,423 @@ class ReportService:
                 date_of_joining = user.date_of_joining
 
         available = []
-        for report_key, catalog_entry in self.REPORT_CATALOG.items():
-            if role_id in catalog_entry["roles"]:
-                report_def = {
-                    "id": catalog_entry["id"],
-                    "title": catalog_entry["title"],
-                    "description": catalog_entry["description"],
-                    "filter_schema": self._get_dynamic_filter_schema(catalog_entry["filter_schema"], role_id, date_of_joining),
-                    "icon": self._get_icon_for_report(catalog_entry["id"])
-                }
+        for _, catalog_entry in self.REPORT_CATALOG.items():
+            if role_id not in catalog_entry["roles"]:
+                continue
 
-                # Add scoped selector options for reports B, C, F, G
-                if catalog_entry["id"] == "team_progress_report" and user_id:
-                    report_def["selector_options"] = self._get_team_leader_options(role_id, user_id)
-                elif catalog_entry["id"] == "franchise_performance_report" and user_id:
-                    report_def["selector_options"] = self._get_franchise_user_options(role_id, user_id)
-                elif catalog_entry["id"] == "program_performance_report" and user_id:
-                    report_def["selector_options"] = self._get_program_options(role_id)
-                elif catalog_entry["id"] == "learner_engagement_report" and user_id:
-                    report_def["selector_options"] = self._get_learner_options(role_id, user_id)
+            report_def = {
+                "id": catalog_entry["id"],
+                "title": catalog_entry["title"],
+                "description": catalog_entry["description"],
+                "filter_schema": self._get_dynamic_filter_schema(
+                    catalog_entry["filter_schema"], role_id, date_of_joining
+                ),
+                "icon": self._get_icon_for_report(catalog_entry["id"]),
+            }
 
+            if not user_id:
                 available.append(report_def)
+                continue
+
+            rt = catalog_entry["id"]
+            if rt == "team_progress_report":
+                report_def["selector_options"] = self._get_team_leader_options(role_id, user_id)
+            elif rt in ("franchise_performance_report", "franchise_learning_report"):
+                report_def["selector_options"] = self._get_franchise_user_options(role_id, user_id)
+            elif rt == "program_performance_report":
+                report_def["selector_options"] = self._get_program_options(role_id)
+            elif rt == "learner_engagement_report":
+                report_def["selector_options"] = self._get_learner_options(role_id, user_id)
+
+            available.append(report_def)
         return available
 
     def get_report_history(self, user_id: int, role_id: int) -> List[Dict[str, Any]]:
-        """
-        Get report generation history for a user based on their scope.
-        """
-        # Get user for hierarchy context
         user = self.db.query(User).filter(User.user_id == user_id).first()
         if not user:
             return []
 
-        # Base query for user's own reports
         query = self.db.query(Report).filter(Report.generated_by == user_id)
 
-        # If admin, also show reports they have access to via hierarchy
         if role_id in [1, 2]:
-            # Admins see all reports
             pass
         elif role_id in [3, 6]:
-            # Team leaders and Franchise Developers see their team reports.
-            team_member_ids = self.db.query(User.user_id).filter(
+            team_member_ids = [id[0] for id in self.db.query(User.user_id).filter(
                 User.Team_Leader_id == user_id
-            ).all()
-            team_member_ids = [id[0] for id in team_member_ids]
-            query = query.filter(
-                or_(
-                    Report.generated_by == user_id,
-                    Report.generated_for.in_(team_member_ids)
-                )
-            )
-        elif role_id in [4, 6]:
-            # Franchise users see their own reports + reports for their franchise employees
-            franchise_employee_ids = self.db.query(User.user_id).filter(
-                User.Team_Leader_id == user_id,
-                User.role_id == 5
-            ).all()
-            franchise_employee_ids = [id[0] for id in franchise_employee_ids]
-            query = query.filter(
-                or_(
-                    Report.generated_by == user_id,
-                    Report.generated_for.in_(franchise_employee_ids)
-                )
-            )
-        # Role 5 (Franchise Employee) and 7 (Head Office Staff) only see their own reports
+            ).all()]
+            query = query.filter(or_(
+                Report.generated_by == user_id,
+                Report.generated_for.in_(team_member_ids) if team_member_ids else False
+            ))
+        elif role_id == 4:
+            employee_ids = [id[0] for id in self.db.query(User.user_id).filter(
+                User.Team_Leader_id == user_id, User.role_id == 5
+            ).all()]
+            query = query.filter(or_(
+                Report.generated_by == user_id,
+                Report.generated_for.in_(employee_ids) if employee_ids else False
+            ))
 
         reports = query.order_by(Report.generated_at.desc()).limit(50).all()
 
         return [
             {
-                "id": report.id,
-                "title": report.title,
-                "report_type": report.report_type,
-                "generated_at": report.generated_at.isoformat() if report.generated_at else None,
-                "period_start": report.period_start.isoformat() if report.period_start else None,
-                "period_end": report.period_end.isoformat() if report.period_end else None,
-                "status": report.status,
-                "generated_for": report.generated_for,
-                "ai_summary": report.ai_summary
+                "id": r.id,
+                "title": r.title,
+                "report_type": r.report_type,
+                "generated_at": r.generated_at.isoformat() if r.generated_at else None,
+                "period_start": r.period_start.isoformat() if r.period_start else None,
+                "period_end": r.period_end.isoformat() if r.period_end else None,
+                "status": r.status,
+                "generated_for": r.generated_for,
+                "ai_summary": r.ai_summary
             }
-            for report in reports
+            for r in reports
         ]
 
-    def _get_dynamic_filter_schema(self, filter_schema: Dict[str, Any], role_id: int, date_of_joining: Optional[date]) -> Dict[str, Any]:
-        """Get dynamic filter schema based on user's role and date of joining."""
-        from datetime import datetime, timedelta
+    # ==========================================
+    # Dynamic filter schemas + selector options
+    # ==========================================
 
-        dynamic_schema = filter_schema.copy()
-        time_range = dynamic_schema.get("time_range", {}).copy()
+    def _get_dynamic_filter_schema(self, filter_schema: Dict[str, Any],
+                                   role_id: int,
+                                   date_of_joining: Optional[date]) -> Dict[str, Any]:
+        dynamic_schema = copy.deepcopy(filter_schema)
+        time_range = dynamic_schema.setdefault("time_range", {})
 
-        # Base options always available
         base_options = ["today", "all_time"]
-        conditional_options = []
-
+        conditional = []
         if date_of_joining:
             today = datetime.now().date()
-            one_year_ago = today - timedelta(days=365)
-            one_month_ago = today - timedelta(days=30)
-            one_week_ago = today - timedelta(days=7)
+            if date_of_joining <= today - timedelta(days=365):
+                conditional.append("last_year")
+            if date_of_joining <= today - timedelta(days=30):
+                conditional.append("last_month")
+            if date_of_joining <= today - timedelta(days=7):
+                conditional.append("last_week")
 
-            if date_of_joining <= one_year_ago:
-                conditional_options.append("last_year")
-            if date_of_joining <= one_month_ago:
-                conditional_options.append("last_month")
-            if date_of_joining <= one_week_ago:
-                conditional_options.append("last_week")
-
-        all_options = base_options + conditional_options
-
-        if role_id in [1, 2, 3, 6]:
-            all_options.append("custom")
+        options = base_options + conditional
+        if role_id in (1, 2, 3, 6):
+            options.append("custom")
             dynamic_schema["custom_range"] = {"type": "date_range", "enabled": True}
         else:
             dynamic_schema["custom_range"] = {"type": "date_range", "enabled": False}
 
-        time_range["options"] = all_options
-        dynamic_schema["time_range"] = time_range
-
+        time_range["options"] = options
         return dynamic_schema
 
     def _get_team_leader_options(self, role_id: int, user_id: int) -> List[Dict[str, Any]]:
-        """Get team leader selector options based on role."""
-        if role_id in [1, 2]:
-            team_leaders = self.db.query(User).filter(User.role_id == 3).all()
-            return [{"id": tl.user_id, "name": tl.full_name} for tl in team_leaders]
-        elif role_id in [3, 6]:
-            return []
-        elif role_id == 6:
-            return []
+        """
+        Options for Team Progress Report — pick a team leader (role 3).
+
+        - Admin/Master (1,2): every team leader.
+        - Team Leader (3): themselves only.
+        - Franchise Developer (6): themselves as the team anchor.
+        """
+        if role_id in (1, 2):
+            leaders = (
+                self.db.query(User)
+                .filter(User.role_id == 3)
+                .order_by(User.full_name)
+                .all()
+            )
+            return [{"id": None, "name": "(all team leaders)"}] + [
+                {"id": l.user_id, "name": l.full_name} for l in leaders
+            ]
+
+        if role_id in (3, 6):
+            me = self.db.query(User).filter(User.user_id == user_id).first()
+            return [{"id": me.user_id, "name": me.full_name}] if me else []
+
         return []
 
     def _get_franchise_user_options(self, role_id: int, user_id: int) -> List[Dict[str, Any]]:
-        """Get franchise user selector options based on role."""
-        if role_id in [1, 2]:
-            franchise_partners = self.db.query(User).filter(User.role_id == 4).all()
-            return [{"id": fp.user_id, "name": fp.full_name} for fp in franchise_partners]
-        elif role_id in [3, 6]:
-            franchise_partners = self.db.query(User).filter(
-                User.Team_Leader_id == user_id,
-                User.role_id == 4
-            ).all()
-            return [{"id": fp.user_id, "name": fp.full_name} for fp in franchise_partners]
+        """
+        Options for Franchise Performance & Franchise Learning reports —
+        pick a franchise (proxied by the Franchise Partner's user_id, role 4).
+
+        - Admin/Master (1,2): every franchise partner.
+        - Franchise Developer (6): their franchise partners only.
+        - Franchise Partner (4): themselves only.
+        """
+        if role_id in (1, 2):
+            partners = (
+                self.db.query(User)
+                .filter(User.role_id == 4)
+                .order_by(User.full_name)
+                .all()
+            )
         elif role_id == 6:
-            franchise_partners = self.db.query(User).filter(User.role_id == 4).all()
-            return [{"id": fp.user_id, "name": fp.full_name} for fp in franchise_partners]
+            partners = (
+                self.db.query(User)
+                .filter(User.Team_Leader_id == user_id, User.role_id == 4)
+                .order_by(User.full_name)
+                .all()
+            )
         elif role_id == 4:
-            return []
-        return []
+            partners = (
+                self.db.query(User)
+                .filter(User.user_id == user_id)
+                .all()
+            )
+        else:
+            partners = []
+
+        return [{"id": None, "name": "(all franchises)"}] + [
+            {"id": p.user_id, "name": p.full_name} for p in partners
+        ]
+
 
     def _get_program_options(self, role_id: int) -> List[Dict[str, Any]]:
-        """Get program selector options based on role."""
-        if role_id in [1, 2]:
+        if role_id in (1, 2):
             from models import Program
             programs = self.db.query(Program).filter(Program.status == "Published").all()
-            options = [{"id": None, "name": "(all programs)"}]
-            options.extend([{"id": p.id, "name": p.name} for p in programs])
-            return options
+            return [{"id": None, "name": "(all programs)"}] + \
+                   [{"id": p.id, "name": p.name} for p in programs]
         return []
 
     def _get_learner_options(self, role_id: int, user_id: int) -> List[Dict[str, Any]]:
-        """Get learner selector options based on role."""
-        if role_id in [1, 2]:
-            learners = self.db.query(User).filter(User.role_id.in_([3, 4, 5, 6, 7])).all()
-            options = [{"id": None, "name": "(all learners)"}]
-            options.extend([{"id": l.user_id, "name": l.full_name} for l in learners])
-            return options
-        elif role_id in [3, 6]:
-            learners = self.db.query(User).filter(
-                User.Team_Leader_id == user_id,
-                User.role_id.in_([4, 5])
-            ).all()
-            options = [{"id": None, "name": "(all learners)"}]
-            options.extend([{"id": l.user_id, "name": l.full_name} for l in learners])
-            return options
+        """
+        Options for Learner Engagement Report — pick any individual user.
+
+        - Admin/Master (1,2): every user in the system.
+        - Team Leader (3): self + direct reports + their reports.
+        - Franchise Developer (6): self + their partners + their partners' employees.
+        - Franchise Partner (4): self + their employees.
+        """
+        if role_id in (1, 2):
+            learners = self.db.query(User).order_by(User.full_name).all()
+
+        elif role_id == 3:
+            direct = [
+                d[0] for d in self.db.query(User.user_id)
+                .filter(User.Team_Leader_id == user_id).all()
+            ]
+            ids = {user_id, *direct}
+            if direct:
+                emps = [
+                    e[0] for e in self.db.query(User.user_id)
+                    .filter(User.Team_Leader_id.in_(direct)).all()
+                ]
+                ids.update(emps)
+            learners = (
+                self.db.query(User)
+                .filter(User.user_id.in_(ids))
+                .order_by(User.full_name)
+                .all()
+            )
+
         elif role_id == 6:
-            learners = self.db.query(User).filter(User.role_id.in_([4, 5])).all()
-            options = [{"id": None, "name": "(all learners)"}]
-            options.extend([{"id": l.user_id, "name": l.full_name} for l in learners])
-            return options
+            partners = [
+                p[0] for p in self.db.query(User.user_id)
+                .filter(User.Team_Leader_id == user_id, User.role_id == 4).all()
+            ]
+            ids = {user_id, *partners}
+            if partners:
+                emps = [
+                    e[0] for e in self.db.query(User.user_id)
+                    .filter(User.Team_Leader_id.in_(partners), User.role_id == 5).all()
+                ]
+                ids.update(emps)
+            learners = (
+                self.db.query(User)
+                .filter(User.user_id.in_(ids))
+                .order_by(User.full_name)
+                .all()
+            )
+
         elif role_id == 4:
-            learners = self.db.query(User).filter(
-                User.Team_Leader_id == user_id,
-                User.role_id == 5
-            ).all()
-            options = [{"id": None, "name": "(all learners)"}]
-            options.extend([{"id": l.user_id, "name": l.full_name} for l in learners])
-            return options
-        return []
+            emps = [
+                e[0] for e in self.db.query(User.user_id)
+                .filter(User.Team_Leader_id == user_id, User.role_id == 5).all()
+            ]
+            ids = {user_id, *emps}
+            learners = (
+                self.db.query(User)
+                .filter(User.user_id.in_(ids))
+                .order_by(User.full_name)
+                .all()
+            )
+
+        else:
+            learners = []
+
+        return [{"id": None, "name": "(all users)"}] + [
+            {"id": l.user_id, "name": l.full_name} for l in learners
+        ]
 
     def _get_icon_for_report(self, report_type: str) -> str:
-        """Get icon name for report type."""
-        icon_map = {
+        return {
             "my_learning_report": "User",
             "team_progress_report": "Users",
             "franchise_performance_report": "Building",
+            "franchise_learning_report": "Building2",
             "organization_learning_report": "BarChart",
             "program_performance_report": "BookOpen",
-            "learner_engagement_report": "TrendingUp"
-        }
-        return icon_map.get(report_type, "FileText")
+            "learner_engagement_report": "TrendingUp",
+        }.get(report_type, "FileText")
+
+    # ==========================================
+    # Scope resolution
+    # ==========================================
+
+    def _compute_allowed_user_ids(self, role_id: int, user_id: int) -> Optional[List[int]]:
+        """
+        Return the list of user_ids this requester may see, or None for 'all'.
+        """
+        if role_id in (1, 2):
+            return None
+
+        allowed = {user_id}
+
+        if role_id == 3:  # Team Leader
+            direct = [d[0] for d in self.db.query(User.user_id).filter(
+                User.Team_Leader_id == user_id
+            ).all()]
+            allowed.update(direct)
+            if direct:
+                emps = [e[0] for e in self.db.query(User.user_id).filter(
+                    User.Team_Leader_id.in_(direct)
+                ).all()]
+                allowed.update(emps)
+
+        elif role_id == 4:  # Franchise Partner
+            emps = [e[0] for e in self.db.query(User.user_id).filter(
+                User.Team_Leader_id == user_id, User.role_id == 5
+            ).all()]
+            allowed.update(emps)
+
+        elif role_id == 6:  # Franchise Developer
+            partners = [p[0] for p in self.db.query(User.user_id).filter(
+                User.Team_Leader_id == user_id, User.role_id == 4
+            ).all()]
+            allowed.update(partners)
+            if partners:
+                emps = [e[0] for e in self.db.query(User.user_id).filter(
+                    User.Team_Leader_id.in_(partners), User.role_id == 5
+                ).all()]
+                allowed.update(emps)
+
+        # Roles 5, 7: self only
+        return list(allowed)
+
+    # ==========================================
+    # Report data dispatch
+    # ==========================================
 
     def _get_report_data(
         self,
         report_type: str,
-        target_user_id: Optional[int],
+        requester_user_id: int,
+        requester_role_id: int,
+        generated_for: Optional[int],
         period_start: Optional[date],
-        period_end: Optional[date]
+        period_end: Optional[date],
     ) -> Dict[str, Any]:
-        """Get report data based on report type."""
-        if report_type == "my_learning_report":
-            return get_user_learning_report(self.db, target_user_id, period_start, period_end)
-        elif report_type == "team_progress_report":
-            return get_team_progress_report(self.db, target_user_id, period_start, period_end)
-        elif report_type == "franchise_performance_report":
-            return get_franchise_performance_report(self.db, target_user_id, period_start, period_end)
-        elif report_type == "organization_learning_report":
-            return get_organization_learning_report(self.db, period_start, period_end)
-        elif report_type == "program_performance_report":
-            return get_program_performance_report(self.db, None, period_start, period_end)
-        elif report_type == "learner_engagement_report":
-            return get_learner_engagement_report(self.db, target_user_id, period_start, period_end)
-        else:
-            raise ValueError(f"Unknown report type: {report_type}")
+        allowed = self._compute_allowed_user_ids(requester_role_id, requester_user_id)
 
-    def _parse_period_filters(self, filters: Optional[Dict[str, Any]]) -> tuple:
-        """Parse period filters to extract start and end dates."""
+        if report_type == "my_learning_report":
+            return get_user_learning_report(
+                self.db, requester_user_id, period_start, period_end
+            )
+
+        if report_type == "team_progress_report":
+            if requester_role_id in (1, 2):
+                team_leader_id = generated_for  # None = all teams
+            else:
+                team_leader_id = requester_user_id
+            return get_team_progress_report(
+                self.db, team_leader_id, period_start, period_end, allowed
+            )
+
+        if report_type == "franchise_performance_report":
+            return get_franchise_performance_report(
+                self.db, generated_for, period_start, period_end, allowed
+            )
+
+        if report_type == "franchise_learning_report":
+            return get_franchise_learning_report(
+                self.db, generated_for, period_start, period_end,
+                requester_role_id, requester_user_id
+            )
+
+        if report_type == "organization_learning_report":
+            return get_organization_learning_report(self.db, period_start, period_end)
+
+        if report_type == "program_performance_report":
+            return get_program_performance_report(self.db, None, period_start, period_end)
+
+        if report_type == "learner_engagement_report":
+            return get_learner_engagement_report(
+                self.db, generated_for, period_start, period_end, allowed
+            )
+
+        raise ValueError(f"Unknown report type: {report_type}")
+
+    def _parse_period_filters(self, filters: Optional[Dict[str, Any]]):
         if not filters:
             return None, None
 
-        period_start = None
-        period_end = None
+        tr = filters.get("time_range")
+        cs, ce = filters.get("custom_start"), filters.get("custom_end")
+        today = date.today()
 
-        time_range = filters.get("time_range")
-        custom_start = filters.get("custom_start")
-        custom_end = filters.get("custom_end")
-
-        if time_range == "custom" and custom_start and custom_end:
+        if tr == "custom" and cs and ce:
             try:
-                period_start = date.fromisoformat(custom_start)
-                period_end = date.fromisoformat(custom_end)
+                return date.fromisoformat(cs), date.fromisoformat(ce)
             except ValueError:
                 raise ValueError("Invalid custom date format. Use YYYY-MM-DD")
-        elif time_range == "today":
-            today = date.today()
-            period_start = today
-            period_end = today
-        elif time_range == "last_month":
-            from datetime import timedelta
-            today = date.today()
-            first_day = today.replace(day=1)
-            last_month = first_day - timedelta(days=1)
-            period_start = last_month.replace(day=1)
-            period_end = last_month
-
-        return period_start, period_end
+        if tr == "today":
+            return today, today
+        if tr == "last_week":
+            return today - timedelta(days=7), today
+        if tr == "last_month":
+            first = today.replace(day=1)
+            last_month_end = first - timedelta(days=1)
+            return last_month_end.replace(day=1), last_month_end
+        if tr == "last_year":
+            return today - timedelta(days=365), today
+        return None, None
 
     # ==========================================
-    # Authorization Helper Methods
+    # Authorization helpers
     # ==========================================
 
     def can_access_report_type(self, role_id: int, report_type: str) -> bool:
-        """Check if a role is authorized to access a report type."""
         if report_type not in self.REPORT_TYPES:
             return False
         return role_id in self.REPORT_TYPES[report_type]["roles"]
 
     def can_access_report_row(self, user_id: int, role_id: int, report: Report) -> bool:
-        """Check if a user can access a specific report row."""
         if report.generated_by == user_id:
             return True
-
         if role_id in [1, 2]:
             return True
-
         if role_id in [3, 6]:
             if report.generated_for:
-                team_member = self.db.query(User).filter(
+                member = self.db.query(User).filter(
                     User.user_id == report.generated_for,
                     User.Team_Leader_id == user_id
                 ).first()
-                return team_member is not None
-
-        return False
-
-    def can_generate_for_target(self, requester_role_id: int, requester_user_id: int, 
-                                 target_user_id: int, report_type: str) -> bool:
-        """Check if a user can generate a report for a specific target user."""
-        if requester_user_id == target_user_id:
-            return self.can_access_report_type(requester_role_id, report_type)
-
-        target_user = self.db.query(User).filter(User.user_id == target_user_id).first()
-        if not target_user:
-            return False
-
-        target_role_id = target_user.role_id
-
-        if report_type == "team_progress_report":
-            if requester_role_id in [1, 2]:
-                return target_role_id == 3
-            elif requester_role_id in [3, 6]:
-                return False
-            return False
-
-        if report_type == "franchise_performance_report":
-            if requester_role_id in [1, 2]:
-                return target_role_id == 4
-            elif requester_role_id in [3, 6]:
-                franchise_user = self.db.query(User).filter(
-                    User.user_id == target_user_id,
-                    User.Team_Leader_id == requester_user_id,
-                    User.role_id == 4
-                ).first()
-                return franchise_user is not None
-            elif requester_role_id == 4:
-                return False
-            return False
-
-        if report_type == "program_performance_report":
-            return True
-
-        if report_type == "learner_engagement_report":
-            if requester_role_id in [1, 2]:
-                return target_role_id in [3, 4, 5, 6, 7]
-            elif requester_role_id in [3, 6]:
-                learner = self.db.query(User).filter(
-                    User.user_id == target_user_id,
-                    User.Team_Leader_id == requester_user_id,
-                    User.role_id.in_([4, 5])
-                ).first()
-                return learner is not None
-            elif requester_role_id == 4:
-                learner = self.db.query(User).filter(
-                    User.user_id == target_user_id,
-                    User.Team_Leader_id == requester_user_id,
+                return member is not None
+        if role_id == 4:
+            if report.generated_for:
+                member = self.db.query(User).filter(
+                    User.user_id == report.generated_for,
+                    User.Team_Leader_id == user_id,
                     User.role_id == 5
                 ).first()
-                return learner is not None
-            elif requester_role_id == 6:
-                learner = self.db.query(User).filter(
-                    User.user_id == target_user_id,
-                    User.role_id.in_([4, 5])
-                ).first()
-                return learner is not None
-            return False
-
+                return member is not None
         return False
 
     # ==========================================
-    # Report Generation Methods
+    # Report lookup / download
     # ==========================================
 
-    def get_report_by_id(self, report_id: int) -> Dict[str, Any]:
-        """Get report metadata by ID."""
+    def get_report_by_id(self, report_id: int) -> Optional[Dict[str, Any]]:
         report = self.db.query(Report).filter(Report.id == report_id).first()
         if not report:
             return None
-
         return {
             "id": report.id,
             "title": report.title,
@@ -616,7 +635,7 @@ class ReportService:
             "generated_for": report.generated_for,
             "role_id": report.role_id,
             "storage_path": report.storage_path,
-            "generated_at": report.generated_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "generated_at": report.generated_at.strftime("%Y-%m-%d %H:%M:%S") if report.generated_at else None,
             "period_start": report.period_start.strftime("%Y-%m-%d") if report.period_start else None,
             "period_end": report.period_end.strftime("%Y-%m-%d") if report.period_end else None,
             "status": report.status,
@@ -624,12 +643,14 @@ class ReportService:
         }
 
     def get_report_download_url(self, report_id: int) -> str:
-        """Get download URL for a report."""
         report = self.db.query(Report).filter(Report.id == report_id).first()
         if not report:
             raise ValueError(f"Report {report_id} not found")
-        
         return self.storage_service.get_report_download_url(report.storage_path)
+
+    # ==========================================
+    # Generation
+    # ==========================================
 
     async def generate_report(
         self,
@@ -641,25 +662,32 @@ class ReportService:
         include_ai: bool = False,
         generated_for: Optional[int] = None
     ) -> Dict[str, Any]:
-        """Generate a complete report with PDF."""
         if report_type not in self.REPORT_TYPES:
             raise ValueError(f"Invalid report type: {report_type}")
-        
+
         if role_id not in self.REPORT_TYPES[report_type]["roles"]:
             raise ValueError(f"Role {role_id} not authorized for report type {report_type}")
 
-        target_user_id = generated_for or user_id
-        data = self._get_report_data(report_type, target_user_id, period_start, period_end)
-        
-        # Generate AI insights if requested
+        # my_learning is always for self
+        if report_type == "my_learning_report":
+            generated_for = None
+
+        data = self._get_report_data(
+            report_type=report_type,
+            requester_user_id=user_id,
+            requester_role_id=role_id,
+            generated_for=generated_for,
+            period_start=period_start,
+            period_end=period_end,
+        )
+
         ai_summary = None
         if include_ai:
             try:
                 ai_summary = await self._generate_ai_insights_with_fallback(data)
             except Exception as e:
                 print(f"AI generation failed: {e}")
-        
-        # Generate PDF
+
         pdf_bytes = self.pdf_generator.generate_pdf(
             report_type=report_type,
             data=data,
@@ -669,8 +697,7 @@ class ReportService:
             period_end=period_end.strftime("%Y-%m-%d") if period_end else None,
             ai_summary=ai_summary
         )
-        
-        # Save report
+
         report = Report(
             title=self.REPORT_TYPES[report_type]["title"],
             report_type=report_type,
@@ -686,15 +713,14 @@ class ReportService:
         self.db.add(report)
         self.db.commit()
         self.db.refresh(report)
-        
-        # Upload PDF
+
         storage_path = self.storage_service.upload_report_pdf(
             user_id=user_id,
             report_id=report.id,
             pdf_bytes=pdf_bytes,
             period_start=period_start.strftime("%Y-%m-%d") if period_start else None
         )
-        
+
         report.storage_path = storage_path
         self.db.commit()
         self.db.refresh(report)
@@ -702,27 +728,28 @@ class ReportService:
         return self.get_report_by_id(report.id)
 
     async def regenerate_with_ai_insights(self, report_id: int, user_id: int, role_id: int) -> Dict[str, Any]:
-        """Regenerate a report with AI insights included."""
         report = self.db.query(Report).filter(Report.id == report_id).first()
         if not report:
             raise ValueError(f"Report {report_id} not found")
-        
+
         if not self.can_access_report_row(user_id, role_id, report):
             raise ValueError(f"Not authorized to access report {report_id}")
-        
+
         data = self._get_report_data(
             report_type=report.report_type,
-            target_user_id=report.generated_for,
+            requester_user_id=user_id,
+            requester_role_id=role_id,
+            generated_for=report.generated_for,
             period_start=report.period_start,
-            period_end=report.period_end
+            period_end=report.period_end,
         )
-        
+
         try:
             ai_summary = await self._generate_ai_insights_with_fallback(data)
         except Exception as e:
             print(f"AI generation failed: {e}")
             raise ValueError("AI provider not available")
-        
+
         pdf_bytes = self.pdf_generator.generate_pdf(
             report_type=report.report_type,
             data=data,
@@ -732,30 +759,27 @@ class ReportService:
             period_end=report.period_end.strftime("%Y-%m-%d") if report.period_end else None,
             ai_summary=ai_summary
         )
-        
+
         storage_path = self.storage_service.upload_report_pdf(
             user_id=user_id,
             report_id=report.id,
             pdf_bytes=pdf_bytes,
             period_start=report.period_start.strftime("%Y-%m-%d") if report.period_start else None
         )
-        
+
         report.storage_path = storage_path
         report.ai_summary = ai_summary
         report.generated_at = datetime.utcnow()
         self.db.commit()
         self.db.refresh(report)
-        
+
         return self.get_report_by_id(report.id)
 
     def delete_report(self, report_id: int) -> bool:
-        """Delete a report."""
         report = self.db.query(Report).filter(Report.id == report_id).first()
         if not report:
             return False
-        
         self.storage_service.delete_report_pdf(report.storage_path)
         self.db.delete(report)
         self.db.commit()
-        
         return True

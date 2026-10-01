@@ -152,6 +152,33 @@ const ReportsPage = () => {
     const filters = reportFilters[report.id] || {};
     const schema = report.filter_schema || {};
 
+    const SCOPE_TYPES_WITH_SELECTOR = [
+      "user_select",
+      "franchise_select",
+      "learner_select",
+      "team_leader_select",
+    ];
+    const showSelector =
+      SCOPE_TYPES_WITH_SELECTOR.includes(schema.scope?.type) &&
+      Array.isArray(report.selector_options) &&
+      report.selector_options.length > 0;
+
+    const selectorLabel = (() => {
+      switch (report.id) {
+        case "program_performance_report":
+          return "Select Program";
+        case "learner_engagement_report":
+          return "Select User";
+        case "franchise_performance_report":
+        case "franchise_learning_report":
+          return "Select Franchise";
+        case "team_progress_report":
+          return "Select Team Leader";
+        default:
+          return "Select User";
+      }
+    })();
+
     return (
       <div className="space-y-3 mb-4 p-4 bg-[#F1ECF7] rounded-lg">
         {schema.time_range && (
@@ -218,41 +245,35 @@ const ReportsPage = () => {
           </div>
         )}
 
-        {schema.scope?.type === "user_select" &&
-          report.selector_options &&
-          report.selector_options.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-[#1E1B4B] mb-1">
-                {report.id === "program_performance_report"
-                  ? "Select Program"
-                  : report.id === "learner_engagement_report"
-                    ? "Select Learner"
-                    : "Select User"}
-              </label>
-              <select
-                value={
-                  filters.generated_for !== null &&
-                  filters.generated_for !== undefined
-                    ? filters.generated_for
-                    : ""
-                }
-                onChange={(e) =>
-                  handleFilterChange(
-                    report.id,
-                    "generated_for",
-                    e.target.value === "" ? null : parseInt(e.target.value),
-                  )
-                }
-                className="w-full px-3 py-2 border border-[#D9CFE8] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#693C83] text-sm"
-              >
-                {report.selector_options.map((option) => (
-                  <option key={option.id || "all"} value={option.id || ""}>
-                    {option.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+        {showSelector && (
+          <div>
+            <label className="block text-sm font-medium text-[#1E1B4B] mb-1">
+              {selectorLabel}
+            </label>
+            <select
+              value={
+                filters.generated_for !== null &&
+                filters.generated_for !== undefined
+                  ? filters.generated_for
+                  : ""
+              }
+              onChange={(e) =>
+                handleFilterChange(
+                  report.id,
+                  "generated_for",
+                  e.target.value === "" ? null : parseInt(e.target.value),
+                )
+              }
+              className="w-full px-3 py-2 border border-[#D9CFE8] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#693C83] text-sm"
+            >
+              {report.selector_options.map((option) => (
+                <option key={option.id ?? "all"} value={option.id ?? ""}>
+                  {option.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
     );
   };
