@@ -7,6 +7,7 @@ import {
   BarChart3,
   BookPlus,
   Flame,
+  RefreshCw,
 } from "lucide-react";
 
 const items = [
@@ -21,6 +22,7 @@ const items = [
   { icon: BarChart3, label: "Reports & Analytics", path: "/reports" },
   { icon: BookPlus, label: "Add Programs", path: "/programs/create" },
   { icon: Flame, label: "Streak Management", path: "/admin/streak-management" },
+  { icon: RefreshCw, label: "Reschedule Meetings", path: "/admin/reschedule" },
 ];
 
 const AdminQuickAccess = () => {
@@ -33,7 +35,7 @@ const AdminQuickAccess = () => {
   };
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
       {items.map((item, index) => {
         const Icon = item.icon;
 

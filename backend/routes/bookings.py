@@ -127,7 +127,8 @@ class BookingRequest(BaseModel):
     user_id: int
 
 class RescheduleRequest(BaseModel):
-    selected_date: date
+    source_date: date
+    target_date: date
 
 
 
@@ -210,6 +211,17 @@ def get_available_slots(
     admin_id: int,
     db: Session = Depends(get_db)
 ):
+    print(f"\n=== Available Slots Debug ===")
+    print(f"Selected Date: {selected_date}")
+    print(f"Admin ID: {admin_id}")
+
+    # Check if admin exists
+    admin_exists = db.query(AdminSchedule).filter(AdminSchedule.admin_id == admin_id).first()
+    print(f"Admin ID {admin_id} exists in schedules: {admin_exists is not None}")
+
+    # Get all unique admin_ids in the system
+    all_admins = db.query(AdminSchedule.admin_id).distinct().all()
+    print(f"Available admin_ids in system: {[a[0] for a in all_admins]}")
 
     schedules = (
         db.query(AdminSchedule)
@@ -223,9 +235,23 @@ def get_available_slots(
         .all()
     )
 
+    print(f"Found {len(schedules)} schedules for date {selected_date} and admin {admin_id}")
+
+    # If no schedules found for this admin, try without admin_id filter to see if schedules exist
+    if len(schedules) == 0:
+        all_schedules = db.query(AdminSchedule).filter(AdminSchedule.date == selected_date).all()
+        print(f"Total schedules for date {selected_date} (any admin): {len(all_schedules)}")
+        if all_schedules:
+            print(f"Sample schedule admin_ids: {[s.admin_id for s in all_schedules[:5]]}")
+            # Fallback: use the first available admin's schedules
+            first_admin_id = all_schedules[0].admin_id
+            print(f"Falling back to admin_id {first_admin_id}")
+            schedules = all_schedules
+
     response = []
 
     for schedule in schedules:
+        print(f"Schedule ID: {schedule.id}, Status: {schedule.status}, Time: {schedule.start_time}")
 
         booking = (
           db.query(Booking)
@@ -236,15 +262,19 @@ def get_available_slots(
            .first()
         )
 
+        is_booked = schedule.status == "booked" or booking
+        print(f"  - Booking found: {booking is not None}, Is booked: {is_booked}")
+
         response.append(
           {
              "id": schedule.id,
              "time": f"{schedule.start_time.strftime('%I:%M %p')} - {schedule.end_time.strftime('%I:%M %p')}",
-             "status": "booked"
-             if schedule.status == "booked" or booking
-             else "available"
+             "status": "booked" if is_booked else "available"
          }
        )
+
+    print(f"Returning {len(response)} slots")
+    print("=== End Debug ===\n")
 
     return response
 
@@ -279,6 +309,10 @@ def book_slot(
     db: Session = Depends(get_db)
 ):
 
+    print(f"\n=== Booking Debug ===")
+    print(f"Schedule ID: {request.schedule_id}")
+    print(f"User ID: {request.user_id}")
+
     # 1. Check user ID
     if not request.user_id:
         raise HTTPException(
@@ -300,6 +334,8 @@ def book_slot(
             status_code=404,
             detail="Schedule not found"
         )
+
+    print(f"Schedule found: {schedule.id}, Date: {schedule.date}, Time: {schedule.start_time}")
 
     # 3. Check slot is available
     if schedule.status != "available":
@@ -335,31 +371,33 @@ def book_slot(
         schedule.end_time
     )
 
-    # 6. Create Google Meet
-    try:
+    # 6. Create Google Meet (with fallback)
+    meeting_link = None
+    google_event_id = None
 
+    try:
+        print("Attempting to create Google Meet event...")
         google_result = create_google_meet_event(
             title="Saarthi Curious - Admin Call",
             start_datetime=start_datetime,
             end_datetime=end_datetime
         )
-
+        meeting_link = google_result["meeting_link"]
+        google_event_id = google_result["event_id"]
+        print(f"Google Meet created successfully: {meeting_link}")
     except Exception as e:
-
-        print("Google Calendar error:", e)
-
-        raise HTTPException(
-            status_code=500,
-            detail="Unable to create Google Meet"
-        )
+        print(f"Google Calendar error (booking will proceed without Meet link): {e}")
+        # Don't raise error - proceed with booking without Google Meet
+        meeting_link = "Google Meet link will be provided later"
+        google_event_id = None
 
     # 7. Create booking
     booking = Booking(
         schedule_id=request.schedule_id,
         user_id=request.user_id,
         admin_id=schedule.admin_id,
-        meeting_link=google_result["meeting_link"],
-        google_event_id=google_result["event_id"],
+        meeting_link=meeting_link,
+        google_event_id=google_event_id,
         booking_status="confirmed"
     )
 
@@ -384,113 +422,8 @@ def book_slot(
         )
 
     # 10. Return booking information
-    return {
-        "message": "Booking successful",
-        "booking_id": booking.id,
-        "schedule_id": booking.schedule_id,
-        "admin_id": booking.admin_id,
-        "booking_status": booking.booking_status,
-        "meeting_link": booking.meeting_link
-    }
-
-    # ---------------------------------
-    # 1. Check user ID
-    # ---------------------------------
-
-    if not request.user_id:
-        raise HTTPException(
-            status_code=400,
-            detail="User ID is required"
-        )
-
-    # ---------------------------------
-    # 2. Check schedule exists
-    # ---------------------------------
-
-    schedule = (
-        db.query(AdminSchedule)
-        .filter(
-            AdminSchedule.id == request.schedule_id
-        )
-        .first()
-    )
-
-    if not schedule:
-        raise HTTPException(
-            status_code=404,
-            detail="Schedule not found"
-        )
-
-    # ---------------------------------
-    # 3. Check schedule is available
-    # ---------------------------------
-
-    if schedule.status != "available":
-        raise HTTPException(
-            status_code=400,
-            detail="This slot is no longer available"
-        )
-
-    # ---------------------------------
-    # 4. Check whether already booked
-    # ---------------------------------
-
-    existing_booking = (
-        db.query(Booking)
-        .filter(
-            Booking.schedule_id == request.schedule_id,
-            Booking.booking_status == "confirmed"
-        )
-        .first()
-    )
-
-    if existing_booking:
-        raise HTTPException(
-            status_code=400,
-            detail="This slot has already been booked"
-        )
-
-    # ---------------------------------
-    # 5. Create booking
-    # ---------------------------------
-
-    booking = Booking(
-        schedule_id=request.schedule_id,
-        user_id=request.user_id,
-        admin_id=schedule.admin_id,
-        booking_status="confirmed"
-    )
-
-    db.add(booking)
-
-    # ---------------------------------
-    # 6. Mark schedule as booked
-    # ---------------------------------
-
-    schedule.status = "booked"
-
-    # ---------------------------------
-    # 7. Save everything
-    # ---------------------------------
-
-    try:
-
-        db.commit()
-
-        db.refresh(booking)
-
-    except Exception:
-
-        db.rollback()
-
-        raise HTTPException(
-            status_code=400,
-            detail="Unable to complete booking. The slot may have been booked by someone else."
-        )
-
-    # ---------------------------------
-    # 8. Return booking information
-    # ---------------------------------
+    print(f"Booking successful: {booking.id}")
+    print("=== End Booking Debug ===\n")
 
     return {
         "message": "Booking successful",
@@ -509,7 +442,7 @@ def reschedule_date(
 
     # ---------------------------------
     # 1. Find all confirmed bookings
-    #    on selected date
+    #    on source date
     # ---------------------------------
 
     bookings = (
@@ -519,7 +452,7 @@ def reschedule_date(
             Booking.schedule_id == AdminSchedule.id
         )
         .filter(
-            AdminSchedule.date == request.selected_date,
+            AdminSchedule.date == request.source_date,
             Booking.booking_status == "confirmed"
         )
         .order_by(AdminSchedule.start_time)
@@ -533,19 +466,16 @@ def reschedule_date(
         }
 
     # ---------------------------------
-    # 2. Find available future slots
+    # 2. Find available slots on target date
     # ---------------------------------
 
     available_slots = (
         db.query(AdminSchedule)
         .filter(
-            AdminSchedule.date > request.selected_date,
+            AdminSchedule.date == request.target_date,
             AdminSchedule.status == "available"
         )
-        .order_by(
-            AdminSchedule.date,
-            AdminSchedule.start_time
-        )
+        .order_by(AdminSchedule.start_time)
         .all()
     )
 
@@ -558,7 +488,7 @@ def reschedule_date(
         raise HTTPException(
             status_code=400,
             detail=(
-                f"Not enough available slots. "
+                f"Not enough available slots on target date. "
                 f"Need {len(bookings)}, "
                 f"but only {len(available_slots)} available."
             )
@@ -663,6 +593,40 @@ def reschedule_date(
             status_code=400,
             detail="Unable to reschedule meetings."
         )
+
+    # ---------------------------------
+    # 10. Send reschedule emails
+    # ---------------------------------
+
+    from email_service import send_email
+    from models import User
+
+    for booking in bookings:
+        user = db.query(User).filter(User.user_id == booking.user_id).first()
+        if user and user.email:
+            reschedule_info = next(
+                (r for r in rescheduled if r["booking_id"] == booking.id),
+                None
+            )
+            if reschedule_info:
+                try:
+                    email_html = f"""
+                    <h2>Meeting Rescheduled</h2>
+                    <p>Dear {user.full_name},</p>
+                    <p>Your meeting has been rescheduled from {request.source_date} to {reschedule_info['new_date']}.</p>
+                    <p><strong>New Time:</strong> {reschedule_info['new_start_time']} - {reschedule_info['new_end_time']}</p>
+                    <p><strong>Meeting Link:</strong> <a href="{reschedule_info['meeting_link']}">Join Meeting</a></p>
+                    <p>Please make sure to attend at the new scheduled time.</p>
+                    <p>Best regards,<br>Saarthi Curious Team</p>
+                    """
+                    send_email(
+                        to_email=user.email,
+                        subject="Your Meeting Has Been Rescheduled - Saarthi Curious",
+                        html=email_html
+                    )
+                    print(f"Reschedule email sent to {user.email}")
+                except Exception as e:
+                    print(f"Failed to send reschedule email to {user.email}: {e}")
 
     return {
         "message": "Meetings rescheduled successfully.",

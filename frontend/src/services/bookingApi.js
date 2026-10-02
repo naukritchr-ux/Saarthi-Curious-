@@ -4,12 +4,19 @@ export const getAvailableSlots = async (selectedDate, adminId) => {
   // Format date as YYYY-MM-DD for backend
   const formattedDate = selectedDate.toISOString().split("T")[0];
 
+  console.log("Fetching available slots:", {
+    selectedDate: formattedDate,
+    adminId: adminId,
+  });
+
   const response = await api.get("/bookings/available-slots", {
     params: {
       selected_date: formattedDate,
       admin_id: adminId,
     },
   });
+
+  console.log("Available slots response:", response.data);
 
   return response.data;
 };
@@ -19,9 +26,10 @@ export const bookSlot = async (bookingData) => {
   return response.data;
 };
 
-export const rescheduleDate = async (selectedDate) => {
+export const rescheduleDate = async (sourceDate, targetDate) => {
   const response = await api.post("/bookings/reschedule-date", {
-    selected_date: selectedDate,
+    source_date: sourceDate,
+    target_date: targetDate,
   });
   return response.data;
 };

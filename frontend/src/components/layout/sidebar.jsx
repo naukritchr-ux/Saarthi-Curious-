@@ -16,6 +16,7 @@ import {
   UserMinus,
   GraduationCap,
   FileText,
+  RefreshCw,
 } from "lucide-react";
 
 const Sidebar = ({ isExpanded, onMouseEnter, onMouseLeave, onNavigate }) => {
@@ -164,6 +165,14 @@ const Sidebar = ({ isExpanded, onMouseEnter, onMouseLeave, onNavigate }) => {
         section: "Administration",
       },
       {
+        id: "reschedule-meetings",
+        icon: RefreshCw,
+        label: "Reschedule Meetings",
+        path: "/admin/reschedule",
+        section: "Administration",
+        roles: [1, 2], // Admin only
+      },
+      {
         id: "application-check-submissions",
         icon: FileText,
         label: "Application Check Submissions",
@@ -187,6 +196,7 @@ const Sidebar = ({ isExpanded, onMouseEnter, onMouseLeave, onNavigate }) => {
         "reports-analytics",
         "candidate-attrition",
         "application-check-submissions",
+        "reschedule-meetings",
       ],
       2: [
         "programs",
@@ -202,6 +212,7 @@ const Sidebar = ({ isExpanded, onMouseEnter, onMouseLeave, onNavigate }) => {
         "reports-analytics",
         "candidate-attrition",
         "application-check-submissions",
+        "reschedule-meetings",
       ],
       3: [
         "team-directory",

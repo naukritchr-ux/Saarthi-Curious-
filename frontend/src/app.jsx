@@ -347,7 +347,14 @@ function App() {
           }
         />
 
-        <Route path="/admin/reschedule" element={<AdminReschedule />} />
+        <Route
+          path="/admin/reschedule"
+          element={
+            <ProtectedRoute requiredRoles={[1, 2]}>
+              <AdminReschedule />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/admin/roles"

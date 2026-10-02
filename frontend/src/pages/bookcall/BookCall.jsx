@@ -91,10 +91,17 @@ const BookCall = () => {
 
     try {
       setBookingError("");
+      console.log("Booking slot:", {
+        schedule_id: selectedSlot.id,
+        user_id: userId,
+      });
+
       const response = await bookSlot({
         schedule_id: selectedSlot.id,
         user_id: userId,
       });
+
+      console.log("Booking response:", response);
 
       setSlots((previousSlots) =>
         previousSlots.map((slot) =>
@@ -115,7 +122,9 @@ const BookCall = () => {
       setShowSuccessModal(true);
     } catch (error) {
       console.error("Booking failed:", error);
-      setBookingError(error.message || "Unable to book this slot.");
+      console.error("Error response:", error.response?.data);
+      const errorMessage = error.response?.data?.detail || error.message || "Unable to book this slot.";
+      setBookingError(errorMessage);
     }
   };
 
