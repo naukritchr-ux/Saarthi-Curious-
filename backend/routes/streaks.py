@@ -4,6 +4,7 @@ from database import get_db
 from models import LearningStreak, User
 from datetime import date, timedelta
 from typing import Optional
+from auth import get_current_user
 
 router = APIRouter(prefix="/streaks", tags=["Streak Management"])
 
@@ -56,6 +57,47 @@ def get_current_user_streak(db: Session = Depends(get_db)):
     }
 
 
+@router.get("/admin")
+def get_admin_streak_data(
+    current_user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all users with streak data for admin management (Admin/Master Admin only)"""
+    try:
+        # Check if user is Admin or Master Admin
+        current_user = db.query(User).filter(User.user_id == current_user_id).first()
+        if not current_user or current_user.role_id not in [1, 2]:
+            raise HTTPException(
+                status_code=403,
+                detail="Access denied. Only Admins can access this endpoint."
+            )
+
+        streaks = db.query(User, LearningStreak).outerjoin(
+            LearningStreak, User.user_id == LearningStreak.user_id
+        ).all()
+
+        result = []
+        for user, streak in streaks:
+            result.append({
+                "user_id": user.user_id,
+                "name": user.full_name,
+                "email": user.email,
+                "role_id": user.role_id,
+                "current_streak": streak.current_streak if streak else 0,
+                "longest_streak": streak.longest_streak if streak else 0,
+                "total_learning_days": streak.total_learning_days if streak else 0,
+                "freezes": streak.freezes if streak else 0,
+                "last_activity_date": streak.last_activity_date if streak else None
+            })
+
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error fetching admin streak data: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/leaderboard")
 def get_streak_leaderboard(db: Session = Depends(get_db)):
     """Get leaderboard sorted by current streak"""
@@ -65,7 +107,7 @@ def get_streak_leaderboard(db: Session = Depends(get_db)):
         ).order_by(
             LearningStreak.current_streak.desc().nulls_last()
         ).all()
-        
+
         result = []
         for user, streak in streaks:
             result.append({
@@ -77,7 +119,7 @@ def get_streak_leaderboard(db: Session = Depends(get_db)):
                 "total_learning_days": streak.total_learning_days if streak else 0,
                 "freezes": streak.freezes if streak else 0  # Add this
             })
-        
+
         return result
     except Exception as e:
         print(f"Error fetching streak leaderboard: {e}")
@@ -196,44 +238,80 @@ def check_freezes(streak: LearningStreak):
 
 
 @router.post("/user/{user_id}/freeze")
-def add_freeze(user_id: int, db: Session = Depends(get_db)):
+def add_freeze(
+    user_id: int,
+    current_user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """Manually add a freeze to a user (admin only)"""
-    streak = db.query(LearningStreak).filter(
-        LearningStreak.user_id == user_id
-    ).first()
-    
-    if not streak:
-        raise HTTPException(status_code=404, detail="User streak not found")
-    
-    streak.freezes += 1
-    db.commit()
-    
-    return {
-        "user_id": streak.user_id,
-        "freezes": streak.freezes
-    }
+    try:
+        # Check if user is Admin or Master Admin
+        current_user = db.query(User).filter(User.user_id == current_user_id).first()
+        if not current_user or current_user.role_id not in [1, 2]:
+            raise HTTPException(
+                status_code=403,
+                detail="Access denied. Only Admins can add freezes."
+            )
+
+        streak = db.query(LearningStreak).filter(
+            LearningStreak.user_id == user_id
+        ).first()
+
+        if not streak:
+            raise HTTPException(status_code=404, detail="User streak not found")
+
+        streak.freezes += 1
+        db.commit()
+
+        return {
+            "user_id": streak.user_id,
+            "freezes": streak.freezes
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error adding freeze: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/user/{user_id}/freeze/remove")
-def remove_freeze(user_id: int, db: Session = Depends(get_db)):
+def remove_freeze(
+    user_id: int,
+    current_user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """Manually remove a freeze from a user (admin only)"""
-    streak = db.query(LearningStreak).filter(
-        LearningStreak.user_id == user_id
-    ).first()
-    
-    if not streak:
-        raise HTTPException(status_code=404, detail="User streak not found")
-    
-    if streak.freezes <= 0:
-        raise HTTPException(status_code=400, detail="No freezes available to remove")
-    
-    streak.freezes -= 1
-    db.commit()
-    
-    return {
-        "user_id": streak.user_id,
-        "freezes": streak.freezes
-    }
+    try:
+        # Check if user is Admin or Master Admin
+        current_user = db.query(User).filter(User.user_id == current_user_id).first()
+        if not current_user or current_user.role_id not in [1, 2]:
+            raise HTTPException(
+                status_code=403,
+                detail="Access denied. Only Admins can remove freezes."
+            )
+
+        streak = db.query(LearningStreak).filter(
+            LearningStreak.user_id == user_id
+        ).first()
+
+        if not streak:
+            raise HTTPException(status_code=404, detail="User streak not found")
+
+        if streak.freezes <= 0:
+            raise HTTPException(status_code=400, detail="No freezes available to remove")
+
+        streak.freezes -= 1
+        db.commit()
+
+        return {
+            "user_id": streak.user_id,
+            "freezes": streak.freezes
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error removing freeze: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/seed")

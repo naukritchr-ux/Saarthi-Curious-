@@ -17,6 +17,7 @@ import FranchiseeDashboard from "./pages/franchiseePartner/franchiseeDashboard";
 import EmployeeDashboard from "./pages/employee/employeeDashboard";
 import HeadOfficeDashboard from "./pages/headOffice/headOfficeDashboard";
 import StreakManagement from "./pages/gamification/streakManagement";
+import AdminStreakManagement from "./pages/gamification/adminStreakManagement";
 import Leaderboard from "./pages/gamification/leaderboard";
 import CuroManagement from "./pages/gamification/curoManagement";
 import ProtectedRoute from "./routes/protectedRoutes";
@@ -266,6 +267,15 @@ function App() {
           element={
             <ProtectedRoute>
               <StreakManagement />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/streak-management"
+          element={
+            <ProtectedRoute requiredRoles={[1, 2]}>
+              <AdminStreakManagement />
             </ProtectedRoute>
           }
         />

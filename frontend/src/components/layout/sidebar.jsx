@@ -95,6 +95,15 @@ const Sidebar = ({ isExpanded, onMouseEnter, onMouseLeave, onNavigate }) => {
         label: "Streak Management",
         path: "/streak-management",
         section: "Engagement & Gamification",
+        roles: [3, 4, 5, 6, 7], // Learner roles
+      },
+      {
+        id: "admin-streak-management",
+        icon: Flame,
+        label: "Streak Management",
+        path: "/admin/streak-management",
+        section: "Engagement & Gamification",
+        roles: [1, 2], // Admin roles
       },
       {
         id: "user-management",
@@ -169,7 +178,7 @@ const Sidebar = ({ isExpanded, onMouseEnter, onMouseLeave, onNavigate }) => {
         "curo-management",
         "leaderboards",
         "rewards",
-        "streak-management",
+        "admin-streak-management",
         "user-management",
         "certificates",
         "role-management",
@@ -184,7 +193,7 @@ const Sidebar = ({ isExpanded, onMouseEnter, onMouseLeave, onNavigate }) => {
         "curo-management",
         "leaderboards",
         "rewards",
-        "streak-management",
+        "admin-streak-management",
         "user-management",
         "certificates",
         "role-management",

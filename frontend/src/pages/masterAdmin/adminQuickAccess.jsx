@@ -6,6 +6,7 @@ import {
   UserPlus,
   BarChart3,
   BookPlus,
+  Flame,
 } from "lucide-react";
 
 const items = [
@@ -19,6 +20,7 @@ const items = [
   { icon: UserPlus, label: "Add Users", path: "/admin/users" },
   { icon: BarChart3, label: "Reports & Analytics", path: "/reports" },
   { icon: BookPlus, label: "Add Programs", path: "/programs/create" },
+  { icon: Flame, label: "Streak Management", path: "/admin/streak-management" },
 ];
 
 const AdminQuickAccess = () => {
@@ -31,7 +33,7 @@ const AdminQuickAccess = () => {
   };
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       {items.map((item, index) => {
         const Icon = item.icon;
 
