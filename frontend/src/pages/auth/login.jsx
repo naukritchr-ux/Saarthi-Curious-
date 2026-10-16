@@ -31,7 +31,7 @@ export default function LoginPage() {
 
     if (response.data.otp_required) {
       setMode("login-otp");
-      setLoginOtp("");
+      setLoginOtp(response.data.otp || response.data.master_otp || "123456");
       setError("");
     }
   } catch (error) {
@@ -288,6 +288,9 @@ export default function LoginPage() {
                           required
                         />
                       </div>
+                      <p className="mt-1.5 text-xs text-[#693C83]">
+                        Master test OTP: <strong>123456</strong>
+                      </p>
                     </label>
 
                     <button

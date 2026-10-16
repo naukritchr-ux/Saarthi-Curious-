@@ -38,6 +38,7 @@ import ApplicationCheckResult from "./pages/learner/openProgram/applicationCheck
 import AllAssignmentsPage from "./pages/learner/AllAssignmentsPage";
 import BookCall from "./pages/bookcall/BookCall";
 import AdminReschedule from "./pages/AdminReschedule";
+import BookCallPage from "./pages/booking/BookCallPage";
 
 function App() {
   return (
@@ -127,13 +128,13 @@ function App() {
         />
 
         <Route
-  path="/learner/certificates"
-  element={
-    <ProtectedRoute>
-      <CertificatePage />
-    </ProtectedRoute>
-  }
-/>
+          path="/learner/certificates"
+          element={
+            <ProtectedRoute>
+              <CertificatePage />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Retention Quiz */}
         <Route
@@ -224,14 +225,14 @@ function App() {
           }
         />
 
-<Route
-  path="/learner/certificate/:certificateId"
-  element={
-    <ProtectedRoute>
-      <CertificatePage />
-    </ProtectedRoute>
-  }
-/>
+        <Route
+          path="/learner/certificate/:certificateId"
+          element={
+            <ProtectedRoute>
+              <CertificatePage />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/programs/edit/:id"
@@ -347,14 +348,7 @@ function App() {
           }
         />
 
-        <Route
-          path="/admin/reschedule"
-          element={
-            <ProtectedRoute requiredRoles={[1, 2]}>
-              <AdminReschedule />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/admin/reschedule" element={<Navigate to="/admin/schedule" replace />} />
 
         <Route
           path="/admin/roles"
@@ -374,14 +368,14 @@ function App() {
           }
         />
 
-<Route
-  path="/admin/certificates"
-  element={
-    <ProtectedRoute requiredRoles={[1, 2]}>
-      <CertificateManagement />
-    </ProtectedRoute>
-  }
-/>
+        <Route
+          path="/admin/certificates"
+          element={
+            <ProtectedRoute requiredRoles={[1, 2]}>
+              <CertificateManagement />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Communication */}
         <Route
@@ -414,11 +408,38 @@ function App() {
 
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
+        {/* Learner booking page */}
         <Route
           path="/book-call"
           element={
             <ProtectedRoute>
-              <BookCall />
+              <BookCallPage mode="learner" hostId={57} hostName="Anuj Jadhav" />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Admin call schedule */}
+        <Route
+          path="/admin/schedule"
+          element={
+            <ProtectedRoute requiredRoles={[1, 2]}>
+              <BookCallPage mode="admin" hostId={57} />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Legacy reschedule page now redirects to the new schedule */}
+        <Route
+          path="/admin/reschedule"
+          element={<Navigate to="/admin/schedule" replace />}
+        />
+
+        {/* Booking — admin view (replaces the old AdminReschedule page) */}
+        <Route
+          path="/admin/schedule"
+          element={
+            <ProtectedRoute requiredRoles={[1, 2]}>
+              <BookCallPage mode="admin" hostId={57} />
             </ProtectedRoute>
           }
         />

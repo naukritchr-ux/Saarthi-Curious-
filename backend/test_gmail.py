@@ -1,17 +1,12 @@
-from gmail_sender import send_email
+from email_service import send_otp_email
 
-result = send_email(
+result = send_otp_email(
     to_email="Atharvalohar333@gmail.com",
-    subject="Saarthi LMS — Gmail API Test",
-    body="""Hello!
-
-This is a test email from Saarthi LMS.
-
-Gmail API is working successfully.
-
-— Saarthi LMS
-"""
+    otp="123456",
+    purpose="login"
 )
 
-print("Email sent successfully!")
-print("Message ID:", result["id"])
+if result:
+    print("[SUCCESS] Test email sent successfully!")
+else:
+    print("[INFO] Test email completed (check logs above).")

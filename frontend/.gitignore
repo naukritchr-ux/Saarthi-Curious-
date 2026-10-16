@@ -22,3 +22,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+# Local junk
+.vscode/
+screenshot.png
+Saarthi-Curious-/
+*.log
+
+# Big binaries (move to Supabase storage if needed)
+# frontend/public/assets/robot-hero-excited.png
+# (comment out lines above if you want to keep them in git)

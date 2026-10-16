@@ -1178,3 +1178,22 @@ class Certificate(Base):
 
     user = relationship("User")
     program = relationship("Program")
+class UserGoogleToken(Base):
+    __tablename__ = "user_google_tokens"
+
+    user_id = Column(
+        Integer,
+        ForeignKey("users.user_id", ondelete="CASCADE"),
+        primary_key=True
+    )
+    refresh_token = Column(Text, nullable=False)
+    access_token = Column(Text, nullable=True)
+    token_expiry = Column(DateTime, nullable=True)
+    google_email = Column(String, nullable=True)
+    sync_token = Column(Text, nullable=True)
+    channel_id = Column(String, nullable=True)
+    channel_expiration = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("User", backref="google_token")

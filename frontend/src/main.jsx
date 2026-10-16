@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import App from "./app";
 import "./index.css";
+import "./styles/adminNeon.css";
 
 const queryClient = new QueryClient();
 

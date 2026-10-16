@@ -1,0 +1,199 @@
+/* Scoped dark neon for admin dashboard only */
+.sc-dark-mode body,
+.sc-dark-mode { background: #070710; }
+
+.sc-dark-mode main {
+  background:
+    radial-gradient(1000px 500px at 85% -10%, rgba(88, 28, 135, 0.10), transparent 60%),
+    radial-gradient(700px 400px at -5% 30%, rgba(13, 148, 136, 0.06), transparent 60%),
+    #070710 !important;
+}
+
+.sc-dark-mode aside,
+.sc-dark-mode header {
+  background: rgba(13, 11, 22, 0.85) !important;
+  backdrop-filter: blur(16px);
+  border-color: rgba(139, 92, 246, 0.14) !important;
+}
+
+/* ============ NEON CARD — metallic depth ============ */
+.neon-card {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(15, 15, 24, 0.72);
+  border: 1px solid rgba(139, 92, 246, 0.14);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 20px 40px -18px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(12px);
+  isolation: isolate;
+}
+.neon-card > * { position: relative; z-index: 2; }
+
+.neon-card.glow-pulse { animation: neonPulse 5s ease-in-out infinite; }
+@keyframes neonPulse {
+  0%, 100% {
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.05) inset,
+      0 20px 40px -18px rgba(0, 0, 0, 0.7),
+      0 0 20px rgba(139, 92, 246, 0.08);
+  }
+  50% {
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.05) inset,
+      0 20px 40px -18px rgba(0, 0, 0, 0.7),
+      0 0 35px rgba(139, 92, 246, 0.32),
+      0 0 60px rgba(34, 211, 238, 0.10);
+  }
+}
+
+.neon-icon {
+  position: relative;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  box-shadow:
+    0 0 22px var(--glow, rgba(139, 92, 246, 0.6)),
+    0 0 0 1px rgba(255, 255, 255, 0.14) inset,
+    0 -3px 8px rgba(0, 0, 0, 0.4) inset,
+    0 8px 16px rgba(0, 0, 0, 0.45);
+  animation: iconBreathe 3.6s ease-in-out infinite;
+}
+@keyframes iconBreathe {
+  0%, 100% { filter: brightness(1) saturate(1); }
+  50%      { filter: brightness(1.22) saturate(1.18); }
+}
+
+.neon-text {
+  background: linear-gradient(90deg, #ffffff 0%, #d8b4fe 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ============ GLASS BUTTONS ============ */
+.glass-button {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  color: #fff;
+  backdrop-filter: blur(10px);
+  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+.glass-button:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(139, 92, 246, 0.45);
+  transform: translateY(-1px);
+}
+
+/* ============ 3D WHEEL ============ */
+.wheel-3d {
+  perspective: 900px;
+  perspective-origin: 50% 42%;
+}
+.wheel-3d-inner {
+  transform-style: preserve-3d;
+  will-change: transform;
+  animation: wheelSpin 26s linear infinite;
+}
+.wheel-3d-inner svg {
+  filter:
+    drop-shadow(0 30px 32px rgba(139, 92, 246, 0.5))
+    drop-shadow(0 0 20px rgba(34, 211, 238, 0.3));
+}
+@keyframes wheelSpin {
+  from { transform: rotateX(62deg) rotateZ(0deg); }
+  to   { transform: rotateX(62deg) rotateZ(360deg); }
+}
+.wheel-3d:hover .wheel-3d-inner { animation-play-state: paused; }
+
+.wheel-3d-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: -16px;
+  transform: translateX(-50%);
+  width: 150px;
+  height: 24px;
+  background: radial-gradient(ellipse at center, rgba(139, 92, 246, 0.6), transparent 70%);
+  filter: blur(10px);
+  pointer-events: none;
+}
+
+/* ============ VOICE WAVE PULSE ============ */
+.voice-wave {
+  width: 64px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(34, 211, 238, 0.7);
+  box-shadow: 0 0 22px rgba(34, 211, 238, 0.95);
+  animation: voiceWave 0.5s ease-in-out infinite alternate;
+}
+@keyframes voiceWave {
+  from { transform: translateX(-50%) scaleX(0.4); opacity: 0.55; }
+  to   { transform: translateX(-50%) scaleX(1); opacity: 1; }
+}
+
+/* ============ BOT ANIMATION RIG ============ */
+.bot-float { animation: botFloat 5.5s ease-in-out infinite; }
+@keyframes botFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+
+.bot-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ringPing 1.8s ease-out infinite;
+}
+@keyframes ringPing {
+  0%   { transform: scale(0.78); opacity: 0.85; }
+  100% { transform: scale(1.55); opacity: 0; }
+}
+
+.bot-dot { animation: dotThink 1.05s infinite ease-in-out; }
+.bot-dot:nth-child(2) { animation-delay: 0.18s; }
+.bot-dot:nth-child(3) { animation-delay: 0.36s; }
+@keyframes dotThink {
+  0%, 100% { opacity: 0.25; transform: translateY(0); }
+  50%      { opacity: 1; transform: translateY(-3px); }
+}
+
+/* ============ 3D WHEEL SPIN (new continuous rotation) ============ */
+@keyframes wheel3DSpin {
+  from { transform: rotateX(58deg) rotateZ(0deg); }
+  to   { transform: rotateX(58deg) rotateZ(360deg); }
+}
+
+@keyframes tickerPing {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+@keyframes auditPing {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+}
+
+@keyframes auditLog3DSpin {
+  0% { transform: rotateX(-22deg) rotateY(0deg) rotateZ(0deg); }
+  50% { transform: rotateX(22deg) rotateY(180deg) rotateZ(12deg); }
+  100% { transform: rotateX(-22deg) rotateY(360deg) rotateZ(0deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wheel-3d-inner, .neon-card.glow-pulse, .neon-icon, .bot-float, .voice-wave,
+  .bot-ring, .bot-dot {
+    animation: none !important;
+  }
+  [style*="wheel3DSpin"] {
+    animation: none !important;
+  }
+}
