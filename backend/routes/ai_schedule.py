@@ -91,9 +91,27 @@ async def schedule_ask(payload: ScheduleAskRequest, db: Session = Depends(get_db
     ]
 
     try:
-        content = await groq.chat(messages, temperature=0.3, max_tokens=400, json_mode=True)
-        parsed = json.loads(content)
+        try:
+            content = await groq.chat(messages, temperature=0.3, max_tokens=400, json_mode=True)
+        except Exception:
+            content = await groq.chat(messages, temperature=0.3, max_tokens=400, json_mode=False)
+        
+        # Strip potential markdown formatting if returned
+        clean = content.strip()
+        if clean.startswith("```json"):
+            clean = clean[7:]
+        elif clean.startswith("```"):
+            clean = clean[3:]
+        if clean.endswith("```"):
+            clean = clean[:-3]
+        clean = clean.strip()
+        parsed = json.loads(clean)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"AI parsing failed: {e}")
+        print(f"[AI Schedule Parse Error]: {e}, raw content: {locals().get('content')}")
+        parsed = {
+            "intent": "query",
+            "reply": "I understood your request. Could you please specify the exact source and target dates?",
+            "params": {"source_date": None, "target_date": None, "time_range": None, "booking_id": None}
+        }
 
     return parsed

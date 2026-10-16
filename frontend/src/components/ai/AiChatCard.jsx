@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
-import { Send, Sparkles, X } from "lucide-react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { Send, Sparkles, X, MessageSquare, RotateCw } from "lucide-react";
 import { sendAiMessage } from "../../services/aiService";
-import RobotHero from "./RobotHero";
+import RobotHero, { ROBOT_ASSETS } from "./RobotHero";
+import { getInitialGreeting, getRandomMessage } from "./robotMessages";
 
 const SUGGESTIONS = [
   {
@@ -15,39 +16,71 @@ const SUGGESTIONS = [
     prompt: "Find inactive learners and suggest actions.",
   },
   {
-    icon: "📊",
-    label: "Explain this week's trends",
-    prompt: "Explain this week's activity trends.",
+    icon: "📅",
+    label: "What meetings do I have today?",
+    prompt: "What meetings do I have scheduled for today?",
   },
 ];
 
-const PRELOAD_IMAGES = [
-  "/assets/robot-idle.png",
-  "/assets/robot-thinking.png",
-  "/assets/robot-happy.png",
-  "/assets/robot-listening.png",
-  "/assets/robot-error.png",
-];
+const AUTO_MESSAGE_INTERVAL_MS = 30000; // 30 seconds
 
 const AiChatCard = ({ context }) => {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [mood, setMood] = useState("idle");
+  const [gesture, setGesture] = useState(null);
   const [talking, setTalking] = useState(false);
+  const [autoMessage, setAutoMessage] = useState("");
+
+  const adminName = context?.adminName || "Anuj";
 
   const timerRef = useRef(null);
+  const autoMessageIntervalRef = useRef(null);
+  const gestureTimeoutRef = useRef(null);
   const listeningTimeoutRef = useRef(null);
   const errorResetTimeoutRef = useRef(null);
   const listRef = useRef(null);
 
-  /* Preload robot images on mount for instant zero-flicker transitions */
+  // Trigger a new message from the 85+ message bank
+  const triggerRandomMessage = useCallback(() => {
+    const next = getRandomMessage(adminName);
+    setAutoMessage(next.text);
+    setGesture(next.gesture || "talking1");
+    setMood(next.mood || "happy");
+
+    if (gestureTimeoutRef.current) clearTimeout(gestureTimeoutRef.current);
+    gestureTimeoutRef.current = setTimeout(() => {
+      setGesture(null);
+      setMood("idle");
+    }, 2800);
+  }, [adminName]);
+
+  // Initial greeting on dashboard mount + 30-second recurring timer
   useEffect(() => {
-    PRELOAD_IMAGES.forEach((src) => {
-      const img = new Image();
-      img.src = src;
-    });
-  }, []);
+    const greeting = getInitialGreeting(adminName);
+    setAutoMessage(greeting.text);
+    setGesture(greeting.gesture);
+    setMood(greeting.mood);
+
+    gestureTimeoutRef.current = setTimeout(() => {
+      setGesture(null);
+      setMood("idle");
+    }, 3000);
+
+    // Auto-messages every 30 seconds
+    autoMessageIntervalRef.current = setInterval(() => {
+      // Don't interrupt if user is actively chatting or open
+      if (!talking && !open) {
+        triggerRandomMessage();
+      }
+    }, AUTO_MESSAGE_INTERVAL_MS);
+
+    return () => {
+      if (autoMessageIntervalRef.current) clearInterval(autoMessageIntervalRef.current);
+      if (gestureTimeoutRef.current) clearTimeout(gestureTimeoutRef.current);
+    };
+  }, [adminName, talking, open, triggerRandomMessage]);
 
   /* Cleanup intervals and timeouts on unmount */
   useEffect(() => {
@@ -65,8 +98,8 @@ const AiChatCard = ({ context }) => {
 
   /* Typewriter streaming effect while robot changes expressions */
   const speak = (text) => {
-    // happy — set while the reply streams (talking: true also active)
     setMood("happy");
+    setGesture("talking1");
     setTalking(true);
     setMessages((m) => [...m, { role: "ai", text: "", streaming: true }]);
     let i = 0;
@@ -84,11 +117,11 @@ const AiChatCard = ({ context }) => {
       });
       if (i >= text.length) {
         clearInterval(timerRef.current);
-        // Return to idle when streaming finishes
         setMood("idle");
+        setGesture(null);
         setTalking(false);
       }
-    }, 24);
+    }, 22);
   };
 
   /* Send prompt to AI backend */
@@ -98,8 +131,8 @@ const AiChatCard = ({ context }) => {
     setOpen(true);
     setMessages((m) => [...m, { role: "user", text: prompt }]);
 
-    // thinking — set when a user question is submitted
     setMood("thinking");
+    setGesture(null);
     setTalking(false);
 
     try {
@@ -114,14 +147,12 @@ const AiChatCard = ({ context }) => {
         context,
       );
 
-      // listening — set 300ms before the reply starts streaming
       setMood("listening");
       listeningTimeoutRef.current = setTimeout(() => {
         speak(text);
-      }, 300);
+      }, 250);
     } catch (err) {
       console.error("AI chat error:", err);
-      // error — set only when the API call fails
       setMood("error");
       setTalking(false);
       errorResetTimeoutRef.current = setTimeout(() => {
@@ -132,44 +163,94 @@ const AiChatCard = ({ context }) => {
 
   return (
     <div
-      className="neon-card glow-pulse p-5 h-full min-h-[340px] flex flex-col justify-between"
+      className="neon-card glow-pulse p-5 h-full min-h-[350px] flex flex-col justify-between"
       style={{ borderColor: "rgba(139, 92, 246, 0.22)" }}
     >
-      {/* Top section: robot component on the LEFT, heading + suggestions + button on RIGHT */}
-      <div className="grid grid-cols-1 sm:grid-cols-[220px_1fr] items-center sm:items-start gap-4">
-        {/* Left Side: RobotHero with dynamic mood-driven expressions */}
-        <RobotHero mood={mood} talking={talking} size={220} />
+      {/* Top section: robot on the LEFT, heading + suggestions + button on RIGHT */}
+      <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] items-center sm:items-start gap-4">
+        {/* Left Side: RobotHero with dynamic animated expressions & gestures */}
+        <div className="flex flex-col items-center">
+          <RobotHero
+            mood={mood}
+            gesture={gesture}
+            talking={talking}
+            size={200}
+            onClick={triggerRandomMessage}
+            interactive={true}
+          />
+          <span className="text-[10px] text-cyan-300/60 mt-1 hover:text-cyan-300 cursor-pointer transition select-none" onClick={triggerRandomMessage}>
+            ✦ Click robot to interact
+          </span>
+        </div>
 
-        {/* Right Side: Header, Subtitle, Suggestions, and Toggle Button */}
-        <div className="flex-1 min-w-0 w-full">
-          <h3 className="text-lg font-bold text-white flex items-center gap-2">
-            Ask Saarthi AI
-            <Sparkles size={16} className="text-fuchsia-400" />
-          </h3>
-          <p className="text-xs text-purple-200/70 mt-1">
-            Your live assistant — reacts and talks with animated expressions.
-          </p>
+        {/* Right Side: Header, Live Speech Bubble, Suggestions, and Toggle Button */}
+        <div className="flex-1 min-w-0 w-full flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                Ask Saarthi AI
+                <Sparkles size={16} className="text-fuchsia-400" />
+              </h3>
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Live Co-Pilot
+              </span>
+            </div>
 
-          {/* 3 Quick Suggestion Buttons */}
-          <div className="mt-3.5 space-y-2">
-            {SUGGESTIONS.map((s) => (
-              <button
-                key={s.label}
-                onClick={() => ask(s.prompt)}
-                className="w-full text-left text-xs text-purple-100 rounded-xl border border-purple-500/30 bg-purple-500/10 px-3 py-2 hover:bg-purple-500/25 hover:border-purple-400/60 hover:shadow-[0_0_14px_rgba(139,92,246,0.35)] transition-all flex items-center gap-2"
-              >
-                <span>{s.icon}</span>
-                <span className="truncate">{s.label}</span>
-              </button>
-            ))}
+            {/* Floating Live Speech Bubble — Updates every 30s */}
+            <div
+              className="mt-2.5 p-3 rounded-2xl transition-all duration-300 border"
+              style={{
+                background:
+                  "linear-gradient(135deg, rgba(30, 27, 75, 0.75) 0%, rgba(15, 15, 26, 0.85) 100%)",
+                borderColor: "rgba(139, 92, 246, 0.35)",
+                boxShadow: "0 8px 24px -10px rgba(139, 92, 246, 0.35)",
+              }}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] font-semibold text-cyan-300 tracking-wide flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+                  Saarthi Live Note
+                </span>
+                <button
+                  type="button"
+                  onClick={triggerRandomMessage}
+                  className="text-[10px] text-purple-200/60 hover:text-white flex items-center gap-1 transition"
+                  title="Cycle to next auto-message"
+                >
+                  <RotateCw size={10} />
+                  <span>Next</span>
+                </button>
+              </div>
+              <p className="text-xs text-purple-100 font-medium leading-relaxed">
+                "{autoMessage}"
+              </p>
+            </div>
+
+            {/* 3 Quick Suggestion Buttons */}
+            <div className="mt-3 space-y-1.5">
+              {SUGGESTIONS.map((s) => (
+                <button
+                  key={s.label}
+                  type="button"
+                  onClick={() => ask(s.prompt)}
+                  className="w-full text-left text-xs text-purple-100 rounded-xl border border-purple-500/30 bg-purple-500/10 px-3 py-2 hover:bg-purple-500/25 hover:border-purple-400/60 hover:shadow-[0_0_14px_rgba(139,92,246,0.35)] transition-all flex items-center gap-2"
+                >
+                  <span>{s.icon}</span>
+                  <span className="truncate">{s.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Action toggle button */}
           <button
+            type="button"
             onClick={() => setOpen((o) => !o)}
-            className="mt-3 w-full rounded-xl bg-gradient-to-r from-fuchsia-600 via-purple-600 to-indigo-600 py-2.5 text-xs font-semibold text-white shadow-[0_0_20px_rgba(192,38,211,0.45)] hover:brightness-110 transition-all hover:scale-[1.01]"
+            className="mt-3 w-full rounded-xl bg-gradient-to-r from-fuchsia-600 via-purple-600 to-indigo-600 py-2.5 text-xs font-semibold text-white shadow-[0_0_20px_rgba(192,38,211,0.45)] hover:brightness-110 transition-all hover:scale-[1.01] flex items-center justify-center gap-1.5"
           >
-            {open ? "Close conversation" : "Ask Saarthi AI →"}
+            <MessageSquare size={13} />
+            <span>{open ? "Close conversation" : "Chat with Saarthi AI →"}</span>
           </button>
         </div>
       </div>
@@ -203,10 +284,11 @@ const AiChatCard = ({ context }) => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && ask(input)}
-              placeholder="Type anything…"
+              placeholder="Ask anything, e.g. what meetings do I have today?"
               className="flex-1 rounded-xl bg-black/50 border border-purple-500/30 px-3 py-2 text-xs text-white placeholder-purple-300/50 outline-none focus:border-cyan-400/60 focus:shadow-[0_0_12px_rgba(34,211,238,0.25)] transition"
             />
             <button
+              type="button"
               onClick={() => ask(input)}
               className="rounded-xl bg-cyan-500/20 border border-cyan-400/40 px-3 text-cyan-300 hover:bg-cyan-400/30 transition flex items-center justify-center"
               aria-label="Send message"
@@ -214,6 +296,7 @@ const AiChatCard = ({ context }) => {
               <Send size={14} />
             </button>
             <button
+              type="button"
               onClick={() => setOpen(false)}
               className="rounded-xl bg-white/5 border border-white/10 px-2 text-purple-200 hover:bg-white/10 transition flex items-center justify-center"
               aria-label="Close chat"
