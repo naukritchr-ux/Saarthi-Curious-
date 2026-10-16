@@ -30,3 +30,7 @@ dist/
 **/build/
 
 .vercel
+# Build outputs
+frontend/dist/
+backend/dist/
+*.tsbuildinfo

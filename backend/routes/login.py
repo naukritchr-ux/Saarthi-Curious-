@@ -106,7 +106,7 @@ def send_otp(request: SendOTPRequest, db: Session = Depends(get_db)):
     # Send OTP email
     try:
         send_otp_email(request.email, otp)
-        print(f"OTP sent to {request.email}: {otp}")
+        print(f"OTP dispatched to {request.email}")
         return {"message": "OTP sent successfully"}
     except Exception as e:
         print(f"FAILED TO SEND OTP EMAIL: {repr(e)}")

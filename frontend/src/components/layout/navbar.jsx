@@ -75,7 +75,7 @@ const Navbar = ({ onMenuToggle }) => {
       </div>
 
       {/* Right Section */}
-      <div className="flex shrink-0 items-center gap-1 sm:gap-4 lg:gap-6">
+      <div className="flex shrink-0 items-center gap-2 sm:gap-4 lg:gap-5">
         <NotificationBell />
 
         {/* Profile */}

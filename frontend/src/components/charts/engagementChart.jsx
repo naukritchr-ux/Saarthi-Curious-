@@ -9,101 +9,67 @@ import {
   CartesianGrid,
 } from "recharts";
 
-const defaultData = [
-  {
-    day: "May 1",
-    logins: 400,
-    videos: 280,
-    quizzes: 150,
-    retention: 90,
-    application: 50,
-
-
-  },
-  {
-    day: "May 5",
-    logins: 760,
-    videos: 480,
-    quizzes: 250,
-    retention: 180,
-    application: 120,
-
-
-  },
-  {
-    day: "May 9",
-    logins: 700,
-    videos: 500,
-    quizzes: 270,
-    retention: 220,
-    application: 150,
-
-
-  },
-  {
-    day: "May 13",
-    logins: 980,
-    videos: 650,
-    quizzes: 330,
-    retention: 280,
-    application: 200,
-
-  },
-  {
-    day: "May 17",
-    logins: 830,
-    videos: 620,
-    quizzes: 350,
-    retention: 310,
-    application: 180,
-
-
-  },
-  {
-    day: "May 19",
-    logins: 920,
-    videos: 710,
-    quizzes: 400,
-    retention: 360,
-    application: 250,
-
-  },
-];
+const getLast7DaysFallback = () => {
+  const result = [];
+  const now = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    result.push({
+      day: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      logins: 0,
+      videos: 0,
+      quizzes: 0,
+      retention: 0,
+      application: 0,
+    });
+  }
+  return result;
+};
 
 const EngagementChart = ({ data = [] }) => {
-  const chartData = Array.isArray(data) ? data : [];
-
-  const hasExpectedKeys = Array.isArray(chartData)
-    && chartData.length > 0
-    && ["day", "logins", "videos", "quizzes", "retention", "application"].every(
-      (key) => Object.prototype.hasOwnProperty.call(chartData[0], key),
-    );
-
-  const finalData = hasExpectedKeys ? chartData : defaultData;
+  const finalData = Array.isArray(data) && data.length > 0
+    ? data.map((d) => ({
+        day: d.day || "",
+        logins: Number(d.logins) || 0,
+        videos: Number(d.videos) || 0,
+        quizzes: Number(d.quizzes) || 0,
+        retention: Number(d.retention) || 0,
+        application: Number(d.application) || 0,
+      }))
+    : getLast7DaysFallback();
 
   return (
     <ResponsiveContainer width="100%" height={280}>
       <LineChart data={finalData}>
-        <CartesianGrid stroke="#cfc6dd" />
+        <CartesianGrid stroke="rgba(167, 139, 250, 0.12)" strokeDasharray="3 3" />
 
         <XAxis
           dataKey="day"
-          stroke="#94a3b8"
+          stroke="#a78bfa"
+          tick={{ fill: "#c4b5fd", fontSize: 11 }}
+          axisLine={{ stroke: "rgba(167, 139, 250, 0.2)" }}
         />
 
         <YAxis
-          stroke="#94a3b8"
+          stroke="#a78bfa"
+          tick={{ fill: "#c4b5fd", fontSize: 11 }}
+          axisLine={{ stroke: "rgba(167, 139, 250, 0.2)" }}
         />
 
         <Tooltip
           contentStyle={{
-            backgroundColor: "#ffffff",
-            borderRadius: "12px",
-            border: "1px solid #d1d5db",
+            backgroundColor: "#130f24",
+            borderRadius: "14px",
+            border: "1px solid rgba(139, 92, 246, 0.4)",
+            boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.8), 0 0 15px rgba(139, 92, 246, 0.3)",
+            color: "#ffffff",
           }}
+          itemStyle={{ color: "#e2e8f0", fontSize: "12px" }}
+          labelStyle={{ color: "#a78bfa", fontWeight: "bold", marginBottom: "4px" }}
         />
 
-        <Legend />
+        <Legend wrapperStyle={{ paddingTop: "8px", fontSize: "12px", color: "#c4b5fd" }} />
 
         {/* Logins */}
         <Line

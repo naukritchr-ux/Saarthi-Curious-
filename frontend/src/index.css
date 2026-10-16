@@ -16,6 +16,14 @@ body,
   overflow: hidden;
 }
 
+.sc-dark-mode,
+.sc-dark-mode body,
+.sc-dark-mode #root,
+.sc-dark-mode .h-screen {
+  background-color: #06060c !important;
+  color: #f1f5f9;
+}
+
 body {
   overflow-x: hidden;
 }

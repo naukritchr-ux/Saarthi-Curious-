@@ -1,4 +1,14 @@
 import os
+import sys
+
+
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -23,8 +33,11 @@ from routes.certificates import router as certificates_router
 from routes import badges
 from routes.reports import router as reports_router
 from routes.leaderboards import router as leaderboards_router
-
+from routes.ai_chat import router as ai_chat_router
+from routes.google_calendar_routes import router as google_calendar_router
+from routes.ai_schedule import router as ai_schedule_router
 from database import SessionLocal
+
 
 app = FastAPI(
     title="Saarthi Curious API",
@@ -76,6 +89,9 @@ app.include_router(notifications_router)
 app.include_router(reports_router, prefix="/reports", tags=["reports"])
 app.include_router(bookings_router)
 app.include_router(certificates_router)
+app.include_router(ai_chat_router)
+app.include_router(google_calendar_router)
+app.include_router(ai_schedule_router)
 
 # ============================
 # DEBUG - Print all routes (fixed)
