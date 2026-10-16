@@ -89,6 +89,27 @@ class GroqProvider(AIProvider):
             print(f"Error generating AI insights with Groq: {e}")
             raise
     
+    async def chat(self, messages: list, temperature: float = 0.5, max_tokens: int = 500, json_mode: bool = False) -> str:
+        """Execute a direct chat completion with Groq"""
+        if not self._available or not self.client:
+            raise ValueError(f"Groq provider not available: {self._error_message}")
+        import asyncio
+        loop = asyncio.get_event_loop()
+        kwargs = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+        if json_mode:
+            kwargs["response_format"] = {"type": "json_object"}
+        response = await loop.run_in_executor(
+            None,
+            lambda: self.client.chat.completions.create(**kwargs)
+        )
+        return response.choices[0].message.content
+
+    
     def _parse_response(self, content: str) -> Dict[str, Any]:
         """Parse the AI response into structured format"""
         sections = {
