@@ -4,13 +4,6 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 import sys
 
-if hasattr(sys.stdout, "reconfigure"):
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-        sys.stderr.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
-
 print(f"\n🔵 LOADING login.py")
 print(f"🔵 File: {__file__}")
 
@@ -74,13 +67,8 @@ def login(
     # Generate OTP for login
     otp = generate_otp()
 
-    # Store OTP for 10 minutes (both raw and lowercase)
+    # Store OTP for 10 minutes
     store_otp(request.email, otp, "login")
-    store_otp(request.email.strip().lower(), otp, "login")
-
-    print(f"\n{'=' * 60}", flush=True)
-    print(f"[LOGIN OTP] Email: {request.email} | OTP: {otp} | Master Test OTP: 123456", flush=True)
-    print(f"{'=' * 60}\n", flush=True)
 
     # Queue email sending in the background so login responds instantly.
     background_tasks.add_task(
@@ -89,13 +77,11 @@ def login(
         otp
     )
 
-    print(f"Queued login OTP email for {request.email}", flush=True)
+    print(f"Queued login OTP email for {request.email}")
 
     return {
         "message": "OTP sent successfully",
-        "otp_required": True,
-        "otp": otp,
-        "master_otp": "123456"
+        "otp_required": True
     }
 
 
@@ -116,31 +102,27 @@ def send_otp(request: SendOTPRequest, db: Session = Depends(get_db)):
     # Generate and store OTP
     otp = generate_otp()
     store_otp(request.email, otp, "reset_password")
-    store_otp(request.email.strip().lower(), otp, "reset_password")
 
     # Send OTP email
     try:
         send_otp_email(request.email, otp)
-        print(f"OTP sent to {request.email}: {otp}", flush=True)
-        return {"message": "OTP sent successfully", "otp": otp, "master_otp": "123456"}
+        print(f"OTP dispatched to {request.email}")
+        return {"message": "OTP sent successfully"}
     except Exception as e:
-        print(f"FAILED TO SEND OTP EMAIL: {repr(e)}", flush=True)
-        return {"message": "OTP sent successfully", "otp": otp, "master_otp": "123456"}
+        print(f"FAILED TO SEND OTP EMAIL: {repr(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/verify-otp")
 def verify_otp_endpoint(request: VerifyOTPRequest):
     """Verify OTP for password reset"""
-    print(f"\n{'=' * 60}\nVERIFY OTP REQUEST\n{'=' * 60}", flush=True)
+    print(f"\n{'=' * 60}\nVERIFY OTP REQUEST\n{'=' * 60}")
 
-    email_clean = request.email.strip().lower()
-    otp_clean = str(request.otp).strip()
-
-    if otp_clean in ("123456", "000000"):
-        is_valid = True
-        print(f"[AUTH] Master OTP '{otp_clean}' accepted for {email_clean}", flush=True)
-    else:
-        is_valid = verify_otp(email_clean, otp_clean, "reset_password") or verify_otp(request.email, request.otp, "reset_password")
+    is_valid = verify_otp(
+        request.email,
+        request.otp,
+        "reset_password"
+    )
 
     if not is_valid:
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
@@ -151,16 +133,14 @@ def verify_otp_endpoint(request: VerifyOTPRequest):
 @router.post("/reset-password")
 def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db)):
     """Reset user password after OTP verification"""
-    print(f"\n{'=' * 60}\nRESET PASSWORD REQUEST\n{'=' * 60}", flush=True)
+    print(f"\n{'=' * 60}\nRESET PASSWORD REQUEST\n{'=' * 60}")
 
-    email_clean = request.email.strip().lower()
-    otp_clean = str(request.otp).strip()
-
-    if otp_clean in ("123456", "000000"):
-        is_valid = True
-        print(f"[AUTH] Master OTP '{otp_clean}' accepted for {email_clean}", flush=True)
-    else:
-        is_valid = verify_otp(email_clean, otp_clean, "reset_password") or verify_otp(request.email, request.otp, "reset_password")
+    # Verify OTP first
+    is_valid = verify_otp(
+        request.email,
+        request.otp,
+        "reset_password"
+    )
 
     if not is_valid:
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
@@ -179,33 +159,29 @@ def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db))
     db.commit()
 
     # Clear OTP
-    clear_otp(email_clean, "reset_password")
-    clear_otp(request.email, "reset_password")
+    clear_otp(
+        request.email,
+        "reset_password"
+    )
 
-    print(f"Password reset successful for {request.email}", flush=True)
+    print(f"Password reset successful for {request.email}")
     return {"message": "Password reset successful"}
-
 
 @router.post("/verify-login-otp")
 def verify_login_otp(
     request: VerifyOTPRequest,
     db: Session = Depends(get_db)
 ):
-    print(f"\n{'=' * 60}\nVERIFY LOGIN OTP\n{'=' * 60}", flush=True)
-    print(f"[VERIFY LOGIN OTP] Email: '{request.email}', OTP: '{request.otp}'", flush=True)
+    print(f"\n{'=' * 60}\nVERIFY LOGIN OTP\n{'=' * 60}")
 
-    email_clean = request.email.strip().lower()
-    otp_clean = str(request.otp).strip()
-
-    # Master OTP bypass or standard verification
-    if otp_clean in ("123456", "000000"):
-        is_valid = True
-        print(f"[AUTH] Master test OTP '{otp_clean}' accepted for {email_clean}", flush=True)
-    else:
-        is_valid = verify_otp(email_clean, otp_clean, "login") or verify_otp(request.email, request.otp, "login")
+    # Verify OTP
+    is_valid = verify_otp(
+        request.email,
+        request.otp,
+        "login"
+    )
 
     if not is_valid:
-        print(f"[AUTH] OTP '{otp_clean}' rejected for {email_clean}", flush=True)
         raise HTTPException(
             status_code=400,
             detail="Invalid or expired OTP"
@@ -215,7 +191,7 @@ def verify_login_otp(
     user = db.query(User).filter(User.email.ilike(request.email)).first()
 
     if not user:
-        print(f"User not found: {request.email}", flush=True)
+        print(f"User not found: {request.email}")
         raise HTTPException(
             status_code=404,
             detail="User not found"
@@ -237,10 +213,12 @@ def verify_login_otp(
     })
 
     # Clear OTP after successful login
-    clear_otp(email_clean, "login")
-    clear_otp(request.email, "login")
+    clear_otp(
+        request.email,
+        "login"
+    )
 
-    print(f"Login successful for {request.email} (Role: {user.role_id})", flush=True)
+    print(f"Login successful for {request.email}")
 
     return {
         "message": "Login Successful",
