@@ -10,16 +10,16 @@ from services.google_calendar import (
     create_google_meet_event,
     delete_google_event,
 )
+from auth import get_current_user
 
 router = APIRouter(prefix="/calendar", tags=["Calendar Events"])
 
 
 class CalendarEventRequest(BaseModel):
-    admin_id: int
     title: str
     event_type: str = "custom"
-    date: str            # "YYYY-MM-DD"
-    start_time: Optional[str] = None   # "HH:MM" — required for meetings, optional for all-day
+    date: str            
+    start_time: Optional[str] = None   
     end_time: Optional[str] = None
     all_day: bool = False
     description: Optional[str] = None
@@ -27,8 +27,13 @@ class CalendarEventRequest(BaseModel):
 
 
 @router.post("/events")
-def create_event(request: CalendarEventRequest, db: Session = Depends(get_db)):
-    """Create a calendar event (birthday, holiday, trip, custom). Syncs to Google Calendar."""
+def create_event(
+    request: CalendarEventRequest, 
+    db: Session = Depends(get_db),
+    current_user_id: int = Depends(get_current_user)
+):
+    admin_id = current_user_id
+
     try:
         event_date = date.fromisoformat(request.date)
     except ValueError:
@@ -53,12 +58,12 @@ def create_event(request: CalendarEventRequest, db: Session = Depends(get_db)):
         start = time(0, 0)
         end = time(23, 59)
 
-    admin = db.query(User).filter(User.user_id == request.admin_id).first()
+    admin = db.query(User).filter(User.user_id == admin_id).first()
     if not admin:
         raise HTTPException(status_code=404, detail="Admin not found.")
 
     ev = CalendarEvent(
-        admin_id=request.admin_id,
+        admin_id=admin_id,
         title=request.title,
         description=request.description,
         event_type=request.event_type,
@@ -70,12 +75,12 @@ def create_event(request: CalendarEventRequest, db: Session = Depends(get_db)):
     db.add(ev)
     db.flush()
 
-    # Sync to Google Calendar
     token_row = (
         db.query(UserGoogleToken)
-        .filter(UserGoogleToken.user_id == request.admin_id)
+        .filter(UserGoogleToken.user_id == admin_id)
         .first()
     )
+    
     if request.add_meet and token_row and token_row.refresh_token:
         try:
             start_dt = datetime.combine(event_date, start)
@@ -85,14 +90,13 @@ def create_event(request: CalendarEventRequest, db: Session = Depends(get_db)):
                 start_datetime=start_dt,
                 end_datetime=end_dt,
                 refresh_token=token_row.refresh_token,
-                attendees=None,  # no attendees for personal events
+                attendees=None,  
                 description=request.description or request.title,
             )
             ev.google_event_id = result.get("event_id")
+            print(f"[calendar-events] Synced to Google Calendar: {ev.google_event_id}")
         except Exception as e:
             print(f"[calendar-events] Google sync failed: {e}")
-    else:
-        print(f"[calendar-events] add_meet={request.add_meet}, skipping Google Calendar sync.")
 
     try:
         db.commit()
@@ -116,9 +120,11 @@ def create_event(request: CalendarEventRequest, db: Session = Depends(get_db)):
 @router.get("/events")
 def list_events(
     month: str = Query(..., description="YYYY-MM"),
-    admin_id: int = Query(...),
     db: Session = Depends(get_db),
+    current_user_id: int = Depends(get_current_user)
 ):
+    admin_id = current_user_id
+    
     try:
         year, m = map(int, month.split("-"))
     except ValueError:
@@ -154,10 +160,17 @@ def list_events(
 
 
 @router.delete("/events/{event_id}")
-def delete_event(event_id: int, db: Session = Depends(get_db)):
+def delete_event(
+    event_id: int, 
+    db: Session = Depends(get_db),
+    current_user_id: int = Depends(get_current_user)
+):
     ev = db.query(CalendarEvent).filter(CalendarEvent.id == event_id).first()
     if not ev:
         raise HTTPException(status_code=404, detail="Event not found.")
+        
+    if ev.admin_id != current_user_id:
+         raise HTTPException(status_code=403, detail="Not authorized to delete this event.")
 
     if ev.google_event_id:
         token_row = (
