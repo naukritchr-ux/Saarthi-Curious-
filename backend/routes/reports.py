@@ -15,7 +15,7 @@ from services.reports.report_queries import (
     get_franchise_learning_report,
     get_organization_learning_report,
     get_program_performance_report,
-    get_learner_engagement_report
+    get_learner_engagement_report,
 )
 from auth import get_current_user
 import traceback
@@ -23,13 +23,9 @@ import logging
 import os
 
 logger = logging.getLogger(__name__)
-
 router = APIRouter()
 
 
-# =========================================================
-# Pydantic models
-# =========================================================
 class PreviewReportRequest(BaseModel):
     report_type: str
     filters: Optional[dict] = None
@@ -46,7 +42,6 @@ class GenerateReportRequest(BaseModel):
 
 
 class AIInsightsRequest(BaseModel):
-    """Frontend can pass either a numeric report_id OR a report_type string."""
     report_id: Optional[int] = None
     report_type: Optional[str] = None
     filters: Optional[dict] = None
@@ -60,13 +55,10 @@ def get_user_from_db(db: Session, user_id: int) -> User:
     return user
 
 
-# =========================================================
-# Report catalog + history
-# =========================================================
 @router.get("/")
 def get_available_reports(
     db: Session = Depends(get_db),
-    current_user_id: int = Depends(get_current_user)
+    current_user_id: int = Depends(get_current_user),
 ):
     try:
         user = get_user_from_db(db, current_user_id)
@@ -82,7 +74,7 @@ def get_available_reports(
 @router.get("/history")
 def get_report_history(
     db: Session = Depends(get_db),
-    current_user_id: int = Depends(get_current_user)
+    current_user_id: int = Depends(get_current_user),
 ):
     try:
         user = get_user_from_db(db, current_user_id)
@@ -95,20 +87,15 @@ def get_report_history(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# =========================================================
-# Preview — data only, no PDF
-# =========================================================
 @router.post("/preview")
 async def preview_report(
     request: PreviewReportRequest,
     db: Session = Depends(get_db),
-    current_user_id: int = Depends(get_current_user)
+    current_user_id: int = Depends(get_current_user),
 ):
     try:
-        logger.info(f"Preview request: {request.report_type} for user {current_user_id}")
         user = get_user_from_db(db, current_user_id)
         report_service = ReportService(db)
-
         period_start, period_end = report_service._parse_period_filters(request.filters)
         target_user_id = request.generated_for or current_user_id
         allowed = report_service._compute_allowed_user_ids(user.role_id, current_user_id)
@@ -117,51 +104,31 @@ async def preview_report(
 
         if request.report_type == "my_learning_report":
             preview_data = get_user_learning_report(db, target_user_id, period_start, period_end)
-
         elif request.report_type == "team_progress_report":
             preview_data = get_team_progress_report(
-                db,
-                target_user_id if request.generated_for else None,
-                period_start,
-                period_end,
-                allowed,
+                db, target_user_id if request.generated_for else None, period_start, period_end, allowed
             )
-
         elif request.report_type == "franchise_performance_report":
             preview_data = get_franchise_performance_report(
-                db,
-                target_user_id if request.generated_for else None,
-                period_start,
-                period_end,
-                allowed,
+                db, target_user_id if request.generated_for else None, period_start, period_end, allowed
             )
-
         elif request.report_type == "franchise_learning_report":
             preview_data = get_franchise_learning_report(
-                db,
-                target_user_id if request.generated_for else None,
-                period_start,
-                period_end,
-                user.role_id,
-                current_user_id,
+                db, target_user_id if request.generated_for else None, period_start, period_end,
+                user.role_id, current_user_id,
             )
-
         elif request.report_type == "organization_learning_report":
             preview_data = get_organization_learning_report(db, period_start, period_end)
-
         elif request.report_type == "program_performance_report":
             program_id = request.filters.get("generated_for") if request.filters else None
             preview_data = get_program_performance_report(db, program_id, period_start, period_end)
-
         elif request.report_type == "learner_engagement_report":
             learner_id = request.filters.get("generated_for") if request.filters else None
             preview_data = get_learner_engagement_report(db, learner_id, period_start, period_end, allowed)
-
         else:
             preview_data = {"summary": {"message": "Report type not recognized"}}
 
         return {"data": preview_data, "report": None}
-
     except HTTPException:
         raise
     except Exception as e:
@@ -170,22 +137,17 @@ async def preview_report(
         raise HTTPException(status_code=500, detail=f"Error previewing report: {str(e)}")
 
 
-# =========================================================
-# Generate
-# =========================================================
 @router.post("/generate")
 async def generate_report(
     request: GenerateReportRequest,
     db: Session = Depends(get_db),
-    current_user_id: int = Depends(get_current_user)
+    current_user_id: int = Depends(get_current_user),
 ):
     try:
         user = get_user_from_db(db, current_user_id)
         report_service = ReportService(db)
-
         period_start = date.fromisoformat(request.period_start) if request.period_start else None
         period_end = date.fromisoformat(request.period_end) if request.period_end else None
-
         report = await report_service.generate_report(
             report_type=request.report_type,
             user_id=current_user_id,
@@ -195,49 +157,36 @@ async def generate_report(
             include_ai=request.include_ai,
             generated_for=request.generated_for,
         )
-
         return {"report": report}
-
     except Exception as e:
         logger.error(f"Error in generate_report: {str(e)}")
         logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Error generating report: {str(e)}")
 
 
-# =========================================================
-# AI INSIGHTS — accepts report_id (int) OR report_type (str)
-# =========================================================
 @router.post("/ai-insights")
 async def generate_ai_insights(
     request: AIInsightsRequest,
     db: Session = Depends(get_db),
-    current_user_id: int = Depends(get_current_user)
+    current_user_id: int = Depends(get_current_user),
 ):
-    """
-    Generate AI insights for either:
-    - an existing report (pass report_id), or
-    - a fresh report on the fly (pass report_type + optional filters)
-    """
     try:
         user = get_user_from_db(db, current_user_id)
         service = ReportService(db)
 
         if request.report_id:
-            updated_report = await service.regenerate_with_ai_insights(
+            return await service.regenerate_with_ai_insights(
                 report_id=request.report_id,
                 user_id=current_user_id,
                 role_id=user.role_id,
             )
-            return updated_report
 
         if request.report_type:
             period_start, period_end = service._parse_period_filters(request.filters)
-
             generated_for = request.generated_for
             if request.filters and "generated_for" in request.filters:
                 generated_for = request.filters["generated_for"]
-
-            report = await service.generate_report(
+            return await service.generate_report(
                 report_type=request.report_type,
                 user_id=current_user_id,
                 role_id=user.role_id,
@@ -246,13 +195,8 @@ async def generate_ai_insights(
                 include_ai=True,
                 generated_for=generated_for,
             )
-            return report
 
-        raise HTTPException(
-            status_code=400,
-            detail="Either report_id or report_type is required."
-        )
-
+        raise HTTPException(status_code=400, detail="Either report_id or report_type is required.")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except HTTPException:
@@ -263,20 +207,19 @@ async def generate_ai_insights(
         raise HTTPException(status_code=500, detail=f"Failed to generate AI insights: {str(e)}")
 
 
-# =========================================================
-# Full individual learner detail
-# =========================================================
+# ═══════════════════════════════════════════════════════════════════
+# LEARNER FULL REPORT — MUST be declared before /{report_id}
+# ═══════════════════════════════════════════════════════════════════
 @router.get("/learner/{user_id}")
 def get_learner_full_report(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user_id: int = Depends(get_current_user)
+    current_user_id: int = Depends(get_current_user),
 ):
-    """Full individual learner report — profile, programs, quizzes, badges, activity."""
     try:
         from models import (
             UserProgramProgress, QuizAttempt, Quiz, Program,
-            LearningStreak, UserBadge, Badge, AuditLog, Certificate, Role
+            LearningStreak, UserBadge, Badge, AuditLog, Certificate, Role,
         )
 
         requester = get_user_from_db(db, current_user_id)
@@ -422,7 +365,6 @@ def get_learner_full_report(
             "certificates": certificates,
             "recent_activity": recent_activity,
         }
-
     except HTTPException:
         raise
     except Exception as e:
@@ -431,29 +373,22 @@ def get_learner_full_report(
         raise HTTPException(status_code=500, detail=f"Error loading learner report: {str(e)}")
 
 
-# =========================================================
-# Get report by id + download
-# =========================================================
 @router.get("/{report_id}")
 def get_report(
     report_id: int,
     db: Session = Depends(get_db),
-    current_user_id: int = Depends(get_current_user)
+    current_user_id: int = Depends(get_current_user),
 ):
     try:
         user = get_user_from_db(db, current_user_id)
         report_service = ReportService(db)
-
         report = report_service.get_report_by_id(report_id)
         if not report:
             raise HTTPException(status_code=404, detail="Report not found")
-
         report_model = db.query(Report).filter(Report.id == report_id).first()
         if not report_service.can_access_report_row(current_user_id, user.role_id, report_model):
             raise HTTPException(status_code=403, detail="You do not have access to this report")
-
         return {"report": report}
-
     except HTTPException:
         raise
     except Exception as e:
@@ -466,35 +401,28 @@ def get_report(
 def download_report(
     report_id: int,
     db: Session = Depends(get_db),
-    current_user_id: int = Depends(get_current_user)
+    current_user_id: int = Depends(get_current_user),
 ):
     try:
         user = get_user_from_db(db, current_user_id)
         report_service = ReportService(db)
-
         report = report_service.get_report_by_id(report_id)
         if not report:
             raise HTTPException(status_code=404, detail="Report not found")
-
         report_model = db.query(Report).filter(Report.id == report_id).first()
         if not report_service.can_access_report_row(current_user_id, user.role_id, report_model):
             raise HTTPException(status_code=403, detail="You do not have access to this report")
-
         download_url = report_service.get_report_download_url(report_id)
-
         if download_url.startswith("file://"):
             storage_service = StorageService()
             local_path = storage_service._get_local_path(report_model.storage_path)
             if not os.path.exists(local_path):
                 raise HTTPException(status_code=404, detail="PDF file not found")
             return FileResponse(
-                local_path,
-                media_type="application/pdf",
+                local_path, media_type="application/pdf",
                 filename=f"report_{report_id}.pdf",
             )
-
         return {"download_url": download_url}
-
     except HTTPException:
         raise
     except Exception as e:
@@ -503,26 +431,18 @@ def download_report(
         raise HTTPException(status_code=500, detail=f"Error generating download URL: {str(e)}")
 
 
-# =========================================================
-# Regenerate with AI (legacy — kept for compatibility)
-# =========================================================
 @router.post("/{report_id}/ai-insights")
 async def regenerate_with_ai_insights(
     report_id: int,
     db: Session = Depends(get_db),
-    current_user_id: int = Depends(get_current_user)
+    current_user_id: int = Depends(get_current_user),
 ):
     try:
         user = get_user_from_db(db, current_user_id)
         service = ReportService(db)
-
-        updated_report = await service.regenerate_with_ai_insights(
-            report_id=report_id,
-            user_id=current_user_id,
-            role_id=user.role_id,
+        return await service.regenerate_with_ai_insights(
+            report_id=report_id, user_id=current_user_id, role_id=user.role_id
         )
-        return updated_report
-
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -535,27 +455,22 @@ async def regenerate_with_ai_insights(
 def delete_report(
     report_id: int,
     db: Session = Depends(get_db),
-    current_user_id: int = Depends(get_current_user)
+    current_user_id: int = Depends(get_current_user),
 ):
     try:
         user = get_user_from_db(db, current_user_id)
         service = ReportService(db)
-
         report = db.query(Report).filter(Report.id == report_id).first()
         if not report:
             raise HTTPException(status_code=404, detail="Report not found")
-
         if not service.can_access_report_row(current_user_id, user.role_id, report):
             raise HTTPException(status_code=403, detail="Not authorized to delete this report")
-
         if report.storage_path:
             storage_service = StorageService()
             storage_service.delete_report_pdf(report.storage_path)
-
         db.delete(report)
         db.commit()
         return {"message": "Report deleted successfully"}
-
     except HTTPException:
         raise
     except Exception as e:
