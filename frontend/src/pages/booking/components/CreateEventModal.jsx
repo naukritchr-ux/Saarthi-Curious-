@@ -24,6 +24,8 @@ export default function CreateEventModal({
     learners,
     onClose,
     onCreated,
+    onEventCreated,
+    onSuccess,
 }) {
     const [date, setDate] = useState(
         defaultDate || new Date().toISOString().slice(0, 10)
@@ -59,8 +61,9 @@ export default function CreateEventModal({
 
         setBusy(true);
         try {
+            let createdData = null;
             if (isMeeting) {
-                await createCustomBooking({
+                createdData = await createCustomBooking({
                     admin_id: adminId,
                     user_id: parseInt(learnerId),
                     date,
@@ -72,7 +75,7 @@ export default function CreateEventModal({
                     attendee_emails,
                 });
             } else {
-                await createCalendarEvent({
+                createdData = await createCalendarEvent({
                     admin_id: adminId,
                     date,
                     start_time: startTime,
@@ -84,10 +87,14 @@ export default function CreateEventModal({
                 });
             }
             setSuccessMessage("Event created successfully!");
-            onCreated?.();
+            // Immediately notify parent so calendar refetches without waiting
+            onCreated?.(createdData);
+            onEventCreated?.(createdData);
+            onSuccess?.(createdData);
+
             setTimeout(() => {
                 onClose();
-            }, 1200);
+            }, 800);
         } catch (e) {
             setError(e.message);
         } finally {
