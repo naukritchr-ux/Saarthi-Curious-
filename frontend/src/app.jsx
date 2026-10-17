@@ -39,7 +39,7 @@ import AllAssignmentsPage from "./pages/learner/AllAssignmentsPage";
 import BookCall from "./pages/bookcall/BookCall";
 import AdminReschedule from "./pages/AdminReschedule";
 import BookCallPage from "./pages/booking/BookCallPage";
-import IndividualLearnerReport from "./pages/Reports/IndividualReportLearner";
+import IndividualLearnerReport from "./pages/Reports/IndividualLearnerReport";
 
 function App() {
   return (

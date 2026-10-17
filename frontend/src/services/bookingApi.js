@@ -105,6 +105,19 @@ export const rescheduleDate = ({ sourceDate, targetDate }) =>
 export const createCustomBooking = (payload) =>
   request("/bookings/create-custom", { method: "POST", body: payload });
 
+// Legacy backwards-compatibility exports
+export const getAvailableSlots = async (selectedDate, adminId) => {
+  const formattedDate = typeof selectedDate === "string" ? selectedDate : selectedDate.toISOString().split("T")[0];
+  return request(`/bookings/available-slots?selected_date=${formattedDate}&admin_id=${adminId}`);
+};
+
+export const generateScheduleForMonth = async (date, adminId, monthsAhead = 1) => {
+  const monthStr = typeof date === "string" ? date : date.toISOString().slice(0, 7);
+  return request(`/bookings/generate-schedule?month=${monthStr}&admin_id=${adminId}&months_ahead=${monthsAhead}`, {
+    method: "POST",
+  });
+};
+
 export const askScheduleAI = ({ message, adminId, today }) =>
   request("/ai/schedule", {
     method: "POST",
