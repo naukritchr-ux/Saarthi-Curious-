@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Video, X, Check, Clock, Plus, Calendar } from "lucide-react";
 import { formatLongDate, formatTime, WEEKDAYS } from "../bookingUtils";
 import {
@@ -6,6 +6,10 @@ import {
   approveBooking,
   rejectBooking,
 } from "../../../services/bookingApi";
+import {
+  getMonthEvents,
+  deleteCalendarEvent,
+} from "../../../services/calendarEventsApi";
 import CreateEventModal from "./CreateEventModal";
 import api from "../../../utils/axios";
 
@@ -23,6 +27,24 @@ export default function DayPage({
   const [workingId, setWorkingId] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
   const [learners, setLearners] = useState([]);
+  const [customEvents, setCustomEvents] = useState([]);
+
+  const currentMonth = iso ? iso.slice(0, 7) : null;
+  const adminId = userId || Number(localStorage.getItem("user_id")) || 57;
+
+  const fetchCustomEvents = useCallback(async () => {
+    if (!currentMonth) return;
+    try {
+      const data = await getMonthEvents(currentMonth, adminId);
+      setCustomEvents(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("[DayPage] Error fetching custom events:", err);
+    }
+  }, [currentMonth, adminId]);
+
+  useEffect(() => {
+    fetchCustomEvents();
+  }, [fetchCustomEvents]);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -48,16 +70,68 @@ export default function DayPage({
 
   const date = new Date(iso + "T00:00:00");
   const weekdayName = WEEKDAYS[(date.getDay() + 6) % 7];
-  const bookedSlots = slots.filter((s) => s.status !== "available" && s.booking);
 
-  const handleCancel = async (bookingId) => {
-    setWorkingId(bookingId);
+  // Merge slots from props and customEvents from /calendar/events for this day
+  const bookedFromProps = (slots || []).filter((s) => s.status !== "available" && s.booking);
+  const dayCustomEvents = customEvents.filter((e) => e.date === iso);
+
+  const seenIds = new Set(bookedFromProps.map((s) => String(s.id)));
+  const customSlots = [];
+
+  for (const ev of dayCustomEvents) {
+    const slotId = `event-${ev.id}`;
+    if (!seenIds.has(slotId)) {
+      seenIds.add(slotId);
+      customSlots.push({
+        id: slotId,
+        isCalendarEvent: true,
+        calendarEventId: ev.id,
+        start: ev.start_time || "00:00",
+        end: ev.end_time || (ev.all_day ? "23:59" : "01:00"),
+        status: "booked",
+        booking: {
+          booking_id: slotId,
+          calendar_event_id: ev.id,
+          user_id: null,
+          user_name: ev.title,
+          user_email: ev.event_type
+            ? `${ev.event_type.charAt(0).toUpperCase() + ev.event_type.slice(1)} Event`
+            : "Calendar Event",
+          meeting_link: ev.meeting_link || null,
+          google_event_id: ev.google_event_id,
+          booking_status: "confirmed",
+        },
+      });
+    }
+  }
+
+  const bookedSlots = [...bookedFromProps, ...customSlots].sort((a, b) => {
+    const timeA = a.start || a.start_time || "";
+    const timeB = b.start || b.start_time || "";
+    return timeA.localeCompare(timeB);
+  });
+
+  const handleCancel = async (slot) => {
+    const slotId = slot?.id || slot?.booking?.booking_id;
+    const isCalEvent = slot?.isCalendarEvent || String(slot?.id).startsWith("event-");
+    const calId = slot?.calendarEventId || (isCalEvent ? Number(String(slot?.id).replace("event-", "")) : null);
+
+    setWorkingId(slotId);
     setError("");
     try {
-      await cancelBooking(bookingId, "Cancelled by admin");
+      if (isCalEvent && calId) {
+        await deleteCalendarEvent(calId);
+        setCustomEvents((prev) => prev.filter((e) => e.id !== calId));
+      } else if (slot?.booking?.booking_id) {
+        await cancelBooking(slot.booking.booking_id, "Cancelled by admin");
+      }
+      fetchCustomEvents();
       onChanged?.();
-    } catch (e) { setError(e.message); }
-    finally { setWorkingId(null); }
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setWorkingId(null);
+    }
   };
 
   const handleApprove = async (bookingId) => {
@@ -193,11 +267,11 @@ export default function DayPage({
                         <button
                           type="button"
                           className="bk-link-ivory is-danger"
-                          disabled={workingId === slot.booking.booking_id}
-                          onClick={() => handleCancel(slot.booking.booking_id)}
+                          disabled={workingId === slot.id || workingId === slot.booking?.booking_id}
+                          onClick={() => handleCancel(slot)}
                         >
                           <X size={13} />
-                          {workingId === slot.booking.booking_id ? "Cancelling…" : "Cancel"}
+                          {workingId === slot.id || workingId === slot.booking?.booking_id ? "Cancelling…" : "Cancel"}
                         </button>
                       </>
                     )}
@@ -212,10 +286,43 @@ export default function DayPage({
       {isAdmin && showCreate && (
         <CreateEventModal
           defaultDate={iso}
-          adminId={userId || 57}
+          adminId={adminId}
           learners={learners}
-          onClose={() => setShowCreate(false)}
-          onCreated={onChanged}
+          onClose={() => {
+            setShowCreate(false);
+            fetchCustomEvents();
+            onChanged?.();
+          }}
+          onCreated={(createdEvent) => {
+            if (createdEvent && createdEvent.date) {
+              setCustomEvents((prev) => {
+                const filtered = prev.filter((e) => e.id !== createdEvent.id);
+                return [...filtered, createdEvent];
+              });
+            }
+            fetchCustomEvents();
+            onChanged?.();
+          }}
+          onEventCreated={(createdEvent) => {
+            if (createdEvent && createdEvent.date) {
+              setCustomEvents((prev) => {
+                const filtered = prev.filter((e) => e.id !== createdEvent.id);
+                return [...filtered, createdEvent];
+              });
+            }
+            fetchCustomEvents();
+            onChanged?.();
+          }}
+          onSuccess={(createdEvent) => {
+            if (createdEvent && createdEvent.date) {
+              setCustomEvents((prev) => {
+                const filtered = prev.filter((e) => e.id !== createdEvent.id);
+                return [...filtered, createdEvent];
+              });
+            }
+            fetchCustomEvents();
+            onChanged?.();
+          }}
         />
       )}
     </article>

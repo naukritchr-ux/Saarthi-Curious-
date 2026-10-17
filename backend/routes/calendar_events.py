@@ -77,6 +77,7 @@ def create_event(request: CalendarEventRequest, db: Session = Depends(get_db)):
         .filter(UserGoogleToken.user_id == request.admin_id)
         .first()
     )
+    meeting_link = None
     if request.add_meet and token_row and token_row.refresh_token:
         try:
             start_dt = datetime.combine(event_date, start)
@@ -101,7 +102,8 @@ def create_event(request: CalendarEventRequest, db: Session = Depends(get_db)):
                 description=request.description or request.title,
             )
             ev.google_event_id = result.get("event_id")
-            print(f"[calendar-events] Synced to Google Calendar: {ev.google_event_id}")
+            meeting_link = result.get("meeting_link")
+            print(f"[calendar-events] Synced to Google Calendar: {ev.google_event_id}, Meet: {meeting_link}")
         except Exception as e:
             print(f"[calendar-events] Google sync failed: {e}")
     else:
@@ -123,6 +125,7 @@ def create_event(request: CalendarEventRequest, db: Session = Depends(get_db)):
         "end_time": ev.end_time.strftime("%H:%M") if ev.end_time else None,
         "all_day": ev.all_day,
         "google_event_id": ev.google_event_id,
+        "meeting_link": meeting_link,
     }
 
 
