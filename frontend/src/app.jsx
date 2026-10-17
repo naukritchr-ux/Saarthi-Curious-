@@ -39,15 +39,14 @@ import AllAssignmentsPage from "./pages/learner/AllAssignmentsPage";
 import BookCall from "./pages/bookcall/BookCall";
 import AdminReschedule from "./pages/AdminReschedule";
 import BookCallPage from "./pages/booking/BookCallPage";
+import IndividualLearnerReport from "./pages/Reports/IndividualReportLearner";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Login */}
         <Route path="/" element={<LoginPage />} />
 
-        {/* Master Admin & Admin Dashboard */}
         <Route
           path="/admin"
           element={
@@ -57,7 +56,6 @@ function App() {
           }
         />
 
-        {/* Master Admin redirect to /admin */}
         <Route
           path="/master-admin"
           element={
@@ -67,7 +65,6 @@ function App() {
           }
         />
 
-        {/* Team Leader Dashboard */}
         <Route
           path="/team-leader"
           element={
@@ -77,7 +74,6 @@ function App() {
           }
         />
 
-        {/* Team (Redirect to team-leader or keep for compatibility) */}
         <Route
           path="/team"
           element={
@@ -87,7 +83,6 @@ function App() {
           }
         />
 
-        {/* Franchisee Partner Dashboard */}
         <Route
           path="/franchiseePartner"
           element={
@@ -97,7 +92,6 @@ function App() {
           }
         />
 
-        {/* Head Office Dashboard */}
         <Route
           path="/head-office"
           element={
@@ -107,7 +101,6 @@ function App() {
           }
         />
 
-        {/* Employee Dashboard - Redirect to learner dashboard */}
         <Route
           path="/employee"
           element={
@@ -117,7 +110,6 @@ function App() {
           }
         />
 
-        {/* Learner Dashboard */}
         <Route
           path="/learner"
           element={
@@ -136,7 +128,6 @@ function App() {
           }
         />
 
-        {/* Retention Quiz */}
         <Route
           path="/retention-quiz/:quizId"
           element={
@@ -155,7 +146,6 @@ function App() {
           }
         />
 
-        {/* Application Check */}
         <Route
           path="/application-check/:checkId"
           element={
@@ -165,7 +155,6 @@ function App() {
           }
         />
 
-        {/* Application Check Result */}
         <Route
           path="/learner/application-check/:checkId/result"
           element={
@@ -175,7 +164,6 @@ function App() {
           }
         />
 
-        {/* All Assignments */}
         <Route
           path="/all-assignments"
           element={
@@ -185,7 +173,6 @@ function App() {
           }
         />
 
-        {/* Programs - Accessible by multiple roles */}
         <Route
           path="/programs"
           element={
@@ -197,7 +184,6 @@ function App() {
 
         <Route path="/programs/edit/:id" element={<EditPrograms />} />
 
-        {/* Admin Application Check Submissions */}
         <Route
           path="/application-check-submissions"
           element={
@@ -235,16 +221,6 @@ function App() {
         />
 
         <Route
-          path="/programs/edit/:id"
-          element={
-            <ProtectedRoute>
-              <EditPrograms />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Program/Module View for Learners */}
-        <Route
           path="/program/:programId"
           element={
             <ProtectedRoute>
@@ -253,7 +229,6 @@ function App() {
           }
         />
 
-        {/* Gamification Features */}
         <Route
           path="/leaderboards"
           element={
@@ -299,7 +274,6 @@ function App() {
           }
         />
 
-        {/* Admin Management */}
         <Route
           path="/candidate-attrition"
           element={
@@ -309,12 +283,20 @@ function App() {
           }
         />
 
-        {/* Reports */}
         <Route
           path="/reports"
           element={
             <ProtectedRoute>
               <ReportsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/users/:userId/report"
+          element={
+            <ProtectedRoute requiredRoles={[1, 2, 3, 4, 6]}>
+              <IndividualLearnerReport />
             </ProtectedRoute>
           }
         />
@@ -328,7 +310,6 @@ function App() {
           }
         />
 
-        {/* Team Directory - for Team Leaders and Franchise Developers */}
         <Route
           path="/team-directory"
           element={
@@ -338,7 +319,6 @@ function App() {
           }
         />
 
-        {/* Franchise Directory - for Franchise Partners */}
         <Route
           path="/franchise-directory"
           element={
@@ -347,8 +327,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
-        <Route path="/admin/reschedule" element={<Navigate to="/admin/schedule" replace />} />
 
         <Route
           path="/admin/roles"
@@ -377,7 +355,6 @@ function App() {
           }
         />
 
-        {/* Communication */}
         <Route
           path="/communication/notification-scripts"
           element={
@@ -387,7 +364,6 @@ function App() {
           }
         />
 
-        {/* User Profile & Settings */}
         <Route
           path="/profile"
           element={
@@ -408,7 +384,6 @@ function App() {
 
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
-        {/* Learner booking page */}
         <Route
           path="/book-call"
           element={
@@ -418,7 +393,6 @@ function App() {
           }
         />
 
-        {/* Admin call schedule */}
         <Route
           path="/admin/schedule"
           element={
@@ -428,23 +402,8 @@ function App() {
           }
         />
 
-        {/* Legacy reschedule page now redirects to the new schedule */}
-        <Route
-          path="/admin/reschedule"
-          element={<Navigate to="/admin/schedule" replace />}
-        />
+        <Route path="/admin/reschedule" element={<Navigate to="/admin/schedule" replace />} />
 
-        {/* Booking — admin view (replaces the old AdminReschedule page) */}
-        <Route
-          path="/admin/schedule"
-          element={
-            <ProtectedRoute requiredRoles={[1, 2]}>
-              <BookCallPage mode="admin" hostId={57} />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Catch-all redirect based on role */}
         <Route
           path="*"
           element={

@@ -942,7 +942,10 @@
 }
 
 /* ---------- AI scheduling panel ---------- */
-.bk-desk__ai { grid-column: 1 / -1; margin-top: 4px; }
+.bk-desk__ai {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+}
 
 .bk-ai {
   border-radius: 10px;
@@ -969,11 +972,26 @@
   text-align: left;
   transition: background-color 140ms ease;
 }
-.bk-ai__toggle:hover { background: rgba(56, 152, 219, 0.08); }
-.bk-ai__toggle svg { color: #3ea1e6; }
 
-.bk-ai__panel { padding: 0 20px 20px; display: grid; gap: 14px; }
-.bk-ai__suggestions { display: flex; flex-wrap: wrap; gap: 8px; }
+.bk-ai__toggle:hover {
+  background: rgba(56, 152, 219, 0.08);
+}
+
+.bk-ai__toggle svg {
+  color: #3ea1e6;
+}
+
+.bk-ai__panel {
+  padding: 0 20px 20px;
+  display: grid;
+  gap: 14px;
+}
+
+.bk-ai__suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 
 .bk-ai__chip {
   padding: 8px 12px;
@@ -985,10 +1003,24 @@
   cursor: pointer;
   transition: background-color 140ms ease, border-color 140ms ease;
 }
-.bk-ai__chip:hover:not(:disabled) { background: rgba(56, 152, 219, 0.18); border-color: rgba(56, 152, 219, 0.55); }
-.bk-ai__chip:disabled { opacity: 0.5; cursor: progress; }
 
-.bk-ai__thread { display: grid; gap: 10px; max-height: 260px; overflow-y: auto; padding-right: 4px; }
+.bk-ai__chip:hover:not(:disabled) {
+  background: rgba(56, 152, 219, 0.18);
+  border-color: rgba(56, 152, 219, 0.55);
+}
+
+.bk-ai__chip:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+.bk-ai__thread {
+  display: grid;
+  gap: 10px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
 
 .bk-ai__msg {
   padding: 10px 14px;
@@ -998,9 +1030,25 @@
   display: grid;
   gap: 8px;
 }
-.bk-ai__msg p { margin: 0; }
-.bk-ai__msg--user { background: rgba(56, 152, 219, 0.12); color: #cfe8fb; justify-self: end; max-width: 80%; }
-.bk-ai__msg--ai { background: rgba(255, 255, 255, 0.04); color: var(--ivory); justify-self: start; max-width: 90%; border: 1px solid var(--ledger-line); }
+
+.bk-ai__msg p {
+  margin: 0;
+}
+
+.bk-ai__msg--user {
+  background: rgba(56, 152, 219, 0.12);
+  color: #cfe8fb;
+  justify-self: end;
+  max-width: 80%;
+}
+
+.bk-ai__msg--ai {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ivory);
+  justify-self: start;
+  max-width: 90%;
+  border: 1px solid var(--ledger-line);
+}
 
 .bk-ai__apply {
   justify-self: start;
@@ -1015,10 +1063,23 @@
   font: 600 12px/1 var(--font-ui);
   cursor: pointer;
 }
-.bk-ai__apply:disabled { opacity: 0.5; cursor: progress; }
-.bk-ai__error { margin: 0; color: #f7b6c5; font-size: 12.5px; }
 
-.bk-ai__input { display: flex; gap: 8px; }
+.bk-ai__apply:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+.bk-ai__error {
+  margin: 0;
+  color: #f7b6c5;
+  font-size: 12.5px;
+}
+
+.bk-ai__input {
+  display: flex;
+  gap: 8px;
+}
+
 .bk-ai__input input {
   flex: 1;
   padding: 12px 14px;
@@ -1029,7 +1090,11 @@
   font: 400 13px/1 var(--font-ui);
   outline: none;
 }
-.bk-ai__input input::placeholder { color: rgba(207, 232, 251, 0.4); }
+
+.bk-ai__input input::placeholder {
+  color: rgba(207, 232, 251, 0.4);
+}
+
 .bk-ai__input button {
   padding: 12px 20px;
   border-radius: 8px;
@@ -1039,10 +1104,21 @@
   font: 600 13px/1 var(--font-ui);
   cursor: pointer;
 }
-.bk-ai__input button:disabled { opacity: 0.4; cursor: not-allowed; }
 
-.spin { animation: bk-spin 1s linear infinite; }
-@keyframes bk-spin { to { transform: rotate(360deg); } }
+.bk-ai__input button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.spin {
+  animation: bk-spin 1s linear infinite;
+}
+
+@keyframes bk-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
 .bk-ledger .bk-tag.is-pending {
   color: #9bd2f7;
@@ -1050,9 +1126,11 @@
   background: rgba(56, 152, 219, 0.14);
   font-weight: 600;
 }
+
 .bk-ledger .bk-line.is-pending .bk-line__row {
   background: linear-gradient(90deg, rgba(56, 152, 219, 0.14), rgba(56, 152, 219, 0.03));
 }
+
 .bk-ledger .bk-line.is-pending::before {
   content: "";
   position: absolute;
@@ -1063,12 +1141,302 @@
   border-radius: 0 3px 3px 0;
   background: #3ea1e6;
 }
+
 .bk-link-ivory.is-approve {
   border-color: rgba(56, 152, 219, 0.5);
   background: rgba(56, 152, 219, 0.15);
   color: #cfe8fb;
 }
+
 .bk-link-ivory.is-approve:hover:not(:disabled) {
   background: rgba(56, 152, 219, 0.28);
   border-color: rgba(56, 152, 219, 0.75);
+}
+
+/* ---------- ROYAL BLUE LEDGER (overrides earlier purple) ---------- */
+.bk-ledger {
+  background:
+    radial-gradient(120% 100% at 100% 0%, rgba(96, 165, 250, 0.16), transparent 55%),
+    linear-gradient(180deg, #1E3A8A 0%, #1E40AF 100%) !important;
+  border: 1px solid rgba(147, 197, 253, 0.35) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 30px 60px -30px rgba(0, 0, 0, 0.9),
+    0 10px 20px -10px rgba(30, 58, 138, 0.7) !important;
+}
+
+.bk-ledger::before {
+  background: linear-gradient(180deg, rgba(147, 197, 253, 0.10), transparent 40%) !important;
+}
+
+.bk-ledger__weekday {
+  color: #93C5FD !important;
+}
+
+.bk-ledger__title {
+  color: #FFFFFF !important;
+}
+
+.bk-ledger__sub {
+  color: rgba(219, 234, 254, 0.75) !important;
+}
+
+.bk-ledger__divider {
+  background: linear-gradient(90deg, rgba(147, 197, 253, 0.7), rgba(147, 197, 253, 0.05)) !important;
+}
+
+.bk-ledger .bk-num {
+  color: #FFFFFF !important;
+}
+
+.bk-ledger .bk-line {
+  border-bottom: 1px solid rgba(147, 197, 253, 0.15) !important;
+}
+
+.bk-ledger .bk-line__to {
+  color: rgba(219, 234, 254, 0.65) !important;
+}
+
+.bk-ledger .bk-hint {
+  color: rgba(191, 219, 254, 0.6) !important;
+}
+
+.bk-ledger .bk-tag.is-open {
+  color: #DBEAFE !important;
+  border-color: rgba(147, 197, 253, 0.55) !important;
+  background: rgba(147, 197, 253, 0.18) !important;
+}
+
+.bk-ledger .bk-tag.is-taken {
+  color: rgba(219, 234, 254, 0.6) !important;
+  border-color: rgba(147, 197, 253, 0.25) !important;
+  background: transparent !important;
+}
+
+.bk-ledger .bk-empty__title {
+  color: #FFFFFF !important;
+}
+
+.bk-ledger .bk-empty p {
+  color: rgba(219, 234, 254, 0.7) !important;
+}
+
+.bk-ledger .bk-line.is-selected .bk-line__row {
+  background: linear-gradient(90deg, rgba(147, 197, 253, 0.22), rgba(147, 197, 253, 0.04)) !important;
+}
+
+.bk-ledger .bk-line.is-selected::before {
+  background: #93C5FD !important;
+}
+
+.bk-ledger .bk-link-ivory {
+  border-color: rgba(147, 197, 253, 0.5) !important;
+  background: rgba(147, 197, 253, 0.15) !important;
+  color: #DBEAFE !important;
+}
+
+.bk-ledger .bk-link-ivory:hover {
+  background: rgba(147, 197, 253, 0.28) !important;
+  border-color: rgba(147, 197, 253, 0.8) !important;
+}
+
+/* AI logo in white */
+.bk-ai__toggle svg {
+  color: #FFFFFF !important;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.7)) !important;
+}
+
+/* New meeting button */
+.bk-new-meeting-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  margin-bottom: 16px;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.bk-new-meeting-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+/* ---------- AI strip: black + golden glow ---------- */
+.bk-ai-black {
+  background: #000000;
+  border: 1px solid #1F1F1F;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(245, 158, 11, 0.15),
+    0 0 24px rgba(245, 158, 11, 0.18),
+    0 0 60px rgba(245, 158, 11, 0.08);
+  transition: box-shadow 300ms ease;
+}
+
+.bk-ai-black:hover {
+  box-shadow:
+    0 0 0 1px rgba(245, 158, 11, 0.25),
+    0 0 32px rgba(245, 158, 11, 0.28),
+    0 0 80px rgba(245, 158, 11, 0.12);
+}
+
+.bk-ai-black__toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #000000;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.bk-ai-black__label {
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.bk-ai-black__panel {
+  padding: 0 20px 20px;
+  background: #000000;
+}
+
+.bk-ai-black__suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.bk-ai-black__chip {
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid #2A2A2A;
+  background: #0F0F0F;
+  color: #E5E5E5;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.bk-ai-black__chip:hover:not(:disabled) {
+  background: #1A1A1A;
+  border-color: #3A3A3A;
+}
+
+.bk-ai-black__chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bk-ai-black__thread {
+  display: grid;
+  gap: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  margin-bottom: 14px;
+}
+
+.bk-ai-black__msg {
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.bk-ai-black__msg p {
+  margin: 0;
+}
+
+.bk-ai-black__msg--user {
+  background: #1F1F1F;
+  color: #F5F5F5;
+  border: 1px solid #2A2A2A;
+}
+
+.bk-ai-black__msg--ai {
+  background: #0F0F0F;
+  color: #F5F5F5;
+  border: 1px solid #1A1A1A;
+}
+
+.bk-ai-black__apply {
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #3A3A3A;
+  background: #1F1F1F;
+  color: #F5F5F5;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bk-ai-black__apply:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bk-ai-black__error {
+  margin: 0 0 10px;
+  color: #F87171;
+  font-size: 12px;
+}
+
+.bk-ai-black__input {
+  display: flex;
+  gap: 8px;
+}
+
+.bk-ai-black__input input {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #2A2A2A;
+  background: #0F0F0F;
+  color: #FFFFFF;
+  font-size: 13px;
+  outline: none;
+}
+
+.bk-ai-black__input input::placeholder {
+  color: #6B6B6B;
+}
+
+.bk-ai-black__input button {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 0;
+  background: #1F1F1F;
+  color: #F5F5F5;
+  cursor: pointer;
+}
+
+.bk-ai-black__input button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@keyframes bk-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin {
+  animation: bk-spin 1s linear infinite;
 }

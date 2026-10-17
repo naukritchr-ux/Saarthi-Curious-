@@ -94,12 +94,6 @@ def get_team_progress_report(db: Session, team_leader_id: Optional[int],
                              period_start: Optional[date],
                              period_end: Optional[date],
                              allowed_user_ids: Optional[List[int]] = None) -> Dict[str, Any]:
-    """
-    Team progress report.
-    - team_leader_id given: that TL's direct reports + their reports.
-    - team_leader_id None + allowed_user_ids given: restrict to that set.
-    - Neither: all learners in the org.
-    """
     if team_leader_id:
         direct = db.query(User.user_id).filter(User.Team_Leader_id == team_leader_id).all()
         direct_ids = [d[0] for d in direct]
@@ -180,7 +174,9 @@ def _empty_franchise_result() -> Dict[str, Any]:
     return {
         "summary": {"total_franchises": 0, "avg_completion_rate": 0,
                     "total_employees": 0, "active_employees": 0},
-        "franchise_comparison": []
+        "franchise_comparison": [],
+        "top_performers": [],
+        "pending_employees": []
     }
 
 
@@ -197,11 +193,6 @@ def get_franchise_performance_report(db: Session, franchise_id: Optional[int],
                                      period_start: Optional[date],
                                      period_end: Optional[date],
                                      allowed_user_ids: Optional[List[int]] = None) -> Dict[str, Any]:
-    """
-    Franchise performance report.
-    - Admin (allowed=None): all franchises, or one if franchise_id given.
-    - Non-admin (allowed=set): restrict to that set; franchise_id narrows further.
-    """
     if franchise_id:
         if allowed_user_ids is not None and franchise_id not in allowed_user_ids:
             return _empty_franchise_result()
@@ -265,6 +256,34 @@ def get_franchise_performance_report(db: Session, franchise_id: Optional[int],
             "employees": len([m for m in members if m.user_id != owner_id])
         })
 
+    scores: Dict[int, Dict[str, Any]] = {}
+    for p in all_progress:
+        scores.setdefault(p.user_id, {"programs": 0, "total": 0.0})
+        scores[p.user_id]["programs"] += 1
+        scores[p.user_id]["total"] += p.completed_percentage or 0
+
+    top_performers = []
+    for uid, s in sorted(scores.items(), key=lambda kv: kv[1]["total"], reverse=True)[:5]:
+        u = db.query(User).filter(User.user_id == uid).first()
+        if u:
+            top_performers.append({
+                "name": u.full_name,
+                "programs_completed": s["programs"],
+                "avg_score": round(s["total"] / s["programs"], 2) if s["programs"] else 0
+            })
+
+    pending = []
+    for uid in user_ids:
+        member_progress = [p for p in all_progress if p.user_id == uid]
+        if not any(p.completed for p in member_progress):
+            u = db.query(User).filter(User.user_id == uid).first()
+            if u:
+                pending.append({
+                    "name": u.full_name,
+                    "pending_programs": len([p for p in member_progress if not p.completed]),
+                    "last_activity": "N/A"
+                })
+
     return {
         "summary": {
             "total_franchises": total_franchises,
@@ -272,7 +291,9 @@ def get_franchise_performance_report(db: Session, franchise_id: Optional[int],
             "total_employees": total_employees,
             "active_employees": active_employees
         },
-        "franchise_comparison": franchise_comparison
+        "franchise_comparison": franchise_comparison,
+        "top_performers": top_performers,
+        "pending_employees": pending[:5]
     }
 
 
@@ -281,13 +302,6 @@ def get_franchise_learning_report(db: Session, franchise_id: Optional[int],
                                   period_end: Optional[date],
                                   requester_role_id: int,
                                   requester_user_id: int) -> Dict[str, Any]:
-    """
-    Franchise learning report — franchise-scoped learner visibility.
-
-    - Admin (1,2): all franchises, or one if franchise_id given.
-    - Franchise Developer (6): own partners + their employees (+self).
-    - Franchise Partner (4): self + own employees.
-    """
     def _ids_for_franchise(fp_id: int) -> List[int]:
         return _franchise_group_ids(db, fp_id)
 
@@ -332,7 +346,6 @@ def get_franchise_learning_report(db: Session, franchise_id: Optional[int],
     completed = [p for p in all_progress if p.completed]
     completion_rate = (len(completed) / len(all_progress) * 100) if all_progress else 0
 
-    # Per-franchise breakdown (group by owner)
     all_users = db.query(User).filter(User.user_id.in_(user_ids)).all()
     groups: Dict[int, List[int]] = {}
     for u in all_users:
@@ -353,7 +366,6 @@ def get_franchise_learning_report(db: Session, franchise_id: Optional[int],
             "employees": len([i for i in member_ids if i != owner_id])
         })
 
-    # Top performers
     scores: Dict[int, Dict[str, Any]] = {}
     for p in all_progress:
         scores.setdefault(p.user_id, {"programs": 0, "total": 0.0})
@@ -370,7 +382,6 @@ def get_franchise_learning_report(db: Session, franchise_id: Optional[int],
                 "avg_score": round(s["total"] / s["programs"], 2) if s["programs"] else 0
             })
 
-    # Pending
     pending = []
     for uid in user_ids:
         member_progress = [p for p in all_progress if p.user_id == uid]
@@ -385,12 +396,10 @@ def get_franchise_learning_report(db: Session, franchise_id: Optional[int],
 
     return {
         "summary": {
-            # franchise.html compatible keys
             "total_franchises": len(groups),
             "avg_completion_rate": round(completion_rate, 2),
             "total_employees": total_learners,
             "active_employees": active_learners,
-            # richer keys
             "total_learners": total_learners,
             "active_learners": active_learners,
             "total_programs": db.query(Program).filter(Program.status == "Published").count(),
@@ -526,7 +535,6 @@ def get_learner_engagement_report(db: Session, user_id: Optional[int],
                                   period_start: Optional[date],
                                   period_end: Optional[date],
                                   allowed_user_ids: Optional[List[int]] = None) -> Dict[str, Any]:
-    # Active learners
     activity_query = db.query(func.count(func.distinct(UserProgramProgress.user_id))).join(
         User, User.user_id == UserProgramProgress.user_id
     ).filter(User.role_id.in_(LEARNER_ROLES))
@@ -545,7 +553,6 @@ def get_learner_engagement_report(db: Session, user_id: Optional[int],
         activity_query = activity_query.filter(UserProgramProgress.created_at <= period_end)
     active_learners = activity_query.scalar() or 0
 
-    # Average streak
     avg_streak_query = db.query(func.avg(LearningStreak.current_streak)).join(
         User, User.user_id == LearningStreak.user_id
     ).filter(User.role_id.in_(LEARNER_ROLES))
@@ -556,7 +563,6 @@ def get_learner_engagement_report(db: Session, user_id: Optional[int],
         avg_streak_query = avg_streak_query.filter(LearningStreak.user_id.in_(allowed_user_ids))
     avg_streak = avg_streak_query.scalar() or 0
 
-    # Badges
     badges_query = db.query(UserBadge).join(
         User, User.user_id == UserBadge.user_id
     ).filter(User.role_id.in_(LEARNER_ROLES))

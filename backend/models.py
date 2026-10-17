@@ -1197,3 +1197,18 @@ class UserGoogleToken(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     user = relationship("User", backref="google_token")
+
+class CalendarEvent(Base):
+    __tablename__ = "calendar_events"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    admin_id = Column(BigInteger, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    event_type = Column(String, nullable=False, default="custom")  # meeting|birthday|holiday|trip|custom
+    date = Column(Date, nullable=False)
+    start_time = Column(Time, nullable=True)
+    end_time = Column(Time, nullable=True)
+    all_day = Column(Boolean, default=False)
+    google_event_id = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
