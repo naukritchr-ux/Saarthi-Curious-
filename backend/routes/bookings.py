@@ -124,7 +124,7 @@ router = APIRouter(prefix="/bookings", tags=["Bookings"])
 
 
 # ─────────────────────────────────────────────────────────────
-# POST /bookings/create-custom  ← NEW: admin picks any time
+# POST /bookings/create-custom
 # ─────────────────────────────────────────────────────────────
 
 @router.post("/create-custom")
@@ -134,17 +134,6 @@ def create_custom_booking(
 ):
     """
     Admin creates a meeting at an arbitrary time (not tied to pre-generated slots).
-
-    Steps:
-    1. Parse date + times
-    2. Reject if in the past
-    3. Reject if overlaps an existing booking for this admin
-    4. Create a new AdminSchedule row with status='booked'
-    5. Create the Booking with status='confirmed'
-    6. Create the Google Calendar event with BOTH learner and admin as attendees
-    7. Return the booking
-
-    Both parties get a Google Calendar invite + Meet link.
     """
     try:
         booking_date = date.fromisoformat(request.date)
@@ -166,7 +155,7 @@ def create_custom_booking(
     if start_dt < datetime.now():
         raise HTTPException(status_code=400, detail="Cannot book a time in the past.")
 
-    # Conflict check: does this admin already have a booking overlapping this window?
+    # Conflict check
     overlapping = (
         db.query(AdminSchedule, Booking)
         .outerjoin(Booking, Booking.schedule_id == AdminSchedule.id)
@@ -182,14 +171,12 @@ def create_custom_booking(
     for sched, bk in overlapping:
         s = datetime.combine(sched.date, sched.start_time)
         e = datetime.combine(sched.date, sched.end_time)
-        # overlap if start < other.end AND end > other.start
         if start_dt < e and end_dt > s:
             raise HTTPException(
                 status_code=400,
                 detail=f"This time overlaps an existing booking ({sched.start_time.strftime('%H:%M')}–{sched.end_time.strftime('%H:%M')}).",
             )
 
-    # Look up users
     admin = db.query(User).filter(User.user_id == request.admin_id).first()
     learner = db.query(User).filter(User.user_id == request.user_id).first()
     if not admin:
@@ -197,7 +184,6 @@ def create_custom_booking(
     if not learner:
         raise HTTPException(status_code=404, detail="Learner not found.")
 
-    # Create the schedule row (a single-use slot)
     slot = AdminSchedule(
         admin_id=request.admin_id,
         date=booking_date,
@@ -206,9 +192,8 @@ def create_custom_booking(
         status="booked",
     )
     db.add(slot)
-    db.flush()  # get slot.id
+    db.flush()
 
-    # Create the booking
     booking = Booking(
         schedule_id=slot.id,
         user_id=request.user_id,
@@ -218,9 +203,8 @@ def create_custom_booking(
         booking_status="confirmed",
     )
     db.add(booking)
-    db.flush()  # get booking.id
+    db.flush()
 
-    # Google Calendar — both admin and learner get the invite
     host_token_row = (
         db.query(UserGoogleToken)
         .filter(UserGoogleToken.user_id == request.admin_id)
@@ -248,7 +232,6 @@ def create_custom_booking(
             print(f"[create-custom] Google Calendar event created: {booking.google_event_id}")
         except Exception as e:
             print(f"[create-custom] Google Calendar error: {e}")
-            # Don't fail the whole booking — the admin can retry or add the Meet link later
             booking.meeting_link = "Google Meet link will be provided later"
     else:
         print(f"[create-custom] add_meet={request.add_meet}, skipping Google Calendar.")
@@ -276,17 +259,11 @@ def create_custom_booking(
     }
 
 
-# ─────────────────────────────────────────────────────────────
-# GET /bookings/test
-# ─────────────────────────────────────────────────────────────
 @router.get("/test")
 def test_booking_route():
     return {"message": "Booking API is working"}
 
 
-# ─────────────────────────────────────────────────────────────
-# GET /bookings/schedule
-# ─────────────────────────────────────────────────────────────
 @router.get("/schedule")
 def get_schedule(
     month: str = Query(..., description="Month in YYYY-MM format"),
@@ -325,9 +302,6 @@ def get_schedule(
     ]
 
 
-# ─────────────────────────────────────────────────────────────
-# GET /bookings/calendar
-# ─────────────────────────────────────────────────────────────
 @router.get("/calendar")
 def get_calendar(
     month: str = Query(..., description="Month in YYYY-MM format"),
@@ -376,9 +350,6 @@ def get_calendar(
     return result
 
 
-# ─────────────────────────────────────────────────────────────
-# GET /bookings/available-slots
-# ─────────────────────────────────────────────────────────────
 @router.get("/available-slots")
 def get_available_slots(
     selected_date: date,
@@ -412,9 +383,6 @@ def get_available_slots(
     return response
 
 
-# ─────────────────────────────────────────────────────────────
-# POST /bookings/generate-schedule
-# ─────────────────────────────────────────────────────────────
 @router.post("/generate-schedule")
 def generate_schedule(
     month: str,
@@ -432,9 +400,6 @@ def generate_schedule(
         raise HTTPException(status_code=500, detail=f"Error generating schedule: {str(e)}")
 
 
-# ─────────────────────────────────────────────────────────────
-# POST /bookings/book  (learner requests, goes to pending)
-# ─────────────────────────────────────────────────────────────
 @router.post("/book")
 def book_slot(request: BookingRequest, db: Session = Depends(get_db)):
     if not request.user_id:
@@ -483,9 +448,6 @@ def book_slot(request: BookingRequest, db: Session = Depends(get_db)):
     }
 
 
-# ─────────────────────────────────────────────────────────────
-# POST /bookings/{id}/approve
-# ─────────────────────────────────────────────────────────────
 @router.post("/{booking_id}/approve")
 def approve_booking(booking_id: int, db: Session = Depends(get_db)):
     booking = db.query(Booking).filter(Booking.id == booking_id).first()
@@ -545,9 +507,6 @@ def approve_booking(booking_id: int, db: Session = Depends(get_db)):
     }
 
 
-# ─────────────────────────────────────────────────────────────
-# POST /bookings/{id}/reject
-# ─────────────────────────────────────────────────────────────
 @router.post("/{booking_id}/reject")
 def reject_booking(booking_id: int, request: CancelRequest, db: Session = Depends(get_db)):
     booking = db.query(Booking).filter(Booking.id == booking_id).first()
@@ -570,9 +529,6 @@ def reject_booking(booking_id: int, request: CancelRequest, db: Session = Depend
     return {"message": "Booking rejected", "booking_id": booking.id, "reason": request.reason}
 
 
-# ─────────────────────────────────────────────────────────────
-# POST /bookings/{id}/reschedule
-# ─────────────────────────────────────────────────────────────
 @router.post("/{booking_id}/reschedule")
 def reschedule_single_booking(booking_id: int, request: SingleRescheduleRequest, db: Session = Depends(get_db)):
     booking = db.query(Booking).filter(Booking.id == booking_id).first()
@@ -627,9 +583,6 @@ def reschedule_single_booking(booking_id: int, request: SingleRescheduleRequest,
     }
 
 
-# ─────────────────────────────────────────────────────────────
-# POST /bookings/{id}/cancel
-# ─────────────────────────────────────────────────────────────
 @router.post("/{booking_id}/cancel")
 def cancel_booking(booking_id: int, request: CancelRequest, db: Session = Depends(get_db)):
     booking = db.query(Booking).filter(Booking.id == booking_id).first()
@@ -663,9 +616,6 @@ def cancel_booking(booking_id: int, request: CancelRequest, db: Session = Depend
     return {"message": "Booking cancelled", "booking_id": booking.id, "reason": request.reason}
 
 
-# ─────────────────────────────────────────────────────────────
-# POST /bookings/reschedule-date (bulk)
-# ─────────────────────────────────────────────────────────────
 @router.post("/reschedule-date")
 def reschedule_date(request: RescheduleRequest, db: Session = Depends(get_db)):
     bookings = (
