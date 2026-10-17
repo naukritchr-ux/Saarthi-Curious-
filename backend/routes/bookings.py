@@ -1,7 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import and_ 
-from datetime import date
+from sqlalchemy import and_
+from datetime import date, datetime, time
+from typing import Optional
+from pydantic import BaseModel
+import calendar
+
 from services.google_calendar import (
     create_google_meet_event,
     reschedule_google_event,
@@ -9,22 +13,17 @@ from services.google_calendar import (
 )
 from database import get_db
 from models import AdminSchedule, Booking, UserGoogleToken, User
-from datetime import datetime, timedelta, time
-import calendar
-from pydantic import BaseModel
 
 
 # ─────────────────────────────────────────────────────────────
-# Schedule auto-generation (unchanged)
+# Schedule auto-generation
 # ─────────────────────────────────────────────────────────────
 
 def auto_generate_schedules(db: Session, admin_id: int = 2, months_to_generate: int = 3):
     today = datetime.now()
     current_month_str = today.strftime("%Y-%m")
     try:
-        result = generate_schedule_internal(
-            current_month_str, admin_id, months_to_generate, db
-        )
+        result = generate_schedule_internal(current_month_str, admin_id, months_to_generate, db)
         print(f"Auto-generated schedules: {result['slots_created']} slots for {result['months_generated']} months")
         return result
     except Exception as e:
@@ -46,62 +45,46 @@ def auto_generate_schedules_wrapper():
 def generate_schedule_internal(month: str, admin_id: int, months_ahead: int, db: Session):
     try:
         year, month_number = map(int, month.split("-"))
-    except:
+    except Exception:
         raise ValueError("Month format should be YYYY-MM")
 
-    slots = [
-        (time(10, 0), time(10, 15)),
-        (time(14, 0), time(14, 15)),
-        (time(16, 0), time(16, 15)),
-    ]
-
+    slots = [(time(10, 0), time(10, 15)), (time(14, 0), time(14, 15)), (time(16, 0), time(16, 15))]
     total_created = 0
 
     for offset in range(months_ahead):
         target_month = month_number + offset
         target_year = year
-
         while target_month > 12:
             target_month -= 12
             target_year += 1
-
         total_days = calendar.monthrange(target_year, target_month)[1]
-
         for day in range(1, total_days + 1):
             current_date = date(target_year, target_month, day)
-
             if current_date.weekday() >= 5:
                 continue
-
             for start_time, end_time in slots:
                 exists = (
                     db.query(AdminSchedule)
                     .filter(
                         AdminSchedule.admin_id == admin_id,
                         AdminSchedule.date == current_date,
-                        AdminSchedule.start_time == start_time
+                        AdminSchedule.start_time == start_time,
                     )
                     .first()
                 )
                 if exists:
                     continue
-
                 schedule = AdminSchedule(
                     admin_id=admin_id,
                     date=current_date,
                     start_time=start_time,
                     end_time=end_time,
-                    status="available"
+                    status="available",
                 )
                 db.add(schedule)
                 total_created += 1
-
     db.commit()
-
-    return {
-        "slots_created": total_created,
-        "months_generated": months_ahead
-    }
+    return {"slots_created": total_created, "months_generated": months_ahead}
 
 
 # ─────────────────────────────────────────────────────────────
@@ -126,16 +109,176 @@ class CancelRequest(BaseModel):
     reason: str = "Cancelled by admin"
 
 
+class CustomBookingRequest(BaseModel):
+    admin_id: int
+    user_id: int
+    date: str          # "YYYY-MM-DD"
+    start_time: str    # "HH:MM" 24-hour
+    end_time: str      # "HH:MM"
+    title: Optional[str] = "Saarthi Curious - Meeting"
+    description: Optional[str] = "Scheduled via Saarthi"
+    add_meet: bool = True
+
+
+router = APIRouter(prefix="/bookings", tags=["Bookings"])
+
+
 # ─────────────────────────────────────────────────────────────
-# Router
+# POST /bookings/create-custom  ← NEW: admin picks any time
 # ─────────────────────────────────────────────────────────────
 
-router = APIRouter(
-    prefix="/bookings",
-    tags=["Bookings"]
-)
+@router.post("/create-custom")
+def create_custom_booking(
+    request: CustomBookingRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Admin creates a meeting at an arbitrary time (not tied to pre-generated slots).
+
+    Steps:
+    1. Parse date + times
+    2. Reject if in the past
+    3. Reject if overlaps an existing booking for this admin
+    4. Create a new AdminSchedule row with status='booked'
+    5. Create the Booking with status='confirmed'
+    6. Create the Google Calendar event with BOTH learner and admin as attendees
+    7. Return the booking
+
+    Both parties get a Google Calendar invite + Meet link.
+    """
+    try:
+        booking_date = date.fromisoformat(request.date)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date. Use YYYY-MM-DD.")
+
+    try:
+        start_h, start_m = map(int, request.start_time.split(":"))
+        end_h, end_m = map(int, request.end_time.split(":"))
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid time. Use HH:MM (24h).")
+
+    if (end_h, end_m) <= (start_h, start_m):
+        raise HTTPException(status_code=400, detail="End time must be after start time.")
+
+    start_dt = datetime.combine(booking_date, time(start_h, start_m))
+    end_dt = datetime.combine(booking_date, time(end_h, end_m))
+
+    if start_dt < datetime.now():
+        raise HTTPException(status_code=400, detail="Cannot book a time in the past.")
+
+    # Conflict check: does this admin already have a booking overlapping this window?
+    overlapping = (
+        db.query(AdminSchedule, Booking)
+        .outerjoin(Booking, Booking.schedule_id == AdminSchedule.id)
+        .filter(
+            AdminSchedule.admin_id == request.admin_id,
+            AdminSchedule.date == booking_date,
+            Booking.id.isnot(None),
+            Booking.booking_status.in_(["confirmed", "pending"]),
+        )
+        .all()
+    )
+
+    for sched, bk in overlapping:
+        s = datetime.combine(sched.date, sched.start_time)
+        e = datetime.combine(sched.date, sched.end_time)
+        # overlap if start < other.end AND end > other.start
+        if start_dt < e and end_dt > s:
+            raise HTTPException(
+                status_code=400,
+                detail=f"This time overlaps an existing booking ({sched.start_time.strftime('%H:%M')}–{sched.end_time.strftime('%H:%M')}).",
+            )
+
+    # Look up users
+    admin = db.query(User).filter(User.user_id == request.admin_id).first()
+    learner = db.query(User).filter(User.user_id == request.user_id).first()
+    if not admin:
+        raise HTTPException(status_code=404, detail="Admin not found.")
+    if not learner:
+        raise HTTPException(status_code=404, detail="Learner not found.")
+
+    # Create the schedule row (a single-use slot)
+    slot = AdminSchedule(
+        admin_id=request.admin_id,
+        date=booking_date,
+        start_time=time(start_h, start_m),
+        end_time=time(end_h, end_m),
+        status="booked",
+    )
+    db.add(slot)
+    db.flush()  # get slot.id
+
+    # Create the booking
+    booking = Booking(
+        schedule_id=slot.id,
+        user_id=request.user_id,
+        admin_id=request.admin_id,
+        meeting_link=None,
+        google_event_id=None,
+        booking_status="confirmed",
+    )
+    db.add(booking)
+    db.flush()  # get booking.id
+
+    # Google Calendar — both admin and learner get the invite
+    host_token_row = (
+        db.query(UserGoogleToken)
+        .filter(UserGoogleToken.user_id == request.admin_id)
+        .first()
+    )
+
+    if request.add_meet and host_token_row and host_token_row.refresh_token:
+        try:
+            attendees = []
+            if admin.email:
+                attendees.append(admin.email)
+            if learner.email and learner.email != admin.email:
+                attendees.append(learner.email)
+
+            google_result = create_google_meet_event(
+                title=request.title or f"Saarthi Curious - {learner.full_name}",
+                start_datetime=start_dt,
+                end_datetime=end_dt,
+                refresh_token=host_token_row.refresh_token,
+                attendees=attendees,
+                description=request.description or f"Meeting with {learner.full_name}",
+            )
+            booking.meeting_link = google_result.get("meeting_link")
+            booking.google_event_id = google_result.get("event_id")
+            print(f"[create-custom] Google Calendar event created: {booking.google_event_id}")
+        except Exception as e:
+            print(f"[create-custom] Google Calendar error: {e}")
+            # Don't fail the whole booking — the admin can retry or add the Meet link later
+            booking.meeting_link = "Google Meet link will be provided later"
+    else:
+        print(f"[create-custom] add_meet={request.add_meet}, skipping Google Calendar.")
+        booking.meeting_link = None
+
+    try:
+        db.commit()
+        db.refresh(booking)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Unable to save booking: {e}")
+
+    return {
+        "message": "Meeting created",
+        "booking_id": booking.id,
+        "slot_id": slot.id,
+        "admin_id": booking.admin_id,
+        "user_id": booking.user_id,
+        "date": slot.date.isoformat(),
+        "start_time": slot.start_time.strftime("%H:%M"),
+        "end_time": slot.end_time.strftime("%H:%M"),
+        "meeting_link": booking.meeting_link,
+        "google_event_id": booking.google_event_id,
+        "attendees": [u for u in [admin.email, learner.email] if u],
+    }
 
 
+# ─────────────────────────────────────────────────────────────
+# GET /bookings/test
+# ─────────────────────────────────────────────────────────────
 @router.get("/test")
 def test_booking_route():
     return {"message": "Booking API is working"}
@@ -144,31 +287,26 @@ def test_booking_route():
 # ─────────────────────────────────────────────────────────────
 # GET /bookings/schedule
 # ─────────────────────────────────────────────────────────────
-
 @router.get("/schedule")
 def get_schedule(
     month: str = Query(..., description="Month in YYYY-MM format"),
     admin_id: int = Query(..., description="Admin user ID"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     try:
         year, month_number = map(int, month.split("-"))
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid month format. Use YYYY-MM.")
 
-    if month_number == 12:
-        next_month = date(year + 1, 1, 1)
-    else:
-        next_month = date(year, month_number + 1, 1)
-
-    current_month = date(year, month_number, 1) 
+    next_month = date(year + 1, 1, 1) if month_number == 12 else date(year, month_number + 1, 1)
+    current_month = date(year, month_number, 1)
 
     schedules = (
         db.query(AdminSchedule)
         .filter(
             AdminSchedule.admin_id == admin_id,
             AdminSchedule.date >= current_month,
-            AdminSchedule.date < next_month
+            AdminSchedule.date < next_month,
         )
         .order_by(AdminSchedule.date, AdminSchedule.start_time)
         .all()
@@ -181,36 +319,28 @@ def get_schedule(
             "date": slot.date.isoformat(),
             "start_time": slot.start_time.strftime("%H:%M"),
             "end_time": slot.end_time.strftime("%H:%M"),
-            "status": slot.status
+            "status": slot.status,
         }
         for slot in schedules
     ]
 
 
 # ─────────────────────────────────────────────────────────────
-# GET /bookings/calendar  ← NEW: full month with joined booking data
+# GET /bookings/calendar
 # ─────────────────────────────────────────────────────────────
-
 @router.get("/calendar")
 def get_calendar(
     month: str = Query(..., description="Month in YYYY-MM format"),
     admin_id: int = Query(..., description="Host user ID"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    """
-    Return all slots for the month, joined with booking + learner info.
-    This is the endpoint the calendar UI calls.
-    """
     try:
         year, month_number = map(int, month.split("-"))
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid month format. Use YYYY-MM.")
 
     current_month = date(year, month_number, 1)
-    if month_number == 12:
-        next_month = date(year + 1, 1, 1)
-    else:
-        next_month = date(year, month_number + 1, 1)
+    next_month = date(year + 1, 1, 1) if month_number == 12 else date(year, month_number + 1, 1)
 
     rows = (
         db.query(AdminSchedule, Booking, User)
@@ -243,32 +373,24 @@ def get_calendar(
                 "booking_status": booking.booking_status,
             },
         })
-
     return result
 
 
 # ─────────────────────────────────────────────────────────────
 # GET /bookings/available-slots
 # ─────────────────────────────────────────────────────────────
-
 @router.get("/available-slots")
 def get_available_slots(
     selected_date: date,
     admin_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     schedules = (
         db.query(AdminSchedule)
-        .filter(
-            and_(
-                AdminSchedule.date == selected_date,
-                AdminSchedule.admin_id == admin_id
-            )
-        )
+        .filter(and_(AdminSchedule.date == selected_date, AdminSchedule.admin_id == admin_id))
         .order_by(AdminSchedule.start_time)
         .all()
     )
-
     if len(schedules) == 0:
         all_schedules = db.query(AdminSchedule).filter(AdminSchedule.date == selected_date).all()
         if all_schedules:
@@ -278,35 +400,27 @@ def get_available_slots(
     for schedule in schedules:
         booking = (
             db.query(Booking)
-            .filter(
-                Booking.schedule_id == schedule.id,
-                Booking.booking_status == "confirmed"
-            )
+            .filter(Booking.schedule_id == schedule.id, Booking.booking_status == "confirmed")
             .first()
         )
         is_booked = schedule.status == "booked" or booking
-
-        response.append(
-            {
-                "id": schedule.id,
-                "time": f"{schedule.start_time.strftime('%I:%M %p')} - {schedule.end_time.strftime('%I:%M %p')}",
-                "status": "booked" if is_booked else "available"
-            }
-        )
-
+        response.append({
+            "id": schedule.id,
+            "time": f"{schedule.start_time.strftime('%I:%M %p')} - {schedule.end_time.strftime('%I:%M %p')}",
+            "status": "booked" if is_booked else "available",
+        })
     return response
 
 
 # ─────────────────────────────────────────────────────────────
 # POST /bookings/generate-schedule
 # ─────────────────────────────────────────────────────────────
-
 @router.post("/generate-schedule")
 def generate_schedule(
     month: str,
     admin_id: int,
     months_ahead: int = 1,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     try:
         result = generate_schedule_internal(month, admin_id, months_ahead, db)
@@ -319,51 +433,26 @@ def generate_schedule(
 
 
 # ─────────────────────────────────────────────────────────────
-# POST /bookings/book
+# POST /bookings/book  (learner requests, goes to pending)
 # ─────────────────────────────────────────────────────────────
-
 @router.post("/book")
-def book_slot(
-    request: BookingRequest,
-    db: Session = Depends(get_db)
-):
-    print(f"\n=== Booking Debug ===")
-    print(f"Schedule ID: {request.schedule_id}")
-    print(f"User ID: {request.user_id}")
-
+def book_slot(request: BookingRequest, db: Session = Depends(get_db)):
     if not request.user_id:
         raise HTTPException(status_code=400, detail="User ID is required")
 
-    schedule = (
-        db.query(AdminSchedule)
-        .filter(AdminSchedule.id == request.schedule_id)
-        .first()
-    )
-
+    schedule = db.query(AdminSchedule).filter(AdminSchedule.id == request.schedule_id).first()
     if not schedule:
         raise HTTPException(status_code=404, detail="Schedule not found")
-
     if schedule.status != "available":
         raise HTTPException(status_code=400, detail="This slot is no longer available")
 
     existing_booking = (
         db.query(Booking)
-        .filter(
-            Booking.schedule_id == request.schedule_id,
-            Booking.booking_status == "confirmed"
-        )
+        .filter(Booking.schedule_id == request.schedule_id, Booking.booking_status == "confirmed")
         .first()
     )
-
     if existing_booking:
         raise HTTPException(status_code=400, detail="This slot has already been booked")
-
-    start_datetime = datetime.combine(schedule.date, schedule.start_time)
-    end_datetime = datetime.combine(schedule.date, schedule.end_time)
-
-    # Google Calendar event is created when the admin approves the booking.
-    meeting_link = None
-    google_event_id = None
 
     booking = Booking(
         schedule_id=request.schedule_id,
@@ -371,9 +460,8 @@ def book_slot(
         admin_id=schedule.admin_id,
         meeting_link=None,
         google_event_id=None,
-        booking_status="pending"
+        booking_status="pending",
     )
-
     db.add(booking)
     schedule.status = "booked"
 
@@ -383,9 +471,6 @@ def book_slot(
     except Exception:
         db.rollback()
         raise HTTPException(status_code=400, detail="Unable to complete booking.")
-
-    print(f"Booking successful: {booking.id}")
-    print("=== End Booking Debug ===\n")
 
     return {
         "message": "Booking successful",
@@ -398,68 +483,52 @@ def book_slot(
     }
 
 
+# ─────────────────────────────────────────────────────────────
+# POST /bookings/{id}/approve
+# ─────────────────────────────────────────────────────────────
 @router.post("/{booking_id}/approve")
-def approve_booking(
-    booking_id: int,
-    db: Session = Depends(get_db)
-):
-    """Admin approves a pending booking. Creates the Google Calendar event now."""
+def approve_booking(booking_id: int, db: Session = Depends(get_db)):
     booking = db.query(Booking).filter(Booking.id == booking_id).first()
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
-
     if booking.booking_status != "pending":
-        raise HTTPException(
-            status_code=400,
-            detail=f"Only pending bookings can be approved. This one is {booking.booking_status}."
-        )
+        raise HTTPException(status_code=400, detail=f"Only pending bookings can be approved. This one is {booking.booking_status}.")
 
-    schedule = (
-        db.query(AdminSchedule)
-        .filter(AdminSchedule.id == booking.schedule_id)
-        .first()
-    )
+    schedule = db.query(AdminSchedule).filter(AdminSchedule.id == booking.schedule_id).first()
     if not schedule:
         raise HTTPException(status_code=404, detail="Associated slot not found")
 
-    start_datetime = datetime.combine(schedule.date, schedule.start_time)
-    end_datetime = datetime.combine(schedule.date, schedule.end_time)
+    start_dt = datetime.combine(schedule.date, schedule.start_time)
+    end_dt = datetime.combine(schedule.date, schedule.end_time)
 
-    meeting_link = None
-    google_event_id = None
-
-    host_token_row = (
-        db.query(UserGoogleToken)
-        .filter(UserGoogleToken.user_id == booking.admin_id)
-        .first()
-    )
+    host_token_row = db.query(UserGoogleToken).filter(UserGoogleToken.user_id == booking.admin_id).first()
+    admin = db.query(User).filter(User.user_id == booking.admin_id).first()
+    learner = db.query(User).filter(User.user_id == booking.user_id).first()
 
     if host_token_row and host_token_row.refresh_token:
         try:
-            print(f"Approving booking {booking.id}. Creating Google Calendar event...")
+            attendees = []
+            if admin and admin.email:
+                attendees.append(admin.email)
+            if learner and learner.email and learner.email != (admin.email if admin else None):
+                attendees.append(learner.email)
+
             google_result = create_google_meet_event(
                 title="Saarthi Curious - Admin Call",
-                start_datetime=start_datetime,
-                end_datetime=end_datetime,
+                start_datetime=start_dt,
+                end_datetime=end_dt,
                 refresh_token=host_token_row.refresh_token,
+                attendees=attendees,
             )
-            meeting_link = google_result.get("meeting_link")
-            google_event_id = google_result.get("event_id")
-            print(f"Approved: Google Calendar event {google_event_id}")
+            booking.meeting_link = google_result.get("meeting_link")
+            booking.google_event_id = google_result.get("event_id")
         except Exception as e:
-            print(f"Google Calendar error on approval: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail=f"Could not create Google Calendar event: {e}"
-            )
+            print(f"[approve] Google error: {e}")
+            raise HTTPException(status_code=500, detail=f"Could not create Google Calendar event: {e}")
     else:
-        print(f"Host {booking.admin_id} has no Google token — approving without Meet link.")
-        meeting_link = "Google Meet link will be provided later"
+        booking.meeting_link = "Google Meet link will be provided later"
 
-    booking.meeting_link = meeting_link
-    booking.google_event_id = google_event_id
     booking.booking_status = "confirmed"
-
     try:
         db.commit()
         db.refresh(booking)
@@ -476,31 +545,20 @@ def approve_booking(
     }
 
 
+# ─────────────────────────────────────────────────────────────
+# POST /bookings/{id}/reject
+# ─────────────────────────────────────────────────────────────
 @router.post("/{booking_id}/reject")
-def reject_booking(
-    booking_id: int,
-    request: CancelRequest,
-    db: Session = Depends(get_db)
-):
-    """Admin rejects a pending booking. Frees the slot."""
+def reject_booking(booking_id: int, request: CancelRequest, db: Session = Depends(get_db)):
     booking = db.query(Booking).filter(Booking.id == booking_id).first()
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
-
     if booking.booking_status != "pending":
-        raise HTTPException(
-            status_code=400,
-            detail=f"Only pending bookings can be rejected. This one is {booking.booking_status}."
-        )
+        raise HTTPException(status_code=400, detail=f"Only pending bookings can be rejected. This one is {booking.booking_status}.")
 
-    slot = (
-        db.query(AdminSchedule)
-        .filter(AdminSchedule.id == booking.schedule_id)
-        .first()
-    )
+    slot = db.query(AdminSchedule).filter(AdminSchedule.id == booking.schedule_id).first()
     if slot:
         slot.status = "available"
-
     booking.booking_status = "rejected"
 
     try:
@@ -509,60 +567,33 @@ def reject_booking(
         db.rollback()
         raise HTTPException(status_code=400, detail="Unable to reject booking")
 
-    return {
-        "message": "Booking rejected",
-        "booking_id": booking.id,
-        "reason": request.reason,
-    }
+    return {"message": "Booking rejected", "booking_id": booking.id, "reason": request.reason}
 
 
 # ─────────────────────────────────────────────────────────────
-# POST /bookings/{booking_id}/reschedule  ← NEW: single booking move
+# POST /bookings/{id}/reschedule
 # ─────────────────────────────────────────────────────────────
-
 @router.post("/{booking_id}/reschedule")
-def reschedule_single_booking(
-    booking_id: int,
-    request: SingleRescheduleRequest,
-    db: Session = Depends(get_db)
-):
-    """
-    Move ONE booking to a new slot. Also moves the Google Calendar event.
-    """
+def reschedule_single_booking(booking_id: int, request: SingleRescheduleRequest, db: Session = Depends(get_db)):
     booking = db.query(Booking).filter(Booking.id == booking_id).first()
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
-
     if booking.booking_status != "confirmed":
         raise HTTPException(status_code=400, detail=f"Cannot reschedule a {booking.booking_status} booking")
 
-    new_slot = (
-        db.query(AdminSchedule)
-        .filter(AdminSchedule.id == request.new_schedule_id)
-        .first()
-    )
+    new_slot = db.query(AdminSchedule).filter(AdminSchedule.id == request.new_schedule_id).first()
     if not new_slot:
         raise HTTPException(status_code=404, detail="Target slot not found")
-
     if new_slot.status != "available":
         raise HTTPException(status_code=400, detail="Target slot is not available")
 
-    old_slot = (
-        db.query(AdminSchedule)
-        .filter(AdminSchedule.id == booking.schedule_id)
-        .first()
-    )
+    old_slot = db.query(AdminSchedule).filter(AdminSchedule.id == booking.schedule_id).first()
 
     new_start = datetime.combine(new_slot.date, new_slot.start_time)
     new_end = datetime.combine(new_slot.date, new_slot.end_time)
 
-    # Move the Google Calendar event, if any
     if booking.google_event_id:
-        host_token_row = (
-            db.query(UserGoogleToken)
-            .filter(UserGoogleToken.user_id == booking.admin_id)
-            .first()
-        )
+        host_token_row = db.query(UserGoogleToken).filter(UserGoogleToken.user_id == booking.admin_id).first()
         if host_token_row and host_token_row.refresh_token:
             try:
                 reschedule_google_event(
@@ -571,14 +602,9 @@ def reschedule_single_booking(
                     new_end_datetime=new_end,
                     refresh_token=host_token_row.refresh_token,
                 )
-                print(f"Google Calendar event {booking.google_event_id} moved.")
             except Exception as e:
-                print(f"Google Calendar move error: {e}")
                 raise HTTPException(status_code=500, detail=f"Google Calendar move failed: {e}")
-        else:
-            print(f"Host {booking.admin_id} has no Google token — skipping Google move.")
 
-    # Free old slot, book new slot, update booking
     if old_slot:
         old_slot.status = "available"
     new_slot.status = "booked"
@@ -602,55 +628,30 @@ def reschedule_single_booking(
 
 
 # ─────────────────────────────────────────────────────────────
-# POST /bookings/{booking_id}/cancel  ← NEW
+# POST /bookings/{id}/cancel
 # ─────────────────────────────────────────────────────────────
-
 @router.post("/{booking_id}/cancel")
-def cancel_booking(
-    booking_id: int,
-    request: CancelRequest,
-    db: Session = Depends(get_db)
-):
-    """
-    Cancel a booking, delete the Google Calendar event, and free the slot.
-    """
+def cancel_booking(booking_id: int, request: CancelRequest, db: Session = Depends(get_db)):
     booking = db.query(Booking).filter(Booking.id == booking_id).first()
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
-
     if booking.booking_status != "confirmed":
         raise HTTPException(status_code=400, detail=f"Booking is already {booking.booking_status}")
 
-    # Delete the Google Calendar event if we have an ID and the host is connected
     if booking.google_event_id:
-        host_token_row = (
-            db.query(UserGoogleToken)
-            .filter(UserGoogleToken.user_id == booking.admin_id)
-            .first()
-        )
+        host_token_row = db.query(UserGoogleToken).filter(UserGoogleToken.user_id == booking.admin_id).first()
         if host_token_row and host_token_row.refresh_token:
             try:
                 delete_google_event(
                     event_id=booking.google_event_id,
                     refresh_token=host_token_row.refresh_token,
                 )
-                print(f"Google Calendar event {booking.google_event_id} deleted.")
             except Exception as e:
-                # Don't fail the cancel if Google delete fails; log it
-                print(f"Google Calendar delete error (non-fatal): {e}")
-        else:
-            print(f"Host {booking.admin_id} has no Google token — skipping Google delete.")
+                print(f"Google delete error (non-fatal): {e}")
 
-    # Free the slot
-    slot = (
-        db.query(AdminSchedule)
-        .filter(AdminSchedule.id == booking.schedule_id)
-        .first()
-    )
+    slot = db.query(AdminSchedule).filter(AdminSchedule.id == booking.schedule_id).first()
     if slot:
         slot.status = "available"
-
-    # Mark the booking cancelled
     booking.booking_status = "cancelled"
 
     try:
@@ -659,29 +660,18 @@ def cancel_booking(
         db.rollback()
         raise HTTPException(status_code=400, detail="Unable to cancel booking")
 
-    return {
-        "message": "Booking cancelled",
-        "booking_id": booking.id,
-        "reason": request.reason,
-    }
+    return {"message": "Booking cancelled", "booking_id": booking.id, "reason": request.reason}
 
 
 # ─────────────────────────────────────────────────────────────
-# POST /bookings/reschedule-date  (bulk — kept for backwards compat)
+# POST /bookings/reschedule-date (bulk)
 # ─────────────────────────────────────────────────────────────
-
 @router.post("/reschedule-date")
-def reschedule_date(
-    request: RescheduleRequest,
-    db: Session = Depends(get_db)
-):
+def reschedule_date(request: RescheduleRequest, db: Session = Depends(get_db)):
     bookings = (
         db.query(Booking)
         .join(AdminSchedule, Booking.schedule_id == AdminSchedule.id)
-        .filter(
-            AdminSchedule.date == request.source_date,
-            Booking.booking_status == "confirmed"
-        )
+        .filter(AdminSchedule.date == request.source_date, Booking.booking_status == "confirmed")
         .order_by(AdminSchedule.start_time)
         .all()
     )
@@ -691,10 +681,7 @@ def reschedule_date(
 
     available_slots = (
         db.query(AdminSchedule)
-        .filter(
-            AdminSchedule.date == request.target_date,
-            AdminSchedule.status == "available"
-        )
+        .filter(AdminSchedule.date == request.target_date, AdminSchedule.status == "available")
         .order_by(AdminSchedule.start_time)
         .all()
     )
@@ -702,42 +689,30 @@ def reschedule_date(
     if len(available_slots) < len(bookings):
         raise HTTPException(
             status_code=400,
-            detail=f"Not enough available slots on target date. Need {len(bookings)}, only {len(available_slots)} available."
+            detail=f"Not enough available slots on target date. Need {len(bookings)}, only {len(available_slots)} available.",
         )
 
     rescheduled = []
-
     for booking, new_slot in zip(bookings, available_slots):
-        old_schedule = (
-            db.query(AdminSchedule)
-            .filter(AdminSchedule.id == booking.schedule_id)
-            .first()
-        )
-
-        new_start_datetime = datetime.combine(new_slot.date, new_slot.start_time)
-        new_end_datetime = datetime.combine(new_slot.date, new_slot.end_time)
+        old_schedule = db.query(AdminSchedule).filter(AdminSchedule.id == booking.schedule_id).first()
+        new_start = datetime.combine(new_slot.date, new_slot.start_time)
+        new_end = datetime.combine(new_slot.date, new_slot.end_time)
 
         if booking.google_event_id:
-            host_token_row = (
-                db.query(UserGoogleToken)
-                .filter(UserGoogleToken.user_id == booking.admin_id)
-                .first()
-            )
+            host_token_row = db.query(UserGoogleToken).filter(UserGoogleToken.user_id == booking.admin_id).first()
             if host_token_row and host_token_row.refresh_token:
                 try:
                     reschedule_google_event(
                         event_id=booking.google_event_id,
-                        new_start_datetime=new_start_datetime,
-                        new_end_datetime=new_end_datetime,
+                        new_start_datetime=new_start,
+                        new_end_datetime=new_end,
                         refresh_token=host_token_row.refresh_token,
                     )
                 except Exception as e:
-                    print("Google Calendar reschedule error:", e)
-                    raise HTTPException(status_code=500, detail="Unable to reschedule Google Calendar event.")
-            else:
-                print(f"Host {booking.admin_id} has no Google token — skipping Google reschedule.")
+                    raise HTTPException(status_code=500, detail=f"Google reschedule failed: {e}")
 
-        old_schedule.status = "available"
+        if old_schedule:
+            old_schedule.status = "available"
         new_slot.status = "booked"
         booking.schedule_id = new_slot.id
 
@@ -747,7 +722,7 @@ def reschedule_date(
             "new_date": new_slot.date.isoformat(),
             "new_start_time": new_slot.start_time.strftime("%H:%M"),
             "new_end_time": new_slot.end_time.strftime("%H:%M"),
-            "meeting_link": booking.meeting_link
+            "meeting_link": booking.meeting_link,
         })
 
     try:
@@ -756,33 +731,8 @@ def reschedule_date(
         db.rollback()
         raise HTTPException(status_code=400, detail="Unable to reschedule meetings.")
 
-    from email_service import send_email
-
-    for booking in bookings:
-        user = db.query(User).filter(User.user_id == booking.user_id).first()
-        if user and user.email:
-            reschedule_info = next((r for r in rescheduled if r["booking_id"] == booking.id), None)
-            if reschedule_info:
-                try:
-                    email_html = f"""
-                    <h2>Meeting Rescheduled</h2>
-                    <p>Dear {user.full_name},</p>
-                    <p>Your meeting has been rescheduled from {request.source_date} to {reschedule_info['new_date']}.</p>
-                    <p><strong>New Time:</strong> {reschedule_info['new_start_time']} - {reschedule_info['new_end_time']}</p>
-                    <p><strong>Meeting Link:</strong> <a href="{reschedule_info['meeting_link']}">Join Meeting</a></p>
-                    <p>Best regards,<br>Saarthi Curious Team</p>
-                    """
-                    send_email(
-                        to_email=user.email,
-                        subject="Your Meeting Has Been Rescheduled - Saarthi Curious",
-                        html=email_html
-                    )
-                    print(f"Reschedule email sent to {user.email}")
-                except Exception as e:
-                    print(f"Failed to send reschedule email to {user.email}: {e}")
-
     return {
         "message": "Meetings rescheduled successfully.",
         "rescheduled": len(rescheduled),
-        "meetings": rescheduled
+        "meetings": rescheduled,
     }

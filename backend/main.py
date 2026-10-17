@@ -37,6 +37,7 @@ from routes.ai_chat import router as ai_chat_router
 from routes.google_calendar_routes import router as google_calendar_router
 from routes.ai_schedule import router as ai_schedule_router
 from database import SessionLocal
+from routes.calendar_events import router as calendar_events_router
 
 
 app = FastAPI(
@@ -92,6 +93,7 @@ app.include_router(certificates_router)
 app.include_router(ai_chat_router)
 app.include_router(google_calendar_router)
 app.include_router(ai_schedule_router)
+app.include_router(calendar_events_router)
 
 # ============================
 # DEBUG - Print all routes (fixed)

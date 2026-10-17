@@ -33,4 +33,5 @@ dist/
 # Build outputs
 frontend/dist/
 backend/dist/
+backend/generated_reports/
 *.tsbuildinfo
