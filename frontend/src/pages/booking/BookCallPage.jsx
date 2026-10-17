@@ -15,7 +15,13 @@ import {
 } from "./bookingUtils";
 
 const MONTHS_AHEAD = 2;
-const DEFAULT_HOST_ID = Number(import.meta.env?.VITE_BOOKING_HOST_ID) || 57;
+// Read the actual logged-in user's ID from localStorage
+const getLoggedInUserId = () => {
+  const id = localStorage.getItem("user_id") || localStorage.getItem("id");
+  return id ? Number(id) : null;
+};
+
+const DEFAULT_HOST_ID = getLoggedInUserId() || Number(import.meta.env?.VITE_BOOKING_HOST_ID) || 57;
 
 export default function BookCallPage({
   mode = "learner",
