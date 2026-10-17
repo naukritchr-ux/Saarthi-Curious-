@@ -43,7 +43,7 @@ def create_google_meet_event(
     """
     service = _build_service(refresh_token)
 
-    event = {
+    event_body = {
         "summary": title,
         "description": description,
         "start": {
@@ -78,27 +78,24 @@ def create_google_meet_event(
                 seen.add(email)
                 clean.append({"email": email.strip()})
         if clean:
-            event["attendees"] = clean
+            event_body["attendees"] = clean
 
-    created = (
-        service.events()
-        .insert(
-            calendarId="primary",
-            body=event,
-            conferenceDataVersion=1,
-            sendUpdates="all",  # sends emails to all attendees
-        )
-        .execute()
-    )
+    event = service.events().insert(
+        calendarId='primary',
+        body=event_body,
+        conferenceDataVersion=1, 
+        sendUpdates='all' 
+    ).execute()
 
-    meeting_link = None
-    for ep in created.get("conferenceData", {}).get("entryPoints", []):
-        if ep.get("entryPointType") == "video":
-            meeting_link = ep.get("uri")
-            break
+    meeting_link = event.get("hangoutLink")
+    if not meeting_link:
+        for ep in event.get("conferenceData", {}).get("entryPoints", []):
+            if ep.get("entryPointType") == "video":
+                meeting_link = ep.get("uri")
+                break
 
     return {
-        "event_id": created.get("id"),
+        "event_id": event.get("id"),
         "meeting_link": meeting_link,
     }
 

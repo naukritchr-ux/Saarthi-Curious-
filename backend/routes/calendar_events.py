@@ -80,15 +80,22 @@ def create_event(request: CalendarEventRequest, db: Session = Depends(get_db)):
         try:
             start_dt = datetime.combine(event_date, start)
             end_dt = datetime.combine(event_date, end)
+            
+            # Create attendees list using the admin's email
+            attendee_emails = []
+            if admin.email:
+                attendee_emails.append(admin.email)
+                
             result = create_google_meet_event(
                 title=request.title,
                 start_datetime=start_dt,
                 end_datetime=end_dt,
                 refresh_token=token_row.refresh_token,
-                attendees=None,  # no attendees for personal events
+                attendees=attendee_emails,  # <-- Pass the list here instead of None
                 description=request.description or request.title,
             )
             ev.google_event_id = result.get("event_id")
+            print(f"[calendar-events] Synced to Google Calendar: {ev.google_event_id}")
         except Exception as e:
             print(f"[calendar-events] Google sync failed: {e}")
     else:
