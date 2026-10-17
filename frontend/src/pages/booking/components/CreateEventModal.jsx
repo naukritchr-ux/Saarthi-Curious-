@@ -31,10 +31,12 @@ export default function CreateEventModal({
     const [startTime, setStartTime] = useState("10:00");
     const [endTime, setEndTime] = useState("10:30");
     const [learnerId, setLearnerId] = useState("");
+    const [additionalEmails, setAdditionalEmails] = useState("");
     const [title, setTitle] = useState("");
     const [addMeet, setAddMeet] = useState(true);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
+    const [successMessage, setSuccessMessage] = useState("");
 
     const duration = diffMinutes(startTime, endTime);
     const isMeeting = !!learnerId;
@@ -50,6 +52,11 @@ export default function CreateEventModal({
             return;
         }
 
+        const attendee_emails = additionalEmails
+            .split(",")
+            .map((e) => e.trim())
+            .filter(Boolean);
+
         setBusy(true);
         try {
             if (isMeeting) {
@@ -62,6 +69,7 @@ export default function CreateEventModal({
                     title,
                     description: title,
                     add_meet: addMeet,
+                    attendee_emails,
                 });
             } else {
                 await createCalendarEvent({
@@ -72,10 +80,14 @@ export default function CreateEventModal({
                     title,
                     event_type: "custom",
                     add_meet: addMeet,
+                    attendee_emails,
                 });
             }
+            setSuccessMessage("Event created successfully!");
             onCreated?.();
-            onClose();
+            setTimeout(() => {
+                onClose();
+            }, 1200);
         } catch (e) {
             setError(e.message);
         } finally {
@@ -101,7 +113,7 @@ export default function CreateEventModal({
                     background: "white",
                     borderRadius: 14,
                     width: "100%",
-                    maxWidth: 440,
+                    maxWidth: 500,
                     overflow: "hidden",
                     boxShadow: "0 30px 80px rgba(0,0,0,0.55)",
                 }}
@@ -153,6 +165,27 @@ export default function CreateEventModal({
                 </div>
 
                 <div style={{ padding: "20px" }}>
+                    {successMessage && (
+                        <div
+                            style={{
+                                background: "#ECFDF5",
+                                color: "#065F46",
+                                border: "1px solid #A7F3D0",
+                                fontSize: 13,
+                                fontWeight: 600,
+                                padding: "10px 14px",
+                                borderRadius: 8,
+                                marginBottom: 14,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 8,
+                            }}
+                        >
+                            <span style={{ fontSize: 15 }}>✓</span>
+                            <span>{successMessage}</span>
+                        </div>
+                    )}
+
                     <Field label="Title">
                         <input
                             type="text"
@@ -164,20 +197,38 @@ export default function CreateEventModal({
                         />
                     </Field>
 
-                    <Field label="Learner (optional)">
-                        <select
-                            value={learnerId}
-                            onChange={(e) => setLearnerId(e.target.value)}
-                            style={inputStyle}
-                        >
-                            <option value="">— Personal event (no learner) —</option>
-                            {learners.map((l) => (
-                                <option key={l.user_id} value={l.user_id}>
-                                    {l.full_name} — {l.email}
-                                </option>
-                            ))}
-                        </select>
-                    </Field>
+                    <div
+                        style={{
+                            display: "grid",
+                            gridTemplateColumns: "1fr 1fr",
+                            gap: 12,
+                        }}
+                    >
+                        <Field label="Learner (optional)">
+                            <select
+                                value={learnerId}
+                                onChange={(e) => setLearnerId(e.target.value)}
+                                style={inputStyle}
+                            >
+                                <option value="">— Personal event (no learner) —</option>
+                                {learners.map((l) => (
+                                    <option key={l.user_id} value={l.user_id}>
+                                        {l.full_name} — {l.email}
+                                    </option>
+                                ))}
+                            </select>
+                        </Field>
+
+                        <Field label="Additional Attendee Emails">
+                            <input
+                                type="text"
+                                value={additionalEmails}
+                                onChange={(e) => setAdditionalEmails(e.target.value)}
+                                placeholder="name@org.com, other@org.com"
+                                style={inputStyle}
+                            />
+                        </Field>
+                    </div>
 
                     <Field label="Date">
                         <input

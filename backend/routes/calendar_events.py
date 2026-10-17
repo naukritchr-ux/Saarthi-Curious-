@@ -24,6 +24,7 @@ class CalendarEventRequest(BaseModel):
     all_day: bool = False
     description: Optional[str] = None
     add_meet: bool = True
+    attendee_emails: list[str] = []  # <-- ADD THIS
 
 
 @router.post("/events")
@@ -81,17 +82,22 @@ def create_event(request: CalendarEventRequest, db: Session = Depends(get_db)):
             start_dt = datetime.combine(event_date, start)
             end_dt = datetime.combine(event_date, end)
             
-            # Create attendees list using the admin's email
-            attendee_emails = []
+            attendee_list = []
             if admin.email:
-                attendee_emails.append(admin.email)
-                
+                attendee_list.append(admin.email)
+            
+            # Add the custom emails typed by the user
+            if request.attendee_emails:
+                for email in request.attendee_emails:
+                    if email and email not in attendee_list:
+                        attendee_list.append(email)
+
             result = create_google_meet_event(
                 title=request.title,
                 start_datetime=start_dt,
                 end_datetime=end_dt,
                 refresh_token=token_row.refresh_token,
-                attendees=attendee_emails,  # <-- Pass the list here instead of None
+                attendees=attendee_list,  # <-- Pass the combined list
                 description=request.description or request.title,
             )
             ev.google_event_id = result.get("event_id")
