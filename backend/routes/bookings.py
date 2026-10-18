@@ -232,16 +232,9 @@ def create_custom_booking(
     db.add(booking)
     db.flush()
 
-<<<<<<< HEAD
-    host_token_row = (
-        db.query(UserGoogleToken)
-        .filter(UserGoogleToken.user_id == request.admin_id)
-        .first()
-    )
-=======
     # Google Calendar — both admin and learner get the invite
     host_token_row = get_valid_admin_token(db, request.admin_id)
->>>>>>> feature/booking-calendar-ai
+
 
     if host_token_row and host_token_row.refresh_token:
         try:
@@ -333,12 +326,9 @@ def get_schedule(
     ]
 
 
-<<<<<<< HEAD
-=======
 # ─────────────────────────────────────────────────────────────
 # GET /bookings/calendar  ← Unified Calendar Feed (Bookings + Tasks + Google + Events)
 # ─────────────────────────────────────────────────────────────
->>>>>>> feature/booking-calendar-ai
 @router.get("/calendar")
 def get_calendar(
     month: str = Query(..., description="YYYY-MM"),
