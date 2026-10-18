@@ -16,7 +16,7 @@ export default function BookCallPage({
   const effectiveHostId = isAdmin ? (getLoggedInUserId() || hostId || 2) : (hostId || DEFAULT_HOST_ID);
 
   return (
-    <div className="w-full h-screen overflow-hidden bg-[#0a0b0e]">
+    <div className="w-full h-screen overflow-hidden">
       <SaarthiDashboard adminId={effectiveHostId} />
     </div>
   );

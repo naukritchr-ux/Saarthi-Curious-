@@ -98,8 +98,42 @@ export default function SaarthiDashboard({ adminId = null }) {
     return new Date().toISOString().slice(0, 10);
   }, []);
 
-  // Top Bar Actions State
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  // Top Bar Actions State & Theme Persistence
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem("saarthi_theme");
+      if (saved) return saved === "dark";
+    } catch {}
+    return true; // Default dark theme
+  });
+
+  const toggleTheme = () => {
+    setIsDarkMode(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem("saarthi_theme", next ? "dark" : "light");
+      } catch {}
+      toast(next ? "Dark theme enabled" : "Light theme enabled", {
+        icon: next ? "🌙" : "☀️",
+        duration: 2500,
+      });
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    if (!isDarkMode) {
+      document.body.classList.add("saarthi-light-theme");
+      document.body.classList.remove("saarthi-dark-theme");
+    } else {
+      document.body.classList.add("saarthi-dark-theme");
+      document.body.classList.remove("saarthi-light-theme");
+    }
+    return () => {
+      document.body.classList.remove("saarthi-light-theme", "saarthi-dark-theme");
+    };
+  }, [isDarkMode]);
+
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSendingReminders, setIsSendingReminders] = useState(false);
@@ -761,13 +795,22 @@ export default function SaarthiDashboard({ adminId = null }) {
     );
   };
 
-  // Utilization Donut Data: Matching Image 3
-  const utilizationMetrics = aiData?.utilization?.metrics || [
-    { name: "Meetings", hours: "6h 20m", value: 6.33, color: "#9333ea" },
-    { name: "Focus time", hours: "2h 10m", value: 2.16, color: "#2563eb" },
-    { name: "Personal", hours: "1h 30m", value: 1.5, color: "#10b981" },
-    { name: "Available", hours: "4h 0m", value: 4.0, color: "#242731" }
-  ];
+  // Utilization Donut Data: Matching Image 3 with dynamic light/dark colors
+  const utilizationMetrics = useMemo(() => {
+    const defaultMetrics = [
+      { name: "Meetings", hours: "6h 20m", value: 6.33, color: "#9333ea" },
+      { name: "Focus time", hours: "2h 10m", value: 2.16, color: "#2563eb" },
+      { name: "Personal", hours: "1h 30m", value: 1.5, color: "#10b981" },
+      { name: "Available", hours: "4h 0m", value: 4.0, color: isDarkMode ? "#242731" : "#e2e8f0" }
+    ];
+    const source = aiData?.utilization?.metrics || defaultMetrics;
+    return source.map((m) => {
+      if (m.name === "Available" && !isDarkMode && (m.color === "#242731" || !m.color)) {
+        return { ...m, color: "#e2e8f0" };
+      }
+      return m;
+    });
+  }, [aiData?.utilization?.metrics, isDarkMode]);
 
   // Real upcoming events list with fallbacks from Image 3
   const upcomingList = (aiData?.upcoming && aiData.upcoming.length > 0)
@@ -820,7 +863,7 @@ export default function SaarthiDashboard({ adminId = null }) {
   }, [formData.start, formData.end]);
 
   return (
-    <div className="saarthi-layout">
+    <div className={`saarthi-layout ${isDarkMode ? "dark-theme" : "light-theme"}`}>
       <Toaster position="top-right" />
 
       {/* =========================================================
@@ -1030,12 +1073,7 @@ export default function SaarthiDashboard({ adminId = null }) {
             <button
               className="top-action-btn"
               title={isDarkMode ? "Switch to Light theme" : "Switch to Dark theme"}
-              onClick={() => {
-                setIsDarkMode(!isDarkMode);
-                toast(isDarkMode ? "Light theme enabled" : "Dark theme enabled", {
-                  icon: isDarkMode ? "☀️" : "🌙"
-                });
-              }}
+              onClick={toggleTheme}
             >
               {isDarkMode ? <Sun size={17} /> : <Moon size={17} />}
             </button>
