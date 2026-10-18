@@ -73,7 +73,7 @@ export default function SaarthiDashboard({ adminId = null }) {
   const [activeSidebarTab, setActiveSidebarTab] = useState("calendar");
   const [currentView, setCurrentView] = useState("timeGridWeek");
   const [dateRangeText, setDateRangeText] = useState("18 – 24 October 2026");
-  const [selectedMiniDay, setSelectedMiniDay] = useState(18);
+  const [selectedMiniDay, setSelectedMiniDay] = useState(() => new Date().getDate());
 
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState("");
@@ -738,6 +738,7 @@ export default function SaarthiDashboard({ adminId = null }) {
   const handleToday = () => {
     if (calendarRef.current) {
       calendarRef.current.getApi().today();
+      setSelectedMiniDay(new Date().getDate());
       updateDateText();
     }
   };
@@ -1131,27 +1132,39 @@ export default function SaarthiDashboard({ adminId = null }) {
           </div>
         </div>
 
-        {/* Clean FullCalendar Grid (Pure Dark Theme, NO Yellow Col/Drag) */}
+        {/* Clean FullCalendar Grid (Full 24 Hours, Visible Hour Lines, Dynamic Today Highlight) */}
         <div className="calendar-card-wrapper">
           <FullCalendar
             ref={calendarRef}
             plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
             initialView="timeGridWeek"
-            initialDate="2026-10-18"
             headerToolbar={false}
             events={events}
             selectable={true}
             select={handleSelect}
             eventContent={renderEventContent}
             height="100%"
-            slotMinTime="06:00:00"
-            slotMaxTime="23:00:00"
+            slotMinTime="00:00:00"
+            slotMaxTime="24:00:00"
+            scrollTime="07:00:00"
+            slotDuration="00:30:00"
+            slotLabelInterval="01:00:00"
+            slotLabelFormat={{
+              hour: "numeric",
+              minute: "2-digit",
+              omitZeroMinute: true,
+              meridiem: "short"
+            }}
             allDaySlot={false}
             nowIndicator={true}
             dayHeaderContent={(args) => {
               const dayName = args.date.toLocaleDateString("en-US", { weekday: "short" });
               const dayNum = args.date.getDate();
-              const isTodayActive = dayNum === 18;
+              const today = new Date();
+              const isTodayActive =
+                args.date.getDate() === today.getDate() &&
+                args.date.getMonth() === today.getMonth() &&
+                args.date.getFullYear() === today.getFullYear();
               return (
                 <div className="col-header-custom">
                   <span className="col-header-name">{dayName}</span>
