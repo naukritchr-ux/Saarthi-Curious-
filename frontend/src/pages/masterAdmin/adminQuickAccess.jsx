@@ -17,7 +17,7 @@ const QUICK = [
   { label: "Reports & Analytics", path: "/reports", icon: ChartColumn, c: "#14b8a6" },
   { label: "Add Programs", path: "/programs/create", icon: BookOpen, c: "#db2777" },
   { label: "Streak Management", path: "/admin/streak-management", icon: Flame, c: "#ef4444" },
-  { label: "Reschedule Meetings", path: "/admin/reschedule", icon: CalendarDays, c: "#22c55e" },
+  { label: "Saarthi Calendar", path: "/admin/reschedule", icon: CalendarDays, c: "#22c55e" },
 ];
 
 const AdminQuickAccess = () => {

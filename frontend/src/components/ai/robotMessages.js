@@ -22,7 +22,7 @@ export const ROBOT_MESSAGES = [
   { text: "A fresh session begins! Let me know if you'd like to inspect quiz trends.", mood: "idle", gesture: "talking1" },
 
   // ── Calendar, Calls & Scheduling (16-28) ──────────────────────────
-  { text: "Need to reschedule calls for tomorrow? Use the 'Reschedule Meetings' tool!", mood: "talking", gesture: "talking1" },
+  { text: "Need to reschedule calls for tomorrow? Use the 'Saarthi Calendar' tool!", mood: "talking", gesture: "talking1" },
   { text: "Calendar tip: You can ask me 'Move all Friday meetings to Monday' anytime.", mood: "happy", gesture: "wink" },
   { text: "Checking your schedule... Your booked slots sync directly with Google Meet.", mood: "idle", gesture: "hero" },
   { text: "Remember: New bookings arrive as 'Pending' until you click Approve in the ledger.", mood: "talking", gesture: "talking2" },

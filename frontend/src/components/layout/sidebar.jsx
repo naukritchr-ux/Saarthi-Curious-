@@ -17,6 +17,7 @@ import {
   GraduationCap,
   FileText,
   RefreshCw,
+  Calendar,
 } from "lucide-react";
 
 const Sidebar = ({ isExpanded, onMouseEnter, onMouseLeave, onNavigate }) => {
@@ -166,8 +167,8 @@ const Sidebar = ({ isExpanded, onMouseEnter, onMouseLeave, onNavigate }) => {
       },
       {
         id: "reschedule-meetings",
-        icon: RefreshCw,
-        label: "Reschedule Meetings",
+        icon: Calendar,
+        label: "Saarthi Calendar",
         path: "/admin/reschedule",
         section: "Administration",
         roles: [1, 2], // Admin only
