@@ -26,8 +26,9 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 load_dotenv()
 
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID") or "95621534418-tj95nvfs7ver7rqobc5pr331n2nhtei7.apps.googleusercontent.com"
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET") or "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"
+import os
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI") or "http://localhost:8000/google/callback"
 
 GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
