@@ -36,6 +36,21 @@ const Navbar = ({ onMenuToggle }) => {
     localStorage.removeItem("token");
     localStorage.removeItem("role_id");
     localStorage.removeItem("user");
+    localStorage.removeItem("email");
+    localStorage.removeItem("full_name");
+    localStorage.removeItem("saarthi_google_status");
+    localStorage.removeItem("google_calendar_connected");
+    localStorage.removeItem("google_calendar_email");
+    localStorage.removeItem("saarthi_keep_notes");
+
+    // Also clear all user-scoped google status keys
+    try {
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith("saarthi_google_status_")) {
+          localStorage.removeItem(key);
+        }
+      });
+    } catch {}
 
     navigate("/", { replace: true });
   };

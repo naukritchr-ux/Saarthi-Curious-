@@ -55,18 +55,8 @@ def get_valid_admin_token(db: Session, admin_id: int):
         .order_by(UserGoogleToken.updated_at.desc(), UserGoogleToken.id.desc())
         .first()
     )
-    if not token:
-        token = (
-            db.query(UserGoogleToken)
-            .filter(
-                UserGoogleToken.refresh_token.isnot(None),
-                UserGoogleToken.refresh_token != "pending_auth",
-                UserGoogleToken.refresh_token != "",
-            )
-            .order_by(UserGoogleToken.updated_at.desc(), UserGoogleToken.id.desc())
-            .first()
-        )
     return token
+
 
 
 def generate_schedule_internal(month: str, admin_id: int, months_ahead: int, db: Session):
@@ -446,7 +436,7 @@ def get_calendar(
     except Exception as e:
         print(f"Error fetching calendar events in /calendar: {e}")
 
-    # 4. FETCH REAL GOOGLE EVENTS
+    # 4. FETCH REAL GOOGLE EVENTS (Strictly for this admin/user only)
     try:
         tokens = db.query(UserGoogleToken).filter(
             UserGoogleToken.user_id == admin_id,
@@ -454,26 +444,7 @@ def get_calendar(
             UserGoogleToken.refresh_token != "pending_auth",
             UserGoogleToken.refresh_token != "",
         ).all()
-        if device_id:
-            device_tokens = db.query(UserGoogleToken).filter(
-                UserGoogleToken.device_id == device_id,
-                UserGoogleToken.refresh_token.isnot(None),
-                UserGoogleToken.refresh_token != "pending_auth",
-                UserGoogleToken.refresh_token != "",
-            ).all()
-            tokens = list({t.id: t for t in (tokens + device_tokens)}.values())
 
-        if not tokens:
-            tokens = (
-                db.query(UserGoogleToken)
-                .filter(
-                    UserGoogleToken.refresh_token.isnot(None),
-                    UserGoogleToken.refresh_token != "pending_auth",
-                    UserGoogleToken.refresh_token != "",
-                )
-                .order_by(UserGoogleToken.updated_at.desc(), UserGoogleToken.id.desc())
-                .all()
-            )
 
         for tok in tokens:
             if tok and tok.refresh_token and tok.refresh_token != "pending_auth":
@@ -879,10 +850,20 @@ def link_google_calendar(
     db: Session = Depends(get_db),
 ):
     try:
-        # Check if we already have an authorized token for this email
+        target_user_id = request.user_id
+        if not target_user_id:
+            target_user = db.query(User).filter(User.email == request.email).first()
+            if target_user:
+                target_user_id = target_user.user_id
+
+        if not target_user_id:
+            raise HTTPException(status_code=400, detail="user_id is required to link Google Calendar")
+
+        # Check if we already have an authorized token for THIS user and email
         existing_token = (
             db.query(UserGoogleToken)
             .filter(
+                UserGoogleToken.user_id == target_user_id,
                 UserGoogleToken.google_email == request.email,
                 UserGoogleToken.refresh_token.isnot(None),
                 UserGoogleToken.refresh_token != "pending_auth",
@@ -893,8 +874,6 @@ def link_google_calendar(
         )
 
         if existing_token:
-            if request.user_id:
-                existing_token.user_id = request.user_id
             if request.device_id:
                 existing_token.device_id = request.device_id
             existing_token.is_personal = True
@@ -905,15 +884,6 @@ def link_google_calendar(
                 "email": request.email
             }
 
-        target_user = None
-        if request.user_id:
-            target_user = db.query(User).filter(User.user_id == request.user_id).first()
-        if not target_user:
-            target_user = db.query(User).filter(User.email == request.email).first()
-        if not target_user:
-            target_user = db.query(User).filter(User.role_id.in_([1, 2])).first()
-
-        target_user_id = target_user.user_id if target_user else (request.user_id or 57)
         auth_url = f"/google/connect?email={request.email}&user_id={target_user_id}&is_personal=true&device_id={request.device_id or ''}"
         return {
             "message": "Authorization needed to complete Google Calendar sync.",
@@ -924,8 +894,10 @@ def link_google_calendar(
         }
     except Exception as e:
         db.rollback()
-        print(f"[link_google_calendar] Exception handled: {e}")
-        auth_url = f"/google/connect?email={request.email}&user_id={request.user_id or 57}&is_personal=true&device_id={request.device_id or ''}"
+        target_user_id = request.user_id
+        if not target_user_id:
+            raise HTTPException(status_code=400, detail="user_id is required to link Google Calendar")
+        auth_url = f"/google/connect?email={request.email}&user_id={target_user_id}&is_personal=true&device_id={request.device_id or ''}"
         return {
             "message": "Connecting to Google OAuth...",
             "connected": False,

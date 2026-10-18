@@ -59,14 +59,14 @@ const getLoggedInUserId = () => {
   return id ? Number(id) : null;
 };
 
-export default function SaarthiDashboard({ adminId = 57 }) {
+export default function SaarthiDashboard({ adminId = null }) {
   const calendarRef = useRef(null);
   const chatBottomRef = useRef(null);
   const dataPanelRef = useRef(null);
 
-  const effectiveAdminId = getLoggedInUserId() || adminId || 57;
-  const userName = localStorage.getItem("full_name") || "Anuj Jadhav";
-  const userEmail = localStorage.getItem("email") || "anujjadhv3558@gmail.com";
+  const effectiveAdminId = getLoggedInUserId() || (adminId ? Number(adminId) : null);
+  const userName = localStorage.getItem("full_name") || localStorage.getItem("user_name") || "Admin";
+  const userEmail = localStorage.getItem("email") || "";
   const deviceId = localStorage.getItem("saarthi_device_id") || "device_web_saarthi";
 
   // Navigation & Active States
@@ -125,16 +125,15 @@ export default function SaarthiDashboard({ adminId = 57 }) {
   const [aiData, setAiData] = useState(null);
   const [googleStatus, setGoogleStatus] = useState(() => {
     try {
-      const saved = localStorage.getItem("saarthi_google_status");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && (parsed.connected || parsed.email)) return parsed;
+      if (effectiveAdminId) {
+        const saved = localStorage.getItem(`saarthi_google_status_${effectiveAdminId}`);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed.connected === "boolean") return parsed;
+        }
       }
-      const isConn = localStorage.getItem("google_calendar_connected") === "true";
-      const mail = localStorage.getItem("google_calendar_email") || "anujjadhv4000@gmail.com";
-      if (isConn) return { connected: true, email: mail };
     } catch {}
-    return { connected: true, email: "anujjadhv4000@gmail.com" };
+    return { connected: false, email: null };
   });
 
   // Modal States (Matching User Images 1 & 2)
@@ -213,47 +212,55 @@ export default function SaarthiDashboard({ adminId = 57 }) {
     }
   }, [effectiveAdminId]);
 
-  // 3. Fetch Google Calendar Connection Status
+  // 3. Fetch Google Calendar Connection Status (Strictly for this user)
   const fetchGoogleStatus = useCallback(async () => {
+    if (!effectiveAdminId) {
+      setGoogleStatus({ connected: false, email: null });
+      return;
+    }
     try {
       const res = await axios.get(
         `${BACKEND_URL}/google/status?user_id=${effectiveAdminId}&device_id=${deviceId}`
       );
-      if (res.data && (res.data.connected || res.data.email)) {
-        const email = res.data.email || res.data.personal_email || res.data.company_email || "anujjadhv4000@gmail.com";
+      if (res.data && res.data.connected && res.data.email) {
+        const email = res.data.email;
         const newStatus = { connected: true, email };
         setGoogleStatus(newStatus);
-        localStorage.setItem("saarthi_google_status", JSON.stringify(newStatus));
-        localStorage.setItem("google_calendar_connected", "true");
-        localStorage.setItem("google_calendar_email", email);
-        if (email) {
-          setGmailInput(email);
-        }
+        localStorage.setItem(`saarthi_google_status_${effectiveAdminId}`, JSON.stringify(newStatus));
+        setGmailInput(email);
       } else {
-        setGoogleStatus({ connected: false, email: null });
+        const emptyStatus = { connected: false, email: null };
+        setGoogleStatus(emptyStatus);
+        localStorage.removeItem(`saarthi_google_status_${effectiveAdminId}`);
         localStorage.removeItem("saarthi_google_status");
         localStorage.removeItem("google_calendar_connected");
         localStorage.removeItem("google_calendar_email");
+        if (userEmail) {
+          setGmailInput(userEmail);
+        }
       }
     } catch (err) {
       console.warn("Google status check notice:", err);
+      setGoogleStatus({ connected: false, email: null });
     }
-  }, [effectiveAdminId, deviceId]);
+  }, [effectiveAdminId, deviceId, userEmail]);
 
   // Handle URL Query Params from Google OAuth callback
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("google") === "connected") {
-      const email = params.get("email") || "anujjadhv4000@gmail.com";
-      toast.success(`Google Calendar linked with ${email}!`, {
-        icon: "📅",
-        duration: 5000
-      });
-      const newStatus = { connected: true, email };
-      setGoogleStatus(newStatus);
-      localStorage.setItem("saarthi_google_status", JSON.stringify(newStatus));
-      localStorage.setItem("google_calendar_connected", "true");
-      localStorage.setItem("google_calendar_email", email);
+      const email = params.get("email");
+      if (email) {
+        toast.success(`Google Calendar linked with ${email}!`, {
+          icon: "📅",
+          duration: 5000
+        });
+        const newStatus = { connected: true, email };
+        setGoogleStatus(newStatus);
+        if (effectiveAdminId) {
+          localStorage.setItem(`saarthi_google_status_${effectiveAdminId}`, JSON.stringify(newStatus));
+        }
+      }
       window.history.replaceState({}, document.title, window.location.pathname);
       fetchCalendarEvents();
       fetchAiInsights();
@@ -266,7 +273,7 @@ export default function SaarthiDashboard({ adminId = 57 }) {
       });
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, [fetchCalendarEvents, fetchAiInsights, fetchGoogleStatus]);
+  }, [effectiveAdminId, fetchCalendarEvents, fetchAiInsights, fetchGoogleStatus]);
 
   useEffect(() => {
     fetchCalendarEvents();
@@ -420,13 +427,17 @@ export default function SaarthiDashboard({ adminId = 57 }) {
   // Link Google Calendar with Specific Email (With fallback safety)
   const handleLinkGoogleCalendar = async (e) => {
     if (e) e.preventDefault();
+    if (!effectiveAdminId) {
+      toast.error("Please log in to your account first.");
+      return;
+    }
     if (!gmailInput || !gmailInput.includes("@")) {
       toast.error("Please enter a valid Gmail address");
       return;
     }
 
     setIsLinkingGoogle(true);
-    const safeUserId = Number.isInteger(Number(effectiveAdminId)) ? Number(effectiveAdminId) : 57;
+    const safeUserId = effectiveAdminId;
     const redirectUrl = encodeURIComponent(window.location.origin + "/calendar");
     try {
       const res = await axios.post(`${BACKEND_URL}/bookings/link-google-calendar`, {
@@ -440,9 +451,9 @@ export default function SaarthiDashboard({ adminId = 57 }) {
         toast.success(res.data.message || `Google Calendar linked with ${linkedEmail}!`, { icon: "📅" });
         const newStatus = { connected: true, email: linkedEmail };
         setGoogleStatus(newStatus);
-        localStorage.setItem("saarthi_google_status", JSON.stringify(newStatus));
-        localStorage.setItem("google_calendar_connected", "true");
-        localStorage.setItem("google_calendar_email", linkedEmail);
+        if (effectiveAdminId) {
+          localStorage.setItem(`saarthi_google_status_${effectiveAdminId}`, JSON.stringify(newStatus));
+        }
         setIsLinkGoogleOpen(false);
         fetchCalendarEvents();
         fetchAiInsights();
@@ -1647,7 +1658,7 @@ export default function SaarthiDashboard({ adminId = 57 }) {
                 <input
                   type="email"
                   className="google-input-field"
-                  placeholder="e.g. anujjadhv3558@gmail.com"
+                  placeholder="e.g. yourname@gmail.com"
                   value={gmailInput}
                   onChange={e => setGmailInput(e.target.value)}
                   required
@@ -2069,7 +2080,7 @@ export default function SaarthiDashboard({ adminId = 57 }) {
                 <div className="notif-dot blue" />
                 <div className="notif-info">
                   <strong>Google Calendar Synced</strong>
-                  <p>Connected with {googleStatus.email || "anujjadhv4000@gmail.com"}. Live 2-way sync active.</p>
+                  <p>Connected with {googleStatus.email || "your Google Account"}. Live 2-way sync active.</p>
                   <span className="notif-time">Just now</span>
                 </div>
               </div>

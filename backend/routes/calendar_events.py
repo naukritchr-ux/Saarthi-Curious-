@@ -73,7 +73,7 @@ def create_event(request: CalendarEventRequest, db: Session = Depends(get_db)):
     db.add(ev)
     db.flush()
 
-    # Sync to Google Calendar
+    # Sync to Google Calendar (only if this admin has their own token)
     token_row = (
         db.query(UserGoogleToken)
         .filter(
@@ -85,17 +85,6 @@ def create_event(request: CalendarEventRequest, db: Session = Depends(get_db)):
         .order_by(UserGoogleToken.updated_at.desc(), UserGoogleToken.id.desc())
         .first()
     )
-    if not token_row:
-        token_row = (
-            db.query(UserGoogleToken)
-            .filter(
-                UserGoogleToken.refresh_token.isnot(None),
-                UserGoogleToken.refresh_token != "pending_auth",
-                UserGoogleToken.refresh_token != "",
-            )
-            .order_by(UserGoogleToken.updated_at.desc(), UserGoogleToken.id.desc())
-            .first()
-        )
 
     meeting_link = None
     if token_row and token_row.refresh_token:
@@ -219,7 +208,7 @@ def delete_event(event_id: int, db: Session = Depends(get_db)):
 
 
 class SendReminderRequest(BaseModel):
-    admin_id: Optional[int] = 57
+    admin_id: Optional[int] = None
     event_id: Optional[int] = None
     recipient_emails: Optional[List[str]] = None
     note: Optional[str] = None
@@ -234,7 +223,9 @@ def send_calendar_reminders(
     """
     Sends automated meeting reminder emails via Gmail to attendees.
     """
-    effective_admin_id = (payload.admin_id if payload else None) or admin_id or 57
+    effective_admin_id = (payload.admin_id if payload else None) or admin_id
+    if not effective_admin_id:
+        raise HTTPException(status_code=400, detail="Admin ID is required to send reminders.")
     admin = db.query(User).filter(User.user_id == effective_admin_id).first()
 
     events = []

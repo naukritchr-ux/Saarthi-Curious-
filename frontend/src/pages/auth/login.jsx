@@ -238,6 +238,21 @@ export default function LoginPage() {
                           user.name
                         );
 
+                        localStorage.setItem(
+                          "full_name",
+                          user.name || ""
+                        );
+
+                        localStorage.setItem(
+                          "email",
+                          user.email || email || ""
+                        );
+
+                        // Clear any old session's un-scoped calendar status cache
+                        localStorage.removeItem("saarthi_google_status");
+                        localStorage.removeItem("google_calendar_connected");
+                        localStorage.removeItem("google_calendar_email");
+
                         // Role based dashboard
                         const roleDashboardMap = {
                           1: "/admin",

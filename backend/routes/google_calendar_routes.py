@@ -84,8 +84,21 @@ def handle_connect_flow(
             except Exception:
                 pass
 
+    if not target_user_id and target_email:
+        try:
+            from database import SessionLocal
+            from models import User
+            with SessionLocal() as db_session:
+                u = db_session.query(User).filter(User.email.ilike(target_email.strip())).first()
+                if u:
+                    target_user_id = u.user_id
+        except Exception:
+            pass
+
     if not target_user_id:
-        target_user_id = 57  # Default admin fallback if not passed
+        target_redirect = target_redirect_to or FRONTEND_REDIRECT
+        sep = "&" if "?" in target_redirect else "?"
+        return RedirectResponse(f"{target_redirect}{sep}google=error&reason=user_id_required")
 
     try:
         url = google_oauth.build_auth_url(
@@ -102,7 +115,7 @@ def handle_connect_flow(
         client_id = os.getenv("GOOGLE_CLIENT_ID") or "95621534418-tj95nvfs7ver7rqobc5pr331n2nhtei7.apps.googleusercontent.com"
         redirect_uri = os.getenv("GOOGLE_REDIRECT_URI") or "http://localhost:8000/google/callback"
         state_payload = {
-            "user_id": target_user_id or 57,
+            "user_id": target_user_id,
             "is_personal": bool(target_is_personal),
             "device_id": target_device_id,
             "email": target_email.strip() if target_email else None,
@@ -167,9 +180,6 @@ def handle_callback_flow(
             except Exception:
                 pass
 
-    if not user_id:
-        user_id = 57  # Default admin fallback
-
     try:
         tokens = google_oauth.exchange_code_for_tokens(code)
     except Exception as e:
@@ -180,6 +190,19 @@ def handle_callback_flow(
     access_token = tokens.get("access_token")
     expires_in = tokens.get("expires_in")
     google_email = google_oauth.fetch_google_email(access_token) if access_token else None
+
+    if not user_id and google_email:
+        try:
+            from models import User
+            u = db.query(User).filter(User.email.ilike(google_email.strip())).first()
+            if u:
+                user_id = u.user_id
+        except Exception:
+            pass
+
+    if not user_id:
+        print("[Google OAuth] Cannot resolve user_id for OAuth callback; aborting token save")
+        return RedirectResponse(f"{final_base}{sep}google=error&reason=user_not_identified")
 
     # If Google did not return a refresh token, reuse existing valid token for this user
     if not refresh_token:
@@ -320,46 +343,27 @@ def status(
     """Check whether Google account is connected."""
     effective_user_id = current_user_id or user_id
 
-    # 1. Look for tokens for the specific user
-    tokens = []
-    if effective_user_id:
-        tokens = (
-            db.query(UserGoogleToken)
-            .filter(
-                UserGoogleToken.user_id == effective_user_id,
-                UserGoogleToken.refresh_token.isnot(None),
-                UserGoogleToken.refresh_token != "pending_auth",
-                UserGoogleToken.refresh_token != "",
-            )
-            .order_by(UserGoogleToken.updated_at.desc(), UserGoogleToken.id.desc())
-            .all()
-        )
+    if not effective_user_id:
+        return {
+            "connected": False,
+            "company_connected": False,
+            "personal_connected": False,
+            "email": None,
+            "user_id": None,
+        }
 
-    # 2. If no tokens for this specific user ID, check by device_id or system-wide valid token
-    if not tokens and device_id:
-        tokens = (
-            db.query(UserGoogleToken)
-            .filter(
-                UserGoogleToken.device_id == device_id,
-                UserGoogleToken.refresh_token.isnot(None),
-                UserGoogleToken.refresh_token != "pending_auth",
-                UserGoogleToken.refresh_token != "",
-            )
-            .order_by(UserGoogleToken.updated_at.desc(), UserGoogleToken.id.desc())
-            .all()
+    # Query tokens strictly for THIS specific user
+    tokens = (
+        db.query(UserGoogleToken)
+        .filter(
+            UserGoogleToken.user_id == effective_user_id,
+            UserGoogleToken.refresh_token.isnot(None),
+            UserGoogleToken.refresh_token != "pending_auth",
+            UserGoogleToken.refresh_token != "",
         )
-
-    if not tokens:
-        tokens = (
-            db.query(UserGoogleToken)
-            .filter(
-                UserGoogleToken.refresh_token.isnot(None),
-                UserGoogleToken.refresh_token != "pending_auth",
-                UserGoogleToken.refresh_token != "",
-            )
-            .order_by(UserGoogleToken.updated_at.desc(), UserGoogleToken.id.desc())
-            .all()
-        )
+        .order_by(UserGoogleToken.updated_at.desc(), UserGoogleToken.id.desc())
+        .all()
+    )
 
     if not tokens:
         return {
@@ -367,17 +371,17 @@ def status(
             "company_connected": False,
             "personal_connected": False,
             "email": None,
-            "device_id": device_id,
+            "user_id": effective_user_id,
         }
 
-    matched_token = next((t for t in tokens if device_id and t.device_id == device_id), tokens[0])
+    matched_token = tokens[0]
 
     return {
         "connected": True,
+        "email": matched_token.google_email,
         "company_connected": any(not t.is_personal for t in tokens),
         "personal_connected": any(t.is_personal for t in tokens),
-        "company_email": next((t.google_email for t in tokens if not t.is_personal), None),
-        "personal_email": next((t.google_email for t in tokens if t.is_personal), None),
-        "email": matched_token.google_email,
-        "device_id": matched_token.device_id or device_id,
+        "company_email": next((t.google_email for t in tokens if not t.is_personal), matched_token.google_email),
+        "personal_email": next((t.google_email for t in tokens if t.is_personal), matched_token.google_email),
+        "user_id": effective_user_id,
     }

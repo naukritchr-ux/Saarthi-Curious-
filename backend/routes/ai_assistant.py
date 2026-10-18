@@ -161,10 +161,11 @@ def get_ai_insights(admin_id: int, db: Session = Depends(get_db)):
     }
 
 
+from typing import Optional
 from pydantic import BaseModel
 class AIChatRequest(BaseModel):
     message: str
-    admin_id: int = 57
+    admin_id: Optional[int] = None
     confirm_proposal: bool = False
     proposed_meeting: dict = None
 
@@ -178,6 +179,11 @@ def ai_chat(payload: AIChatRequest, db: Session = Depends(get_db)):
     """
     msg = payload.message.strip()
     admin_id = payload.admin_id
+    if not admin_id:
+        return {
+            "reply": "Please log in to your account first so I can access your schedule.",
+            "success": False
+        }
     today = date.today()
 
     # 1. User is confirming a proposed meeting
@@ -215,18 +221,21 @@ def ai_chat(payload: AIChatRequest, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(new_ev)
 
-        # Reverse Sync: Create on Google Calendar if token exists
+        # Reverse Sync: Create on Google Calendar if token exists (only for this admin)
         google_synced = False
         try:
             from models import UserGoogleToken
             from services.google_calendar import create_google_calendar_event
-            tokens = db.query(UserGoogleToken).filter(UserGoogleToken.user_id == admin_id).all()
-            if not tokens:
-                tokens = db.query(UserGoogleToken).filter(
+            tokens = (
+                db.query(UserGoogleToken)
+                .filter(
+                    UserGoogleToken.user_id == admin_id,
                     UserGoogleToken.refresh_token.isnot(None),
                     UserGoogleToken.refresh_token != "pending_auth",
                     UserGoogleToken.refresh_token != "",
-                ).all()
+                )
+                .all()
+            )
 
             for tok in tokens:
                 if tok and tok.refresh_token and tok.refresh_token != "pending_auth":

@@ -46,7 +46,7 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db)):
     db.add(task)
     db.flush()
 
-    # Sync to linked Google Calendar
+    # Sync to linked Google Calendar (only if this admin has their own token)
     token_row = (
         db.query(UserGoogleToken)
         .filter(
@@ -58,17 +58,6 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db)):
         .order_by(UserGoogleToken.updated_at.desc(), UserGoogleToken.id.desc())
         .first()
     )
-    if not token_row:
-        token_row = (
-            db.query(UserGoogleToken)
-            .filter(
-                UserGoogleToken.refresh_token.isnot(None),
-                UserGoogleToken.refresh_token != "pending_auth",
-                UserGoogleToken.refresh_token != "",
-            )
-            .order_by(UserGoogleToken.updated_at.desc(), UserGoogleToken.id.desc())
-            .first()
-        )
 
     if token_row and token_row.refresh_token:
         try:

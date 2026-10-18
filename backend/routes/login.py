@@ -225,7 +225,8 @@ def verify_login_otp(
         "access_token": token,
         "user_id": user.user_id,
         "role_id": user.role_id,
-        "name": user.full_name
+        "name": user.full_name,
+        "email": user.email,
     }
 
 @router.post("/change-password")
