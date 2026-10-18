@@ -25,7 +25,8 @@ const roleNames = {
 const Navbar = ({ onMenuToggle }) => {
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
-  const userName = localStorage.getItem("user_name") || "Guest";
+  const rawUserName = localStorage.getItem("user_name") || "Guest";
+  const userName = rawUserName === "Anuj Jadhav" ? "L&D Lead" : rawUserName;
   const roleId = Number(localStorage.getItem("role_id"));
 
   const handleLogout = () => {

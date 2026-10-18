@@ -33,7 +33,7 @@ const AiChatCard = ({ context }) => {
   const [talking, setTalking] = useState(false);
   const [autoMessage, setAutoMessage] = useState("");
 
-  const adminName = context?.adminName || "Anuj";
+  const adminName = context?.adminName || "L&D Lead";
 
   const timerRef = useRef(null);
   const autoMessageIntervalRef = useRef(null);

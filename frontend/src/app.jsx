@@ -39,6 +39,7 @@ import AllAssignmentsPage from "./pages/learner/AllAssignmentsPage";
 import BookCall from "./pages/bookcall/BookCall";
 import AdminReschedule from "./pages/AdminReschedule";
 import BookCallPage from "./pages/booking/BookCallPage";
+import SaarthiDashboard from "./pages/booking/SaarthiDashboard";
 import IndividualLearnerReport from "./pages/Reports/IndividualLearnerReport";
 
 function App() {
@@ -388,7 +389,7 @@ function App() {
           path="/book-call"
           element={
             <ProtectedRoute>
-              <BookCallPage mode="learner" hostId={57} hostName="Anuj Jadhav" />
+              <BookCallPage mode="learner" hostId={57} hostName="L&D Lead" />
             </ProtectedRoute>
           }
         />
@@ -403,6 +404,8 @@ function App() {
         />
 
         <Route path="/admin/reschedule" element={<Navigate to="/admin/schedule" replace />} />
+        <Route path="/calendar" element={<ProtectedRoute><SaarthiDashboard adminId={57} /></ProtectedRoute>} />
+        <Route path="/saarthi-dashboard" element={<ProtectedRoute><SaarthiDashboard adminId={57} /></ProtectedRoute>} />
 
         <Route
           path="*"

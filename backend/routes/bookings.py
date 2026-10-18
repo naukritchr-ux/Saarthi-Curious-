@@ -10,9 +10,10 @@ from services.google_calendar import (
     create_google_meet_event,
     reschedule_google_event,
     delete_google_event,
+    fetch_google_events,
 )
 from database import get_db
-from models import AdminSchedule, Booking, UserGoogleToken, User
+from models import AdminSchedule, Booking, UserGoogleToken, User, Task, CalendarEvent
 
 
 # ─────────────────────────────────────────────────────────────
@@ -40,6 +41,32 @@ def auto_generate_schedules_wrapper():
         print(f"Error in auto-generate schedules wrapper: {e}")
     finally:
         db.close()
+
+
+def get_valid_admin_token(db: Session, admin_id: int):
+    token = (
+        db.query(UserGoogleToken)
+        .filter(
+            UserGoogleToken.user_id == admin_id,
+            UserGoogleToken.refresh_token.isnot(None),
+            UserGoogleToken.refresh_token != "pending_auth",
+            UserGoogleToken.refresh_token != "",
+        )
+        .order_by(UserGoogleToken.updated_at.desc(), UserGoogleToken.id.desc())
+        .first()
+    )
+    if not token:
+        token = (
+            db.query(UserGoogleToken)
+            .filter(
+                UserGoogleToken.refresh_token.isnot(None),
+                UserGoogleToken.refresh_token != "pending_auth",
+                UserGoogleToken.refresh_token != "",
+            )
+            .order_by(UserGoogleToken.updated_at.desc(), UserGoogleToken.id.desc())
+            .first()
+        )
+    return token
 
 
 def generate_schedule_internal(month: str, admin_id: int, months_ahead: int, db: Session):
@@ -221,38 +248,32 @@ def create_custom_booking(
     db.flush()  # get booking.id
 
     # Google Calendar — both admin and learner get the invite
-    host_token_row = (
-        db.query(UserGoogleToken)
-        .filter(UserGoogleToken.user_id == request.admin_id)
-        .first()
-    )
+    host_token_row = get_valid_admin_token(db, request.admin_id)
 
-    if request.add_meet and host_token_row and host_token_row.refresh_token:
+    if host_token_row and host_token_row.refresh_token:
         try:
             attendees = []
-            if admin.email:
+            if admin and admin.email:
                 attendees.append(admin.email)
-            if learner.email and learner.email != admin.email:
+            if learner and learner.email and learner.email != admin.email:
                 attendees.append(learner.email)
+            if host_token_row.google_email and host_token_row.google_email not in attendees:
+                attendees.append(host_token_row.google_email)
 
             google_result = create_google_meet_event(
-                title=request.title or f"Saarthi Curious - {learner.full_name}",
+                title=request.title or f"Saarthi Curious - {learner.full_name if learner else 'Meeting'}",
                 start_datetime=start_dt,
                 end_datetime=end_dt,
                 refresh_token=host_token_row.refresh_token,
                 attendees=attendees,
-                description=request.description or f"Meeting with {learner.full_name}",
+                description=request.description or f"Meeting with {learner.full_name if learner else 'Attendee'}",
             )
             booking.meeting_link = google_result.get("meeting_link")
             booking.google_event_id = google_result.get("event_id")
             print(f"[create-custom] Google Calendar event created: {booking.google_event_id}")
         except Exception as e:
             print(f"[create-custom] Google Calendar error: {e}")
-            # Don't fail the whole booking — the admin can retry or add the Meet link later
             booking.meeting_link = "Google Meet link will be provided later"
-    else:
-        print(f"[create-custom] add_meet={request.add_meet}, skipping Google Calendar.")
-        booking.meeting_link = None
 
     try:
         db.commit()
@@ -326,54 +347,202 @@ def get_schedule(
 
 
 # ─────────────────────────────────────────────────────────────
-# GET /bookings/calendar
+# GET /bookings/calendar  ← Unified Calendar Feed (Bookings + Tasks + Google + Events)
 # ─────────────────────────────────────────────────────────────
 @router.get("/calendar")
 def get_calendar(
-    month: str = Query(..., description="Month in YYYY-MM format"),
-    admin_id: int = Query(..., description="Host user ID"),
+    month: str = Query(..., description="YYYY-MM"),
+    admin_id: int = Query(...),
+    device_id: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
+    import calendar as pycal
     try:
-        year, month_number = map(int, month.split("-"))
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid month format. Use YYYY-MM.")
+        year, month_num = map(int, month.split("-"))
+    except Exception:
+        today = date.today()
+        year, month_num = today.year, today.month
 
-    current_month = date(year, month_number, 1)
-    next_month = date(year + 1, 1, 1) if month_number == 12 else date(year, month_number + 1, 1)
+    last_day = pycal.monthrange(year, month_num)[1]
+    start_date = date(year, month_num, 1)
+    end_date = date(year, month_num, last_day)
 
-    rows = (
-        db.query(AdminSchedule, Booking, User)
-        .outerjoin(Booking, Booking.schedule_id == AdminSchedule.id)
-        .outerjoin(User, User.user_id == Booking.user_id)
-        .filter(
-            AdminSchedule.admin_id == admin_id,
-            AdminSchedule.date >= current_month,
-            AdminSchedule.date < next_month,
+    unified_events = []
+
+    # 1. FETCH ONLY REAL CONFIRMED/PENDING BOOKINGS (Never output empty unbooked slots)
+    try:
+        bookings = (
+            db.query(AdminSchedule, Booking, User)
+            .outerjoin(Booking, Booking.schedule_id == AdminSchedule.id)
+            .outerjoin(User, User.user_id == Booking.user_id)
+            .filter(
+                AdminSchedule.admin_id == admin_id,
+                AdminSchedule.date >= start_date,
+                AdminSchedule.date <= end_date,
+            )
+            .all()
         )
-        .order_by(AdminSchedule.date, AdminSchedule.start_time)
-        .all()
-    )
 
-    result = []
-    for schedule, booking, user in rows:
-        result.append({
-            "slot_id": schedule.id,
-            "date": schedule.date.isoformat(),
-            "start_time": schedule.start_time.strftime("%H:%M"),
-            "end_time": schedule.end_time.strftime("%H:%M"),
-            "status": schedule.status,
-            "booking": None if not booking else {
-                "booking_id": booking.id,
-                "user_id": booking.user_id,
-                "user_name": user.full_name if user else "Unknown",
-                "user_email": user.email if user else None,
-                "meeting_link": booking.meeting_link,
-                "google_event_id": booking.google_event_id,
-                "booking_status": booking.booking_status,
-            },
-        })
-    return result
+        for sched, book, user in bookings:
+            if book and book.booking_status in ["confirmed", "pending"]:
+                user_name = user.full_name if user else "Booked Meeting"
+                unified_events.append({
+                    "id": f"book_{book.id}",
+                    "title": f"Meeting: {user_name}",
+                    "start": f"{sched.date.isoformat()}T{sched.start_time.isoformat()}",
+                    "end": f"{sched.date.isoformat()}T{sched.end_time.isoformat()}",
+                    "backgroundColor": "#8b5cf6" if book.booking_status == "confirmed" else "#f4c95d",
+                    "source": "booking",
+                    "extendedProps": {
+                        "type": "meeting",
+                        "time": f"{sched.start_time.strftime('%I:%M %p')} – {sched.end_time.strftime('%I:%M %p')}".replace(" 0", " "),
+                        "attendees": 2,
+                        "meeting_link": getattr(book, "meeting_link", None),
+                        "status": book.booking_status,
+                    },
+                })
+    except Exception as e:
+        print(f"Error fetching bookings in /calendar: {e}")
+
+    # 2. FETCH REAL DB TASKS
+    try:
+        tasks = (
+            db.query(Task)
+            .filter(
+                Task.admin_id == admin_id,
+                Task.date >= start_date,
+                Task.date <= end_date,
+            )
+            .all()
+        )
+        for task in tasks:
+            st = task.start_time.isoformat() if task.start_time else "09:00:00"
+            et = task.end_time.isoformat() if task.end_time else "10:00:00"
+            unified_events.append({
+                "id": f"task_{task.id}",
+                "title": task.title,
+                "start": f"{task.date.isoformat()}T{st}",
+                "end": f"{task.date.isoformat()}T{et}",
+                "backgroundColor": "#10b981",
+                "source": "task",
+                "extendedProps": {
+                    "type": "task",
+                    "time": f"{st[:5]} – {et[:5]}",
+                    "is_completed": getattr(task, "is_completed", False),
+                },
+            })
+    except Exception as e:
+        print(f"Error fetching tasks in /calendar: {e}")
+
+    # 3. FETCH CALENDAR EVENTS
+    try:
+        events = (
+            db.query(CalendarEvent)
+            .filter(
+                CalendarEvent.admin_id == admin_id,
+                CalendarEvent.date >= start_date,
+                CalendarEvent.date <= end_date,
+            )
+            .all()
+        )
+        for ev in events:
+            st = ev.start_time.isoformat() if ev.start_time else "10:00:00"
+            et = ev.end_time.isoformat() if ev.end_time else "11:00:00"
+            color = "#6b21a8" if ev.event_type == "meeting" else ("#065f46" if ev.event_type == "holiday" else "#2563eb")
+            unified_events.append({
+                "id": f"calev_{ev.id}",
+                "title": ev.title,
+                "start": f"{ev.date.isoformat()}T{st}",
+                "end": f"{ev.date.isoformat()}T{et}",
+                "backgroundColor": color,
+                "source": "calendar_event",
+                "extendedProps": {
+                    "type": ev.event_type or "meeting",
+                    "time": f"{st[:5]} – {et[:5]}",
+                    "attendees": 3,
+                    "description": ev.description,
+                },
+            })
+    except Exception as e:
+        print(f"Error fetching calendar events in /calendar: {e}")
+
+    # 4. FETCH REAL GOOGLE EVENTS
+    try:
+        tokens = db.query(UserGoogleToken).filter(
+            UserGoogleToken.user_id == admin_id,
+            UserGoogleToken.refresh_token.isnot(None),
+            UserGoogleToken.refresh_token != "pending_auth",
+            UserGoogleToken.refresh_token != "",
+        ).all()
+        if device_id:
+            device_tokens = db.query(UserGoogleToken).filter(
+                UserGoogleToken.device_id == device_id,
+                UserGoogleToken.refresh_token.isnot(None),
+                UserGoogleToken.refresh_token != "pending_auth",
+                UserGoogleToken.refresh_token != "",
+            ).all()
+            tokens = list({t.id: t for t in (tokens + device_tokens)}.values())
+
+        if not tokens:
+            tokens = (
+                db.query(UserGoogleToken)
+                .filter(
+                    UserGoogleToken.refresh_token.isnot(None),
+                    UserGoogleToken.refresh_token != "pending_auth",
+                    UserGoogleToken.refresh_token != "",
+                )
+                .order_by(UserGoogleToken.updated_at.desc(), UserGoogleToken.id.desc())
+                .all()
+            )
+
+        for tok in tokens:
+            if tok and tok.refresh_token and tok.refresh_token != "pending_auth":
+                try:
+                    from services.google_calendar import fetch_google_events
+                    for g_event in fetch_google_events(tok.refresh_token, month):
+                        g_start = str(g_event.get("start", ""))[:16]
+                        g_title = (g_event.get("title") or "").strip().lower()
+                        # Deduplicate: Skip if an existing event in unified_events has same start time and title
+                        is_dup = any(
+                            str(u.get("start", ""))[:16] == g_start and (
+                                g_title in u.get("title", "").strip().lower() or
+                                u.get("title", "").strip().lower() in g_title
+                            )
+                            for u in unified_events
+                        )
+                        if not is_dup:
+                            unified_events.append({
+                                "id": f"gcal_{g_event.get('id', '')}",
+                                "title": g_event.get("title", "Google Event"),
+                                "start": g_event.get("start"),
+                                "end": g_event.get("end"),
+                                "backgroundColor": "#2563eb",
+                                "source": "google_calendar",
+                                "extendedProps": {
+                                    "type": "meeting",
+                                    "meeting_link": g_event.get("meeting_link"),
+                                },
+                            })
+                except Exception as err:
+                    print(f"Error fetching Google events: {err}")
+    except Exception as e:
+        print(f"Error checking google tokens in /calendar: {e}")
+
+    # Deduplicate unified_events across all sources (Booking, Task, CalendarEvent, GoogleCalendar)
+    seen_keys = set()
+    deduped_events = []
+    for ev in unified_events:
+        s_raw = str(ev.get("start", ""))[:16]
+        t_clean = (ev.get("title") or "").strip().lower()
+        if t_clean.startswith("meeting:"):
+            t_clean = t_clean.replace("meeting:", "").strip()
+        key = f"{s_raw}_{t_clean}"
+        if key not in seen_keys:
+            seen_keys.add(key)
+            deduped_events.append(ev)
+
+    return deduped_events
+
 
 
 # ─────────────────────────────────────────────────────────────
@@ -501,7 +670,7 @@ def approve_booking(booking_id: int, db: Session = Depends(get_db)):
     start_dt = datetime.combine(schedule.date, schedule.start_time)
     end_dt = datetime.combine(schedule.date, schedule.end_time)
 
-    host_token_row = db.query(UserGoogleToken).filter(UserGoogleToken.user_id == booking.admin_id).first()
+    host_token_row = get_valid_admin_token(db, booking.admin_id)
     admin = db.query(User).filter(User.user_id == booking.admin_id).first()
     learner = db.query(User).filter(User.user_id == booking.user_id).first()
 
@@ -593,7 +762,7 @@ def reschedule_single_booking(booking_id: int, request: SingleRescheduleRequest,
     new_end = datetime.combine(new_slot.date, new_slot.end_time)
 
     if booking.google_event_id:
-        host_token_row = db.query(UserGoogleToken).filter(UserGoogleToken.user_id == booking.admin_id).first()
+        host_token_row = get_valid_admin_token(db, booking.admin_id)
         if host_token_row and host_token_row.refresh_token:
             try:
                 reschedule_google_event(
@@ -639,7 +808,7 @@ def cancel_booking(booking_id: int, request: CancelRequest, db: Session = Depend
         raise HTTPException(status_code=400, detail=f"Booking is already {booking.booking_status}")
 
     if booking.google_event_id:
-        host_token_row = db.query(UserGoogleToken).filter(UserGoogleToken.user_id == booking.admin_id).first()
+        host_token_row = get_valid_admin_token(db, booking.admin_id)
         if host_token_row and host_token_row.refresh_token:
             try:
                 delete_google_event(
@@ -699,7 +868,7 @@ def reschedule_date(request: RescheduleRequest, db: Session = Depends(get_db)):
         new_end = datetime.combine(new_slot.date, new_slot.end_time)
 
         if booking.google_event_id:
-            host_token_row = db.query(UserGoogleToken).filter(UserGoogleToken.user_id == booking.admin_id).first()
+            host_token_row = get_valid_admin_token(db, booking.admin_id)
             if host_token_row and host_token_row.refresh_token:
                 try:
                     reschedule_google_event(
@@ -736,3 +905,78 @@ def reschedule_date(request: RescheduleRequest, db: Session = Depends(get_db)):
         "rescheduled": len(rescheduled),
         "meetings": rescheduled,
     }
+
+
+
+
+
+# ─────────────────────────────────────────────────────────────
+# POST /bookings/link-google-calendar
+# ─────────────────────────────────────────────────────────────
+
+class LinkCalendarRequest(BaseModel):
+    email: str
+    device_id: Optional[str] = None
+    user_id: Optional[int] = None
+
+
+@router.post("/link-google-calendar")
+def link_google_calendar(
+    request: LinkCalendarRequest,
+    db: Session = Depends(get_db),
+):
+    try:
+        # Check if we already have an authorized token for this email
+        existing_token = (
+            db.query(UserGoogleToken)
+            .filter(
+                UserGoogleToken.google_email == request.email,
+                UserGoogleToken.refresh_token.isnot(None),
+                UserGoogleToken.refresh_token != "pending_auth",
+                UserGoogleToken.refresh_token != "",
+            )
+            .order_by(UserGoogleToken.updated_at.desc(), UserGoogleToken.id.desc())
+            .first()
+        )
+
+        if existing_token:
+            if request.user_id:
+                existing_token.user_id = request.user_id
+            if request.device_id:
+                existing_token.device_id = request.device_id
+            existing_token.is_personal = True
+            db.commit()
+            return {
+                "message": f"Google Calendar linked successfully with {request.email}!",
+                "connected": True,
+                "email": request.email
+            }
+
+        target_user = None
+        if request.user_id:
+            target_user = db.query(User).filter(User.user_id == request.user_id).first()
+        if not target_user:
+            target_user = db.query(User).filter(User.email == request.email).first()
+        if not target_user:
+            target_user = db.query(User).filter(User.role_id.in_([1, 2])).first()
+
+        target_user_id = target_user.user_id if target_user else (request.user_id or 57)
+        auth_url = f"/google/connect?email={request.email}&user_id={target_user_id}&is_personal=true&device_id={request.device_id or ''}"
+        return {
+            "message": "Authorization needed to complete Google Calendar sync.",
+            "connected": False,
+            "auth_required": True,
+            "auth_url": auth_url,
+            "email": request.email
+        }
+    except Exception as e:
+        db.rollback()
+        print(f"[link_google_calendar] Exception handled: {e}")
+        auth_url = f"/google/connect?email={request.email}&user_id={request.user_id or 57}&is_personal=true&device_id={request.device_id or ''}"
+        return {
+            "message": "Connecting to Google OAuth...",
+            "connected": False,
+            "auth_required": True,
+            "auth_url": auth_url,
+            "email": request.email
+        }

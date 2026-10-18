@@ -1,5 +1,6 @@
 // services/bookingApi.js
 import { API_BASE } from "../config/api";
+import { getDeviceId } from "../utils/deviceId";
 
 async function request(path, { method = "GET", body, timeout = 25000 } = {}) {
   const token =
@@ -52,22 +53,46 @@ async function request(path, { method = "GET", body, timeout = 25000 } = {}) {
   return data;
 }
 
-const toSlot = (row) => ({
-  id: row.slot_id ?? row.id,
-  date: row.date,
-  start: row.start_time,
-  end: row.end_time,
-  status: row.status,
-  booking: row.booking || null,
-});
+const toSlot = (row) => {
+  let date = row.date;
+  let start = row.start_time || row.start;
+  let end = row.end_time || row.end;
+  if (!date && typeof row.start === "string") {
+    date = row.start.slice(0, 10);
+    start = row.start.length > 11 && row.start.includes("T") ? row.start.slice(11, 16) : row.start;
+  }
+  if (end && typeof end === "string" && end.length > 11 && end.includes("T")) {
+    end = end.slice(11, 16);
+  }
+  return {
+    id: row.slot_id ?? row.id,
+    date,
+    start,
+    end,
+    status: row.status || "booked",
+    source: row.source || "db",
+    isGoogleEvent: Boolean(row.isGoogleEvent),
+    booking: row.booking || (row.title && row.status !== "available" ? {
+      booking_id: row.id,
+      user_id: null,
+      user_name: row.title,
+      user_email: "Google Calendar Event",
+      meeting_link: row.meeting_link,
+      google_event_id: row.google_event_id || row.id,
+      booking_status: "confirmed",
+    } : null),
+  };
+};
 
 export const getMonthSchedule = async (month, adminId) => {
   const rows = await request(`/bookings/schedule?month=${month}&admin_id=${adminId}`);
   return rows.map(toSlot);
 };
 
-export const getMonthCalendar = async (month, adminId) => {
-  const rows = await request(`/bookings/calendar?month=${month}&admin_id=${adminId}`);
+export const getMonthCalendar = async (month, adminId, deviceId) => {
+  const effectiveDeviceId = deviceId || getDeviceId();
+  const devParam = effectiveDeviceId ? `&device_id=${encodeURIComponent(effectiveDeviceId)}` : "";
+  const rows = await request(`/bookings/calendar?month=${month}&admin_id=${adminId}${devParam}`);
   return rows.map(toSlot);
 };
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { getMonthCalendar, getMonthSchedule } from "../../services/bookingApi";
 import { getMonthEvents } from "../../services/calendarEventsApi";
+import { getDeviceId } from "../../utils/deviceId";
 
 export function useMonthSlots({ month, hostId, mode }) {
   const [status, setStatus] = useState("loading");
@@ -21,9 +22,10 @@ export function useMonthSlots({ month, hostId, mode }) {
       setError("");
 
       try {
+        const deviceId = getDeviceId();
         const fetcher = mode === "admin" ? getMonthCalendar : getMonthCalendar;
         const [slots, customEvents] = await Promise.all([
-          fetcher(month, hostId).catch(() => []),
+          fetcher(month, hostId, deviceId).catch(() => []),
           getMonthEvents(month, hostId).catch(() => []),
         ]);
 

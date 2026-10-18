@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import api from "../../utils/axios";
+import { getDeviceId } from "../../utils/deviceId";
+import { API_BASE } from "../../config/api";
 
 const roleNames = {
   1: "Master Admin",
@@ -242,6 +244,21 @@ const Profile = () => {
     },
   ];
 
+  const handleConnectPersonal = () => {
+    const deviceId = getDeviceId();
+    
+    // We pass the device_id and is_personal=true in the state parameter
+    const stateObj = {
+      is_personal: true,
+      device_id: deviceId
+    };
+    
+    const stateString = encodeURIComponent(JSON.stringify(stateObj));
+    
+    // Redirect to your backend's Google login route
+    window.location.href = `${API_BASE}/auth/google/login?state=${stateString}`;
+  };
+
   return (
     <MainLayout>
       <div className="bg-[#F8F7FC] min-h-screen p-6">
@@ -281,7 +298,7 @@ const Profile = () => {
             </div>
 
             {/* Details Card */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 space-y-6">
               <div className="bg-white rounded-2xl shadow-sm border border-[#E5DDF0] p-6">
                 <h3 className="text-lg font-semibold text-[#1E1B4B] mb-4">
                   Personal Information
@@ -309,6 +326,25 @@ const Profile = () => {
                     </div>
                   ))}
                 </div>
+              </div>
+
+              {/* Google Calendar Card */}
+              <div className="bg-white rounded-2xl shadow-sm border border-[#E5DDF0] p-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <Calendar size={24} className="text-purple-600" />
+                  <h3 className="text-lg font-bold text-[#1E1B4B]">
+                    Google Calendar Integration
+                  </h3>
+                </div>
+                <p className="text-sm text-[#7C6A9A] mb-4">
+                  Connect your personal Google Calendar for this device. Events will merge into your Saarthi schedule.
+                </p>
+                <button
+                  onClick={handleConnectPersonal}
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-medium px-4 py-2 rounded transition-colors"
+                >
+                  Connect Personal Google Calendar
+                </button>
               </div>
             </div>
           </div>
