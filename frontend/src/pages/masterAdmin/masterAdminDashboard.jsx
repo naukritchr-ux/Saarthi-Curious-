@@ -536,11 +536,18 @@ const MasterAdminDashboard = () => {
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [tickerIndex, setTickerIndex] = useState(0);
   const [tickerVisible, setTickerVisible] = useState(true);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Get user data from localStorage
   const userId = localStorage.getItem("user_Id") || localStorage.getItem("user_id") || 1;
   const userRoleId = parseInt(localStorage.getItem("role_id") || "1");
-  const userName = localStorage.getItem("user_name") || localStorage.getItem("name") || "Anuj Jadhav";
+  const rawUserName = localStorage.getItem("user_name") || localStorage.getItem("name") || "L&D Lead";
+  const userName = (rawUserName === "Anuj Jadhav" || !rawUserName) ? "L&D Lead" : rawUserName;
 
   // Check if user has permission (role_id: 1 = Master Admin, 2 = Admin)
   const hasPermission = [1, 2].includes(userRoleId);
@@ -896,7 +903,7 @@ const MasterAdminDashboard = () => {
                 📅 TODAY
               </p>
               <p style={{ fontSize: 16, fontWeight: 700, color: "#fff", marginTop: 4 }}>
-                {new Date().toLocaleDateString("en-IN", {
+                {currentTime.toLocaleDateString("en-IN", {
                   weekday: "long",
                   day: "numeric",
                   month: "long",
@@ -911,9 +918,10 @@ const MasterAdminDashboard = () => {
                   fontFamily: "ui-monospace, monospace",
                 }}
               >
-                🕐 {new Date().toLocaleTimeString("en-IN", {
+                🕐 {currentTime.toLocaleTimeString("en-IN", {
                   hour: "2-digit",
                   minute: "2-digit",
+                  second: "2-digit",
                 })}
               </p>
             </div>
@@ -931,14 +939,14 @@ const MasterAdminDashboard = () => {
               }}
             >
               Good{" "}
-              {new Date().getHours() < 12
+              {currentTime.getHours() < 12
                 ? "Morning"
-                : new Date().getHours() < 17
+                : currentTime.getHours() < 17
                 ? "Afternoon"
                 : "Evening"}
               ,{" "}
               <span className="neon-text" style={{ display: "inline" }}>
-                Anuj Jadhav
+                {userName}
               </span>{" "}
               👋
             </h1>

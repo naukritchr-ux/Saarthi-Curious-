@@ -34,10 +34,12 @@ from routes import badges
 from routes.reports import router as reports_router
 from routes.leaderboards import router as leaderboards_router
 from routes.ai_chat import router as ai_chat_router
-from routes.google_calendar_routes import router as google_calendar_router
+from routes.google_calendar_routes import router as google_calendar_router, auth_alias_router as google_auth_alias_router
 from routes.ai_schedule import router as ai_schedule_router
 from database import SessionLocal
 from routes.calendar_events import router as calendar_events_router
+from routes.tasks import router as tasks_router
+from routes.ai_assistant import router as ai_assistant_router
 
 
 app = FastAPI(
@@ -92,8 +94,11 @@ app.include_router(bookings_router)
 app.include_router(certificates_router)
 app.include_router(ai_chat_router)
 app.include_router(google_calendar_router)
+app.include_router(google_auth_alias_router)
 app.include_router(ai_schedule_router)
 app.include_router(calendar_events_router)
+app.include_router(tasks_router)
+app.include_router(ai_assistant_router)
 
 # ============================
 # DEBUG - Print all routes (fixed)

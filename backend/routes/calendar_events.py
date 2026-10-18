@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from datetime import date, datetime, time
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel
 
 from database import get_db
@@ -15,7 +15,7 @@ router = APIRouter(prefix="/calendar", tags=["Calendar Events"])
 
 
 class CalendarEventRequest(BaseModel):
-    admin_id: int
+    admin_id: Optional[int] = 2
     title: str
     event_type: str = "custom"
     date: str            # "YYYY-MM-DD"
@@ -56,6 +56,8 @@ def create_event(request: CalendarEventRequest, db: Session = Depends(get_db)):
 
     admin = db.query(User).filter(User.user_id == request.admin_id).first()
     if not admin:
+        admin = db.query(User).filter(User.role_id.in_([1, 2])).first()
+    if not admin:
         raise HTTPException(status_code=404, detail="Admin not found.")
 
     ev = CalendarEvent(
@@ -74,20 +76,40 @@ def create_event(request: CalendarEventRequest, db: Session = Depends(get_db)):
     # Sync to Google Calendar
     token_row = (
         db.query(UserGoogleToken)
-        .filter(UserGoogleToken.user_id == request.admin_id)
+        .filter(
+            UserGoogleToken.user_id == request.admin_id,
+            UserGoogleToken.refresh_token.isnot(None),
+            UserGoogleToken.refresh_token != "pending_auth",
+            UserGoogleToken.refresh_token != "",
+        )
+        .order_by(UserGoogleToken.updated_at.desc(), UserGoogleToken.id.desc())
         .first()
     )
+    if not token_row:
+        token_row = (
+            db.query(UserGoogleToken)
+            .filter(
+                UserGoogleToken.refresh_token.isnot(None),
+                UserGoogleToken.refresh_token != "pending_auth",
+                UserGoogleToken.refresh_token != "",
+            )
+            .order_by(UserGoogleToken.updated_at.desc(), UserGoogleToken.id.desc())
+            .first()
+        )
+
     meeting_link = None
-    if request.add_meet and token_row and token_row.refresh_token:
+    if token_row and token_row.refresh_token:
         try:
             start_dt = datetime.combine(event_date, start)
             end_dt = datetime.combine(event_date, end)
             
             attendee_list = []
-            if admin.email:
+            if admin and admin.email:
                 attendee_list.append(admin.email)
+            if token_row.google_email and token_row.google_email not in attendee_list:
+                attendee_list.append(token_row.google_email)
             
-            # Add the custom emails typed by the user
+            # Add custom guests typed by user
             if request.attendee_emails:
                 for email in request.attendee_emails:
                     if email and email not in attendee_list:
@@ -98,16 +120,14 @@ def create_event(request: CalendarEventRequest, db: Session = Depends(get_db)):
                 start_datetime=start_dt,
                 end_datetime=end_dt,
                 refresh_token=token_row.refresh_token,
-                attendees=attendee_list,  # <-- Pass the combined list
+                attendees=attendee_list,
                 description=request.description or request.title,
             )
             ev.google_event_id = result.get("event_id")
             meeting_link = result.get("meeting_link")
-            print(f"[calendar-events] Synced to Google Calendar: {ev.google_event_id}, Meet: {meeting_link}")
+            print(f"[calendar-events] Synced to Google Calendar ({token_row.google_email}): {ev.google_event_id}, Meet: {meeting_link}")
         except Exception as e:
             print(f"[calendar-events] Google sync failed: {e}")
-    else:
-        print(f"[calendar-events] add_meet={request.add_meet}, skipping Google Calendar sync.")
 
     try:
         db.commit()
@@ -178,7 +198,13 @@ def delete_event(event_id: int, db: Session = Depends(get_db)):
     if ev.google_event_id:
         token_row = (
             db.query(UserGoogleToken)
-            .filter(UserGoogleToken.user_id == ev.admin_id)
+            .filter(
+                UserGoogleToken.user_id == ev.admin_id,
+                UserGoogleToken.refresh_token.isnot(None),
+                UserGoogleToken.refresh_token != "pending_auth",
+                UserGoogleToken.refresh_token != "",
+            )
+            .order_by(UserGoogleToken.updated_at.desc(), UserGoogleToken.id.desc())
             .first()
         )
         if token_row and token_row.refresh_token:
@@ -190,3 +216,141 @@ def delete_event(event_id: int, db: Session = Depends(get_db)):
     db.delete(ev)
     db.commit()
     return {"message": "Event deleted", "id": event_id}
+
+
+class SendReminderRequest(BaseModel):
+    admin_id: Optional[int] = 57
+    event_id: Optional[int] = None
+    recipient_emails: Optional[List[str]] = None
+    note: Optional[str] = None
+
+
+@router.post("/send-reminders")
+def send_calendar_reminders(
+    payload: Optional[SendReminderRequest] = None,
+    admin_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db),
+):
+    """
+    Sends automated meeting reminder emails via Gmail to attendees.
+    """
+    effective_admin_id = (payload.admin_id if payload else None) or admin_id or 57
+    admin = db.query(User).filter(User.user_id == effective_admin_id).first()
+
+    events = []
+    if payload and payload.event_id:
+        target = db.query(CalendarEvent).filter(CalendarEvent.id == payload.event_id).first()
+        if target:
+            events.append(target)
+
+    if not events:
+        today = date.today()
+        events = (
+            db.query(CalendarEvent)
+            .filter(CalendarEvent.admin_id == effective_admin_id, CalendarEvent.date >= today)
+            .order_by(CalendarEvent.date, CalendarEvent.start_time)
+            .limit(3)
+            .all()
+        )
+
+    token_row = (
+        db.query(UserGoogleToken)
+        .filter(
+            UserGoogleToken.user_id == effective_admin_id,
+            UserGoogleToken.refresh_token.isnot(None),
+            UserGoogleToken.refresh_token != "pending_auth",
+        )
+        .order_by(UserGoogleToken.updated_at.desc())
+        .first()
+    )
+
+    recipients_sent = []
+    failed_recipients = []
+
+    try:
+        from email_service import send_email as gmail_send
+    except Exception as ie:
+        print(f"[send-reminders] Could not import email_service: {ie}")
+        gmail_send = None
+
+    google_service = None
+    if token_row and token_row.refresh_token:
+        try:
+            from services.google_calendar import _build_service
+            google_service = _build_service(token_row.refresh_token)
+        except Exception as ge:
+            print(f"[send-reminders] Could not build Google service: {ge}")
+
+    for ev in events:
+        if not ev:
+            continue
+        ev_title = ev.title or "Upcoming Schedule Sync"
+        ev_date_str = ev.date.strftime("%A, %d %B %Y")
+        ev_time_str = (
+            f"{ev.start_time.strftime('%I:%M %p')} – {ev.end_time.strftime('%I:%M %p')}"
+            if (ev.start_time and ev.end_time)
+            else "10:00 AM – 11:00 AM"
+        )
+
+        # 1. Trigger Google Calendar notification email if event has google_event_id
+        if google_service and ev.google_event_id:
+            try:
+                patch_res = google_service.events().patch(
+                    calendarId='primary',
+                    eventId=ev.google_event_id,
+                    sendUpdates='all',
+                    body={
+                        "description": f"{ev.description or ''}\n\n[Reminder notification sent: {datetime.now().strftime('%Y-%m-%d %H:%M')}]"
+                    }
+                ).execute()
+                for a in patch_res.get('attendees', []):
+                    em = a.get('email')
+                    if em:
+                        recipients_sent.append(em)
+                print(f"[send-reminders] Dispatched Google Calendar update to: {recipients_sent}")
+            except Exception as e:
+                print(f"[send-reminders] Google patch warning: {e}")
+
+        targets = []
+        if payload and payload.recipient_emails:
+            targets.extend(payload.recipient_emails)
+        if admin and admin.email and admin.email not in targets:
+            targets.append(admin.email)
+        if token_row and token_row.google_email and token_row.google_email not in targets:
+            targets.append(token_row.google_email)
+
+        html_body = f"""
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; background-color: #0b0c10; color: #e2e8f0; padding: 24px; border-radius: 12px; max-width: 520px; border: 1px solid #1e293b;">
+            <div style="margin-bottom: 16px;">
+                <h2 style="color: #38bdf8; margin: 0; font-size: 20px;">📅 Saarthi Calendar Reminder</h2>
+            </div>
+            <p style="font-size: 14px; color: #94a3b8; margin-top: 0;">You have an upcoming event scheduled on your calendar:</p>
+            <div style="background-color: #13151f; border: 1px solid #334155; padding: 16px; border-radius: 8px; margin: 16px 0;">
+                <p style="margin: 4px 0; font-size: 16px; font-weight: 600; color: #ffffff;">{ev_title}</p>
+                <p style="margin: 6px 0; font-size: 13px; color: #93c5fd;"><strong>Date:</strong> {ev_date_str}</p>
+                <p style="margin: 6px 0; font-size: 13px; color: #93c5fd;"><strong>Time:</strong> {ev_time_str}</p>
+                {f'<p style="margin: 6px 0; font-size: 13px; color: #cbd5e1;"><strong>Note:</strong> {payload.note}</p>' if (payload and payload.note) else ''}
+            </div>
+            <p style="font-size: 12px; color: #64748b; margin-bottom: 0;">This automated reminder was sent by Saarthi Scheduler Assistant.</p>
+        </div>
+        """
+
+        for email in targets:
+            if not email or "@" not in email:
+                continue
+            if email in recipients_sent:
+                continue
+            try:
+                if gmail_send:
+                    success = gmail_send(to_email=email, subject=f"Reminder: {ev_title} on {ev_date_str}", html=html_body)
+                    if success:
+                        recipients_sent.append(email)
+            except Exception as e:
+                print(f"[send-reminders] Direct email notice: {e}")
+
+    return {
+        "status": "success",
+        "message": f"Reminders processed. Notified {len(recipients_sent)} recipients.",
+        "sent_to": list(set(recipients_sent)),
+        "failed": list(set(failed_recipients)),
+    }

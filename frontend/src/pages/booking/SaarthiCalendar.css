@@ -1,0 +1,93 @@
+/* Override FullCalendar's default bright white look to match Saarthi's dark/paper theme */
+.saarthi-calendar-container {
+  background: #fdfaf6;
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(105, 60, 131, 0.12);
+}
+
+/* Header styling */
+.fc .fc-toolbar-title {
+  font-family: 'Playfair Display', serif, system-ui;
+  color: #1E1B4B;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+/* Button styling */
+.fc .fc-button-primary {
+  background-color: #693C83 !important;
+  border-color: #693C83 !important;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.fc .fc-button-primary:hover {
+  background-color: #552C6A !important;
+  border-color: #552C6A !important;
+}
+
+.fc .fc-button-primary:disabled {
+  background-color: #693C83 !important;
+  opacity: 0.6;
+}
+
+/* Grid lines */
+.fc-theme-standard td,
+.fc-theme-standard th {
+  border-color: #e5d9c5 !important;
+}
+
+.fc-theme-standard .fc-scrollgrid {
+  border-color: #e5d9c5 !important;
+}
+
+/* Header cells */
+.fc .fc-col-header-cell {
+  background: rgba(105, 60, 131, 0.04);
+  padding: 8px 0;
+}
+
+.fc .fc-col-header-cell-cushion {
+  color: #1E1B4B;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* Time axis */
+.fc .fc-timegrid-slot-label-cushion {
+  color: #7C6A9A;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+/* Event block styling */
+.fc-event {
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fc-event:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.fc-event-title {
+  font-weight: 600;
+}
+
+/* Now indicator */
+.fc .fc-timegrid-now-indicator-line {
+  border-color: #EF4444;
+  border-width: 2px;
+}
+
+.fc .fc-timegrid-now-indicator-arrow {
+  border-color: #EF4444;
+}

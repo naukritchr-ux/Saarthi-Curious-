@@ -14,9 +14,15 @@ import {
   Loader2,
   AlertCircle,
   CheckCircle,
+  Building2,
+  Laptop,
+  Unlink,
+  CheckCircle2,
 } from "lucide-react";
 import api from "../../utils/axios";
 import { useNavigate } from "react-router-dom";
+import { API_BASE } from "../../config/api";
+import { getDeviceId } from "../../utils/deviceId";
 
 // Password Input Component
 const PasswordInput = ({
@@ -244,6 +250,55 @@ const Settings = () => {
     showMessage("success", "Notification preference updated");
   };
 
+  // Google Calendar Integration
+  const [googleStatus, setGoogleStatus] = useState(null);
+  const [loadingGoogle, setLoadingGoogle] = useState(false);
+
+  const fetchGoogleStatus = async () => {
+    try {
+      setLoadingGoogle(true);
+      const deviceId = getDeviceId();
+      const userId = localStorage.getItem("user_id") || 57;
+      const res = await api.get(`/google/status?device_id=${deviceId}&user_id=${userId}`);
+      setGoogleStatus(res.data);
+    } catch (e) {
+      console.error("Failed to fetch google status:", e);
+    } finally {
+      setLoadingGoogle(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchGoogleStatus();
+  }, []);
+
+  const handleConnectPersonal = () => {
+    const deviceId = getDeviceId();
+    
+    // We pass the device_id and is_personal=true in the state parameter
+    const stateObj = {
+      is_personal: true,
+      device_id: deviceId
+    };
+    
+    const stateString = encodeURIComponent(JSON.stringify(stateObj));
+    
+    // Redirect to your backend's Google login route
+    window.location.href = `${API_BASE}/auth/google/login?state=${stateString}`;
+  };
+
+  const handleDisconnectPersonal = async () => {
+    const deviceId = getDeviceId();
+    const userId = localStorage.getItem("user_id") || 57;
+    try {
+      await api.post(`/google/disconnect?is_personal=true&device_id=${deviceId}&user_id=${userId}`);
+      showMessage("success", "Personal Google Calendar disconnected");
+      fetchGoogleStatus();
+    } catch (e) {
+      showMessage("error", "Failed to disconnect personal Google Calendar");
+    }
+  };
+
   return (
     <MainLayout>
       <div className="bg-[#F8F7FC] min-h-screen p-6">
@@ -271,6 +326,18 @@ const Settings = () => {
                   </button>
                   <button
                     type="button"
+                    onClick={() => setActiveSection("calendar")}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                      activeSection === "calendar"
+                        ? "bg-gradient-to-r from-[#693C83] to-[#8B5FBF] text-white shadow-md"
+                        : "text-[#7C6A9A] hover:text-[#1E1B4B] hover:bg-[#F8F7FC]"
+                    }`}
+                  >
+                    <Calendar size={20} />
+                    <span className="font-medium">Google Calendar</span>
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => navigate("/privacy-policy")}
                     className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[#7C6A9A] hover:text-[#1E1B4B] hover:bg-[#F8F7FC] transition-all duration-200"
                   >
@@ -285,71 +352,159 @@ const Settings = () => {
             <div className="lg:col-span-3">
               {/* Account Settings */}
               {activeSection === "account" && (
-                <div className="bg-white rounded-2xl shadow-sm border border-[#E5DDF0] p-6">
+                <div className="space-y-6">
+                  <div className="bg-white rounded-2xl shadow-sm border border-[#E5DDF0] p-6">
+                    <div className="flex items-center gap-3 mb-2">
+                      <ShieldCheck size={24} className="text-[#5B21B6]" />
+                      <h2 className="text-xl font-bold text-[#1E1B4B]">
+                        Change Password
+                      </h2>
+                    </div>
+
+                    <p className="text-sm text-[#7C6A9A] mb-6">
+                      Keep your account secure by using a strong, unique password.
+                    </p>
+
+                    <form onSubmit={handlePasswordChange} className="space-y-5">
+                      <PasswordInput
+                        label="Current Password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        placeholder="Enter current password"
+                        showPassword={showCurrentPassword}
+                        onToggleShow={() =>
+                          setShowCurrentPassword(!showCurrentPassword)
+                        }
+                      />
+
+                      <PasswordInput
+                        label="New Password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Enter new password"
+                        showPassword={showNewPassword}
+                        onToggleShow={() => setShowNewPassword(!showNewPassword)}
+                      />
+
+                      <div className="mt-1">
+                        <ul className="text-xs text-[#7C6A9A] space-y-1">
+                          <li>• Use at least 8 characters</li>
+                        </ul>
+                      </div>
+
+                      <PasswordInput
+                        label="Confirm New Password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Confirm new password"
+                        showPassword={showConfirmPassword}
+                        onToggleShow={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
+                      />
+
+                      <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full bg-[#5B21B6] text-white font-semibold py-3 rounded-xl hover:bg-[#4C1D95] hover:shadow-md transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-70 flex items-center justify-center gap-2"
+                      >
+                        {isLoading ? (
+                          <>
+                            <Loader2 size={20} className="animate-spin" />
+                            Updating Password...
+                          </>
+                        ) : (
+                          "Update Password"
+                        )}
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* Quick Connect Calendar Card */}
+                  <div className="bg-white rounded-2xl shadow-sm border border-[#E5DDF0] p-6">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Calendar size={24} className="text-purple-600" />
+                      <h3 className="text-lg font-bold text-[#1E1B4B]">
+                        Personal Calendar Integration
+                      </h3>
+                    </div>
+                    <p className="text-sm text-[#7C6A9A] mb-4">
+                      Connect your personal Google Calendar for this device. Merges your personal events with your Saarthi schedule.
+                    </p>
+                    <button
+                      onClick={handleConnectPersonal}
+                      className="bg-purple-600 hover:bg-purple-700 text-white font-medium px-4 py-2 rounded transition-colors"
+                    >
+                      Connect Personal Google Calendar
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Google Calendar Section */}
+              {activeSection === "calendar" && (
+                <div className="bg-white rounded-2xl shadow-sm border border-[#E5DDF0] p-6 space-y-6">
                   <div className="flex items-center gap-3 mb-2">
-                    <ShieldCheck size={24} className="text-[#5B21B6]" />
+                    <Calendar size={24} className="text-[#5B21B6]" />
                     <h2 className="text-xl font-bold text-[#1E1B4B]">
-                      Change Password
+                      Google Calendar Integration
                     </h2>
                   </div>
 
-                  <p className="text-sm text-[#7C6A9A] mb-6">
-                    Keep your account secure by using a strong, unique password.
+                  <p className="text-sm text-[#7C6A9A]">
+                    Connect your personal Google Calendar for this device. Events from your personal calendar will merge into your Saarthi schedule for this browser without affecting other users.
                   </p>
 
-                  <form onSubmit={handlePasswordChange} className="space-y-5">
-                    <PasswordInput
-                      label="Current Password"
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      placeholder="Enter current password"
-                      showPassword={showCurrentPassword}
-                      onToggleShow={() =>
-                        setShowCurrentPassword(!showCurrentPassword)
-                      }
-                    />
-
-                    <PasswordInput
-                      label="New Password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="Enter new password"
-                      showPassword={showNewPassword}
-                      onToggleShow={() => setShowNewPassword(!showNewPassword)}
-                    />
-
-                    <div className="mt-1">
-                      <ul className="text-xs text-[#7C6A9A] space-y-1">
-                        <li>• Use at least 8 characters</li>
-                      </ul>
+                  <div className="p-5 rounded-2xl border border-[#E5DDF0] bg-[#F8F7FC] space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600">
+                          <Laptop size={20} />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-[#1E1B4B]">Personal Calendar (This Device)</h4>
+                          <p className="text-xs text-[#7C6A9A]">
+                            Device ID: <span className="font-mono">{getDeviceId()}</span>
+                          </p>
+                        </div>
+                      </div>
+                      <div>
+                        {googleStatus?.personal_connected ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+                            <CheckCircle2 size={14} /> Connected
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
+                            Not Connected
+                          </span>
+                        )}
+                      </div>
                     </div>
 
-                    <PasswordInput
-                      label="Confirm New Password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Confirm new password"
-                      showPassword={showConfirmPassword}
-                      onToggleShow={() =>
-                        setShowConfirmPassword(!showConfirmPassword)
-                      }
-                    />
+                    {googleStatus?.personal_email && (
+                      <p className="text-sm text-gray-700">
+                        Linked account: <strong className="text-purple-700">{googleStatus.personal_email}</strong>
+                      </p>
+                    )}
 
-                    <button
-                      type="submit"
-                      disabled={isLoading}
-                      className="w-full bg-[#5B21B6] text-white font-semibold py-3 rounded-xl hover:bg-[#4C1D95] hover:shadow-md transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-70 flex items-center justify-center gap-2"
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 size={20} className="animate-spin" />
-                          Updating Password...
-                        </>
-                      ) : (
-                        "Update Password"
+                    <div className="pt-2 flex flex-wrap gap-3">
+                      <button
+                        onClick={handleConnectPersonal}
+                        className="bg-purple-600 hover:bg-purple-700 text-white font-medium px-4 py-2 rounded transition-colors"
+                      >
+                        {googleStatus?.personal_connected ? "Reconnect Personal Google Calendar" : "Connect Personal Google Calendar"}
+                      </button>
+
+                      {googleStatus?.personal_connected && (
+                        <button
+                          onClick={handleDisconnectPersonal}
+                          className="border border-red-200 text-red-600 hover:bg-red-50 px-4 py-2 rounded font-medium transition-colors"
+                        >
+                          Disconnect
+                        </button>
                       )}
-                    </button>
-                  </form>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

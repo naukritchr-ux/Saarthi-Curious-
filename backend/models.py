@@ -1181,22 +1181,25 @@ class Certificate(Base):
 class UserGoogleToken(Base):
     __tablename__ = "user_google_tokens"
 
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
     user_id = Column(
-        Integer,
+        BigInteger,
         ForeignKey("users.user_id", ondelete="CASCADE"),
-        primary_key=True
+        nullable=False,
     )
     refresh_token = Column(Text, nullable=False)
     access_token = Column(Text, nullable=True)
     token_expiry = Column(DateTime, nullable=True)
     google_email = Column(String, nullable=True)
+    is_personal = Column(Boolean, default=False)
+    device_id = Column(String, nullable=True)
     sync_token = Column(Text, nullable=True)
     channel_id = Column(String, nullable=True)
     channel_expiration = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    user = relationship("User", backref="google_token")
+    user = relationship("User", backref="google_tokens")
 
 class CalendarEvent(Base):
     __tablename__ = "calendar_events"
@@ -1212,3 +1215,17 @@ class CalendarEvent(Base):
     all_day = Column(Boolean, default=False)
     google_event_id = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class Task(Base):
+    __tablename__ = "tasks"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    admin_id = Column(BigInteger, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    date = Column(Date, nullable=False)
+    start_time = Column(Time, nullable=True)
+    end_time = Column(Time, nullable=True)
+    is_completed = Column(Boolean, default=False)
+    task_type = Column(String, default="task")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

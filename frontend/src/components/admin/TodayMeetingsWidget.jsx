@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Calendar, Video, Clock } from "lucide-react";
 import { getMonthCalendar } from "../../services/bookingApi";
+import { getMonthEvents } from "../../services/calendarEventsApi";
 
 const MONTH_KEY = () => {
   const d = new Date();
@@ -26,13 +27,19 @@ export default function TodayMeetingsWidget({ adminId = 57 }) {
 
   useEffect(() => {
     let cancelled = false;
-    getMonthCalendar(MONTH_KEY(), adminId)
-      .then((rows) => {
+    const effectiveAdminId = Number(localStorage.getItem("user_id")) || adminId;
+    const monthKey = MONTH_KEY();
+    const today = TODAY_ISO();
+
+    Promise.all([
+      getMonthCalendar(monthKey, effectiveAdminId).catch(() => []),
+      getMonthEvents(monthKey, effectiveAdminId).catch(() => []),
+    ])
+      .then(([rows, customEvents]) => {
         if (cancelled) return;
-        const today = TODAY_ISO();
-        const todayMeetings = rows
+
+        const dbMeetings = (rows || [])
           .filter((s) => s.date === today && s.booking)
-          .sort((a, b) => a.start.localeCompare(b.start))
           .map((s) => ({
             slotId: s.id,
             start: s.start,
@@ -42,11 +49,39 @@ export default function TodayMeetingsWidget({ adminId = 57 }) {
             userEmail: s.booking.user_email,
             meetingLink: s.booking.meeting_link,
           }));
-        setMeetings(todayMeetings);
+
+        const customMeetings = (customEvents || [])
+          .filter((e) => e.date === today)
+          .map((e) => ({
+            slotId: `event-${e.id}`,
+            start: e.start_time || "10:00",
+            end: e.end_time || (e.all_day ? "23:59" : "10:30"),
+            status: "confirmed",
+            userName: e.title,
+            userEmail: e.event_type
+              ? `${e.event_type.charAt(0).toUpperCase() + e.event_type.slice(1)} Event`
+              : "Calendar Event",
+            meetingLink: e.meeting_link || null,
+          }));
+
+        const seen = new Set();
+        const merged = [];
+        for (const m of [...dbMeetings, ...customMeetings]) {
+          const key = `${m.start}-${m.userName}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            merged.push(m);
+          }
+        }
+        merged.sort((a, b) => a.start.localeCompare(b.start));
+        setMeetings(merged);
       })
       .catch((e) => console.error("[TodayMeetings]", e))
       .finally(() => !cancelled && setLoading(false));
-    return () => { cancelled = true; };
+
+    return () => {
+      cancelled = true;
+    };
   }, [adminId]);
 
   return (
