@@ -85,6 +85,31 @@ def login(
     }
 
 
+@router.post("/resend-login-otp")
+def resend_login_otp(
+    request: SendOTPRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    """Resend OTP to user's email for login"""
+    print(f"\n{'=' * 60}\nRESEND LOGIN OTP REQUEST: {request.email}\n{'=' * 60}")
+    user = db.query(User).filter(User.email.ilike(request.email.strip())).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="Account is inactive. Contact administrator.")
+
+    otp = generate_otp()
+    store_otp(user.email, otp, "login")
+    background_tasks.add_task(
+        send_login_otp_email,
+        user.email,
+        otp
+    )
+    print(f"Queued resent login OTP email for {user.email}")
+    return {"message": "OTP resent successfully"}
+
+
 @router.post("/send-otp")
 def send_otp(request: SendOTPRequest, db: Session = Depends(get_db)):
     """Send OTP to user's email for password reset"""

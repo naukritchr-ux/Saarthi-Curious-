@@ -791,56 +791,28 @@ const MasterAdminDashboard = () => {
           boxShadow: "0 24px 48px -20px rgba(0,0,0,0.8)",
         }}
       >
-        {/* Background: full desk scene */}
+        {/* Background: full desk scene as it is */}
         <img
           src="/assets/hero-bg.png"
-          alt=""
+          alt="Saarthi Hero Desk"
           style={{
             position: "absolute",
             inset: 0,
             width: "100%",
             height: "100%",
             objectFit: "cover",
-            objectPosition: "center 62%",
-            opacity: 0.95,
+            objectPosition: "center",
           }}
         />
 
-        {/* Left-to-right dark gradient for text contrast */}
+        {/* Subtle left-side dark gradient to ensure text readability without obscuring the laptop and logo */}
         <div
           style={{
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(90deg, rgba(7,7,16,0.92) 0%, rgba(7,7,16,0.55) 38%, rgba(7,7,16,0.10) 78%)",
-          }}
-        />
-
-        {/* Bottom gradient to darken lower edge */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "linear-gradient(180deg, transparent 58%, rgba(7,7,16,0.55) 100%)",
-          }}
-        />
-
-        {/* Laptop screen overlay: blank purple screen (no logo) */}
-        <div
-          style={{
-            position: "absolute",
-            left: "52.5%",
-            top: "32%",
-            width: "22%",
-            height: "34%",
-            borderRadius: 6,
-            background:
-              "radial-gradient(ellipse at 50% 45%, rgba(147, 51, 234, 0.45) 0%, rgba(107, 33, 168, 0.25) 55%, rgba(20, 10, 45, 0.6) 100%)",
-            boxShadow:
-              "inset 0 0 16px rgba(168, 85, 247, 0.35), 0 0 20px rgba(147, 51, 234, 0.15)",
+              "linear-gradient(90deg, rgba(7,7,16,0.85) 0%, rgba(7,7,16,0.45) 32%, rgba(7,7,16,0.05) 60%, transparent 100%)",
             pointerEvents: "none",
-            zIndex: 5,
           }}
         />
 
