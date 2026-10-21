@@ -177,6 +177,45 @@ def create_google_calendar_event(
         return {"event_id": None, "meeting_link": None}
 
 
+def update_google_calendar_event(
+    event_id: str,
+    refresh_token: str,
+    title: Optional[str] = None,
+    start_datetime: Optional[datetime] = None,
+    end_datetime: Optional[datetime] = None,
+    description: Optional[str] = None,
+    attendees: Optional[List[str]] = None,
+):
+    """Update title, time, or description of an existing Google Calendar event."""
+    service = _build_service(refresh_token)
+    event = service.events().get(calendarId="primary", eventId=event_id).execute()
+
+    if title:
+        event["summary"] = title
+    if description is not None:
+        event["description"] = description
+    if start_datetime:
+        event["start"] = {
+            "dateTime": start_datetime.isoformat(),
+            "timeZone": "Asia/Kolkata",
+        }
+    if end_datetime:
+        event["end"] = {
+            "dateTime": end_datetime.isoformat(),
+            "timeZone": "Asia/Kolkata",
+        }
+    if attendees is not None:
+        event["attendees"] = [{"email": e.strip()} for e in attendees if e and e.strip()]
+
+    updated = service.events().update(
+        calendarId="primary",
+        eventId=event_id,
+        body=event,
+        sendUpdates="all",
+    ).execute()
+    return updated
+
+
 def delete_google_event(event_id: str, refresh_token: str):
     """Cancel an event and notify attendees."""
     service = _build_service(refresh_token)
@@ -189,10 +228,8 @@ def delete_google_event(event_id: str, refresh_token: str):
 
 
 def fetch_google_events(refresh_token: str, month_str: str = None, month: str = None):
-    """Fetches events for a specific month (YYYY-MM) from Google Calendar."""
-    from google.oauth2.credentials import Credentials
-    from googleapiclient.discovery import build
-    from datetime import datetime
+    """Fetches events for a specific month (YYYY-MM) with +/- 14 days buffer from Google Calendar."""
+    from datetime import datetime, timedelta
     import calendar
 
     target_month = month_str or month
@@ -200,20 +237,16 @@ def fetch_google_events(refresh_token: str, month_str: str = None, month: str = 
         return []
 
     try:
-        creds = Credentials(
-            token=None,
-            refresh_token=refresh_token,
-            token_uri="https://oauth2.googleapis.com/token",
-            client_id=os.getenv("GOOGLE_CLIENT_ID"),
-            client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
-        )
-        service = build("calendar", "v3", credentials=creds)
+        service = _build_service(refresh_token)
 
         year, month_num = map(int, target_month.split("-"))
         last_day = calendar.monthrange(year, month_num)[1]
-        
-        time_min = f"{year}-{month_num:02d}-01T00:00:00Z"
-        time_max = f"{year}-{month_num:02d}-{last_day}T23:59:59Z"
+
+        start_dt = datetime(year, month_num, 1) - timedelta(days=14)
+        end_dt = datetime(year, month_num, last_day) + timedelta(days=14)
+
+        time_min = start_dt.strftime("%Y-%m-%dT00:00:00Z")
+        time_max = end_dt.strftime("%Y-%m-%dT23:59:59Z")
 
         events_result = service.events().list(
             calendarId='primary',
@@ -222,11 +255,15 @@ def fetch_google_events(refresh_token: str, month_str: str = None, month: str = 
             singleEvents=True,
             orderBy='startTime'
         ).execute()
-        
+
         events = events_result.get('items', [])
-        
+
         formatted_events = []
         for e in events:
+            # Skip cancelled events
+            if e.get('status') == 'cancelled':
+                continue
+
             start = e['start'].get('dateTime', e['start'].get('date'))
             end = e['end'].get('dateTime', e['end'].get('date'))
             title = e.get('summary') or 'Google Event'
@@ -258,6 +295,7 @@ def fetch_google_events(refresh_token: str, month_str: str = None, month: str = 
                 "isGoogleEvent": True,
                 "meeting_link": meeting_link,
                 "google_event_id": e['id'],
+                "description": e.get('description', ''),
                 "booking": {
                     "booking_id": f"google-{e['id']}",
                     "user_id": None,

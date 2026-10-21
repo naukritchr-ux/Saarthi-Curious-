@@ -1228,4 +1228,17 @@ class Task(Base):
     end_time = Column(Time, nullable=True)
     is_completed = Column(Boolean, default=False)
     task_type = Column(String, default="task")
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class UserAvailability(Base):
+    __tablename__ = "user_availability"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    user_id = Column(BigInteger, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
+    day_of_week = Column(Integer, nullable=False) # 0=Monday, 6=Sunday
+    start_time = Column(Time, nullable=False) # e.g., 09:00
+    end_time = Column(Time, nullable=False)   # e.g., 18:00
+    is_available = Column(Boolean, default=True)
+    title = Column(String, nullable=True)
+    duration_minutes = Column(Integer, default=30)
+

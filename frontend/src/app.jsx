@@ -39,6 +39,7 @@ import AllAssignmentsPage from "./pages/learner/AllAssignmentsPage";
 import BookCall from "./pages/bookcall/BookCall";
 import AdminReschedule from "./pages/AdminReschedule";
 import BookCallPage from "./pages/booking/BookCallPage";
+import BookMeetingPage from "./pages/booking/BookMeetingPage";
 import SaarthiDashboard from "./pages/booking/SaarthiDashboard";
 import IndividualLearnerReport from "./pages/Reports/IndividualLearnerReport";
 
@@ -406,6 +407,8 @@ function App() {
         <Route path="/admin/reschedule" element={<Navigate to="/admin/schedule" replace />} />
         <Route path="/calendar" element={<ProtectedRoute><SaarthiDashboard adminId={57} /></ProtectedRoute>} />
         <Route path="/saarthi-dashboard" element={<ProtectedRoute><SaarthiDashboard adminId={57} /></ProtectedRoute>} />
+        <Route path="/book/:hostId" element={<BookMeetingPage />} />
+        <Route path="/book" element={<BookMeetingPage hostId={2} />} />
 
         <Route
           path="*"

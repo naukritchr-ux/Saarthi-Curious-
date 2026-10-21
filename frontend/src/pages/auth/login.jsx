@@ -31,7 +31,7 @@ export default function LoginPage() {
 
     if (response.data.otp_required) {
       setMode("login-otp");
-      setLoginOtp(response.data.otp || response.data.master_otp || "123456");
+      setLoginOtp("");
       setError("");
     }
   } catch (error) {
@@ -298,14 +298,11 @@ export default function LoginPage() {
                               event.target.value.replace(/\D/g, "")
                             )
                           }
-                          placeholder="123456"
+                          placeholder="Enter 6-digit OTP"
                           className="w-full bg-transparent text-sm text-[#1E1B4B] outline-none placeholder:text-[#1E1B4B]/40"
                           required
                         />
                       </div>
-                      <p className="mt-1.5 text-xs text-[#693C83]">
-                        Master test OTP: <strong>123456</strong>
-                      </p>
                     </label>
 
                     <button

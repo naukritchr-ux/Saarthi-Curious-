@@ -9,6 +9,7 @@ from models import CalendarEvent, UserGoogleToken, User
 from services.google_calendar import (
     create_google_meet_event,
     delete_google_event,
+    update_google_calendar_event,
 )
 
 router = APIRouter(prefix="/calendar", tags=["Calendar Events"])
@@ -205,6 +206,122 @@ def delete_event(event_id: int, db: Session = Depends(get_db)):
     db.delete(ev)
     db.commit()
     return {"message": "Event deleted", "id": event_id}
+
+
+class UpdateEventRequest(BaseModel):
+    title: Optional[str] = None
+    date: Optional[str] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    description: Optional[str] = None
+    attendee_emails: Optional[List[str]] = None
+
+
+@router.put("/events/{event_id}")
+def update_event(event_id: int, request: UpdateEventRequest, db: Session = Depends(get_db)):
+    """Update event in DB and synchronize update to Google Calendar."""
+    ev = db.query(CalendarEvent).filter(CalendarEvent.id == event_id).first()
+    if not ev:
+        raise HTTPException(status_code=404, detail="Event not found.")
+
+    if request.title is not None and request.title.strip():
+        ev.title = request.title.strip()
+    if request.description is not None:
+        ev.description = request.description
+    if request.date:
+        try:
+            ev.date = date.fromisoformat(request.date)
+        except Exception:
+            pass
+    if request.start_time:
+        try:
+            sh, sm = map(int, request.start_time.split(":")[:2])
+            ev.start_time = time(sh, sm)
+        except Exception:
+            pass
+    if request.end_time:
+        try:
+            eh, em = map(int, request.end_time.split(":")[:2])
+            ev.end_time = time(eh, em)
+        except Exception:
+            pass
+
+    # Sync update to Google Calendar if linked
+    if ev.google_event_id:
+        token_row = (
+            db.query(UserGoogleToken)
+            .filter(
+                UserGoogleToken.user_id == ev.admin_id,
+                UserGoogleToken.refresh_token.isnot(None),
+                UserGoogleToken.refresh_token != "pending_auth",
+                UserGoogleToken.refresh_token != "",
+            )
+            .order_by(UserGoogleToken.updated_at.desc(), UserGoogleToken.id.desc())
+            .first()
+        )
+        if token_row and token_row.refresh_token:
+            try:
+                start_dt = datetime.combine(ev.date, ev.start_time or time(10, 0))
+                end_dt = datetime.combine(ev.date, ev.end_time or time(11, 0))
+                update_google_calendar_event(
+                    event_id=ev.google_event_id,
+                    refresh_token=token_row.refresh_token,
+                    title=ev.title,
+                    start_datetime=start_dt,
+                    end_datetime=end_dt,
+                    description=ev.description,
+                    attendees=request.attendee_emails
+                )
+                print(f"[calendar-events] Synced event update to Google Calendar: {ev.google_event_id}")
+            except Exception as e:
+                print(f"[calendar-events] Google update notice: {e}")
+
+    db.commit()
+    db.refresh(ev)
+    return {
+        "id": ev.id,
+        "title": ev.title,
+        "date": ev.date.isoformat(),
+        "start_time": ev.start_time.strftime("%H:%M") if ev.start_time else None,
+        "end_time": ev.end_time.strftime("%H:%M") if ev.end_time else None,
+        "google_event_id": ev.google_event_id
+    }
+
+
+@router.delete("/events/google/{google_event_id}")
+def delete_google_calendar_event_endpoint(
+    google_event_id: str,
+    admin_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Delete an event from Google Calendar and clean up any local record."""
+    ev = db.query(CalendarEvent).filter(CalendarEvent.google_event_id == google_event_id).first()
+    effective_admin_id = admin_id or (ev.admin_id if ev else None)
+
+    if effective_admin_id:
+        token_row = (
+            db.query(UserGoogleToken)
+            .filter(
+                UserGoogleToken.user_id == effective_admin_id,
+                UserGoogleToken.refresh_token.isnot(None),
+                UserGoogleToken.refresh_token != "pending_auth",
+                UserGoogleToken.refresh_token != "",
+            )
+            .order_by(UserGoogleToken.updated_at.desc(), UserGoogleToken.id.desc())
+            .first()
+        )
+        if token_row and token_row.refresh_token:
+            try:
+                delete_google_event(google_event_id, token_row.refresh_token)
+                print(f"[calendar-events] Deleted Google Calendar event: {google_event_id}")
+            except Exception as e:
+                print(f"[calendar-events] Failed to delete from Google Calendar: {e}")
+
+    if ev:
+        db.delete(ev)
+        db.commit()
+
+    return {"message": "Google event deleted", "google_event_id": google_event_id}
 
 
 class SendReminderRequest(BaseModel):

@@ -130,10 +130,37 @@ export const rescheduleDate = ({ sourceDate, targetDate }) =>
 export const createCustomBooking = (payload) =>
   request("/bookings/create-custom", { method: "POST", body: payload });
 
+// Smart Dynamic Availability (Calendly-style Gaps Calculation)
+export const getSmartAvailableSlots = async (hostId, selectedDate) => {
+  const formattedDate = typeof selectedDate === "string" ? selectedDate : selectedDate.toISOString().split("T")[0];
+  return request(`/bookings/available-slots/${hostId}?selected_date=${formattedDate}`);
+};
+
+export const getUserAvailability = async (userId) => {
+  return request(`/bookings/user-availability/${userId}`);
+};
+
+export const saveUserAvailability = async (payload) => {
+  return request("/bookings/user-availability", {
+    method: "POST",
+    body: payload,
+  });
+};
+
 // Legacy backwards-compatibility exports
 export const getAvailableSlots = async (selectedDate, adminId) => {
   const formattedDate = typeof selectedDate === "string" ? selectedDate : selectedDate.toISOString().split("T")[0];
-  return request(`/bookings/available-slots?selected_date=${formattedDate}&admin_id=${adminId}`);
+  const res = await request(`/bookings/available-slots?selected_date=${formattedDate}&admin_id=${adminId}`);
+  if (Array.isArray(res)) return res;
+  if (res?.available_slots) {
+    return res.available_slots.map((s, idx) => ({
+      id: idx + 1,
+      time: `${s.start} - ${s.end}`,
+      status: "available",
+      ...s,
+    }));
+  }
+  return [];
 };
 
 export const generateScheduleForMonth = async (date, adminId, monthsAhead = 1) => {

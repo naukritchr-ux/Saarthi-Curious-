@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
-from datetime import date, datetime, time
-from typing import Optional
+from datetime import date, datetime, time, timedelta
+from typing import Optional, List
 from pydantic import BaseModel
 import calendar
 
@@ -13,7 +13,7 @@ from services.google_calendar import (
     fetch_google_events,
 )
 from database import get_db
-from models import AdminSchedule, Booking, UserGoogleToken, User, Task, CalendarEvent
+from models import AdminSchedule, Booking, UserGoogleToken, User, Task, CalendarEvent, UserAvailability
 
 
 # ─────────────────────────────────────────────────────────────
@@ -135,6 +135,20 @@ class CustomBookingRequest(BaseModel):
     title: Optional[str] = "Saarthi Curious - Meeting"
     description: Optional[str] = "Scheduled via Saarthi"
     add_meet: bool = True
+
+
+class DayAvailabilityItem(BaseModel):
+    day_of_week: int  # 0=Monday, 6=Sunday
+    start_time: str   # "09:00"
+    end_time: str     # "17:00"
+    is_available: bool = True
+
+
+class SetUserAvailabilityRequest(BaseModel):
+    user_id: int
+    title: Optional[str] = "Bookable appointment schedule"
+    duration_minutes: Optional[int] = 30
+    schedule: List[DayAvailabilityItem]
 
 
 router = APIRouter(prefix="/bookings", tags=["Bookings"])
@@ -334,8 +348,9 @@ def get_calendar(
         year, month_num = today.year, today.month
 
     last_day = pycal.monthrange(year, month_num)[1]
-    start_date = date(year, month_num, 1)
-    end_date = date(year, month_num, last_day)
+    # Buffer +/- 7 days so events visible across weekly/monthly boundaries appear
+    start_date = date(year, month_num, 1) - timedelta(days=7)
+    end_date = date(year, month_num, last_day) + timedelta(days=7)
 
     unified_events = []
 
@@ -397,6 +412,7 @@ def get_calendar(
                 "source": "task",
                 "extendedProps": {
                     "type": "task",
+                    "db_id": task.id,
                     "time": f"{st[:5]} – {et[:5]}",
                     "is_completed": getattr(task, "is_completed", False),
                 },
@@ -404,7 +420,33 @@ def get_calendar(
     except Exception as e:
         print(f"Error fetching tasks in /calendar: {e}")
 
-    # 3. FETCH CALENDAR EVENTS
+    # 3. FETCH REAL GOOGLE EVENTS FIRST (to enable 2-way sync with CalendarEvent)
+    google_events_map = {}
+    google_fetch_successful = False
+    try:
+        tokens = db.query(UserGoogleToken).filter(
+            UserGoogleToken.user_id == admin_id,
+            UserGoogleToken.refresh_token.isnot(None),
+            UserGoogleToken.refresh_token != "pending_auth",
+            UserGoogleToken.refresh_token != "",
+        ).all()
+
+        for tok in tokens:
+            if tok and tok.refresh_token and tok.refresh_token != "pending_auth":
+                try:
+                    from services.google_calendar import fetch_google_events
+                    g_evs = fetch_google_events(tok.refresh_token, month)
+                    google_fetch_successful = True
+                    for g in g_evs:
+                        gid = g.get("id") or g.get("google_event_id")
+                        if gid:
+                            google_events_map[str(gid)] = g
+                except Exception as err:
+                    print(f"Error fetching Google events: {err}")
+    except Exception as e:
+        print(f"Error checking google tokens in /calendar: {e}")
+
+    # 4. FETCH CALENDAR EVENTS AND SYNC WITH GOOGLE CHANGES
     try:
         events = (
             db.query(CalendarEvent)
@@ -416,6 +458,36 @@ def get_calendar(
             .all()
         )
         for ev in events:
+            # Check if this event was synced with Google
+            if ev.google_event_id and google_fetch_successful:
+                gid = str(ev.google_event_id)
+                if gid in google_events_map:
+                    # User updated event in Google Calendar: reflect Google's latest values immediately!
+                    g_ev = google_events_map.pop(gid)
+                    title = g_ev.get("title") or ev.title
+                    start_str = str(g_ev.get("start", ""))
+                    end_str = str(g_ev.get("end", ""))
+                    unified_events.append({
+                        "id": f"calev_{ev.id}",
+                        "title": title,
+                        "start": start_str,
+                        "end": end_str,
+                        "backgroundColor": "#6b21a8" if ev.event_type == "meeting" else "#2563eb",
+                        "source": "calendar_event",
+                        "extendedProps": {
+                            "type": ev.event_type or "meeting",
+                            "db_id": ev.id,
+                            "google_event_id": ev.google_event_id,
+                            "time": f"{start_str[11:16]} – {end_str[11:16]}" if "T" in start_str and "T" in end_str else "All day",
+                            "meeting_link": g_ev.get("meeting_link"),
+                            "description": g_ev.get("description") or ev.description,
+                        },
+                    })
+                    continue
+                else:
+                    # Event was deleted/cancelled in Google Calendar! Skip it so it's removed from Saarthi view.
+                    continue
+
             st = ev.start_time.isoformat() if ev.start_time else "10:00:00"
             et = ev.end_time.isoformat() if ev.end_time else "11:00:00"
             color = "#6b21a8" if ev.event_type == "meeting" else ("#065f46" if ev.event_type == "holiday" else "#2563eb")
@@ -428,6 +500,8 @@ def get_calendar(
                 "source": "calendar_event",
                 "extendedProps": {
                     "type": ev.event_type or "meeting",
+                    "db_id": ev.id,
+                    "google_event_id": ev.google_event_id,
                     "time": f"{st[:5]} – {et[:5]}",
                     "attendees": 3,
                     "description": ev.description,
@@ -436,48 +510,26 @@ def get_calendar(
     except Exception as e:
         print(f"Error fetching calendar events in /calendar: {e}")
 
-    # 4. FETCH REAL GOOGLE EVENTS (Strictly for this admin/user only)
-    try:
-        tokens = db.query(UserGoogleToken).filter(
-            UserGoogleToken.user_id == admin_id,
-            UserGoogleToken.refresh_token.isnot(None),
-            UserGoogleToken.refresh_token != "pending_auth",
-            UserGoogleToken.refresh_token != "",
-        ).all()
-
-
-        for tok in tokens:
-            if tok and tok.refresh_token and tok.refresh_token != "pending_auth":
-                try:
-                    from services.google_calendar import fetch_google_events
-                    for g_event in fetch_google_events(tok.refresh_token, month):
-                        g_start = str(g_event.get("start", ""))[:16]
-                        g_title = (g_event.get("title") or "").strip().lower()
-                        # Deduplicate: Skip if an existing event in unified_events has same start time and title
-                        is_dup = any(
-                            str(u.get("start", ""))[:16] == g_start and (
-                                g_title in u.get("title", "").strip().lower() or
-                                u.get("title", "").strip().lower() in g_title
-                            )
-                            for u in unified_events
-                        )
-                        if not is_dup:
-                            unified_events.append({
-                                "id": f"gcal_{g_event.get('id', '')}",
-                                "title": g_event.get("title", "Google Event"),
-                                "start": g_event.get("start"),
-                                "end": g_event.get("end"),
-                                "backgroundColor": "#2563eb",
-                                "source": "google_calendar",
-                                "extendedProps": {
-                                    "type": "meeting",
-                                    "meeting_link": g_event.get("meeting_link"),
-                                },
-                            })
-                except Exception as err:
-                    print(f"Error fetching Google events: {err}")
-    except Exception as e:
-        print(f"Error checking google tokens in /calendar: {e}")
+    # 5. ADD ANY REMAINING DIRECT GOOGLE CALENDAR EVENTS
+    for gid, g_event in google_events_map.items():
+        g_start = str(g_event.get("start", ""))
+        g_end = str(g_event.get("end", ""))
+        g_title = g_event.get("title") or "Google Event"
+        unified_events.append({
+            "id": f"gcal_{gid}",
+            "title": g_title,
+            "start": g_start,
+            "end": g_end,
+            "backgroundColor": "#2563eb",
+            "source": "google_calendar",
+            "extendedProps": {
+                "type": "meeting",
+                "google_event_id": gid,
+                "time": f"{g_start[11:16]} – {g_end[11:16]}" if "T" in g_start and "T" in g_end else "All day",
+                "meeting_link": g_event.get("meeting_link"),
+                "description": g_event.get("description", ""),
+            },
+        })
 
     # Deduplicate unified_events across all sources (Booking, Task, CalendarEvent, GoogleCalendar)
     seen_keys = set()
@@ -496,37 +548,217 @@ def get_calendar(
 
 
 
+def compute_smart_slots_for_host(host_id: int, selected_date: date, db: Session):
+    # 1. Get Host's standard working hours for this day of the week
+    day_of_week = selected_date.weekday()  # 0=Monday, 6=Sunday
+    working_hours = db.query(UserAvailability).filter(
+        UserAvailability.user_id == host_id,
+        UserAvailability.day_of_week == day_of_week
+    ).first()
+
+    # If day marked unavailable
+    if working_hours and not working_hours.is_available:
+        return {
+            "date": selected_date.isoformat(),
+            "host_id": host_id,
+            "available_slots": []
+        }
+
+    # If no custom working hours set: default Mon-Fri 9:00 - 17:00, Sat/Sun unavailable
+    if working_hours:
+        start_work = working_hours.start_time
+        end_work = working_hours.end_time
+    else:
+        if day_of_week >= 5:  # Saturday or Sunday
+            return {
+                "date": selected_date.isoformat(),
+                "host_id": host_id,
+                "available_slots": []
+            }
+        start_work = time(9, 0)
+        end_work = time(17, 0)
+
+    # Convert to datetime for calculation
+    day_start = datetime.combine(selected_date, start_work)
+    day_end = datetime.combine(selected_date, end_work)
+
+    # 2. Find all BUSY times for this host
+    busy_intervals = []
+
+    # A. DB Bookings (AdminSchedule where admin_id == host_id and date == selected_date and status == "booked")
+    bookings = db.query(AdminSchedule).filter(
+        AdminSchedule.admin_id == host_id,
+        AdminSchedule.date == selected_date,
+        AdminSchedule.status == "booked"
+    ).all()
+    for b in bookings:
+        busy_intervals.append((datetime.combine(selected_date, b.start_time), datetime.combine(selected_date, b.end_time)))
+
+    # A2. Calendar Events
+    cal_events = db.query(CalendarEvent).filter(
+        CalendarEvent.admin_id == host_id,
+        CalendarEvent.date == selected_date
+    ).all()
+    for ev in cal_events:
+        if ev.all_day:
+            busy_intervals.append((day_start, day_end))
+        elif ev.start_time and ev.end_time:
+            busy_intervals.append((datetime.combine(selected_date, ev.start_time), datetime.combine(selected_date, ev.end_time)))
+
+    # B. Tasks
+    tasks = db.query(Task).filter(Task.admin_id == host_id, Task.date == selected_date).all()
+    for t in tasks:
+        if t.start_time and t.end_time:
+            busy_intervals.append((datetime.combine(selected_date, t.start_time), datetime.combine(selected_date, t.end_time)))
+
+    # C. Google Calendar Events
+    token = db.query(UserGoogleToken).filter(
+        UserGoogleToken.user_id == host_id,
+        UserGoogleToken.refresh_token.isnot(None),
+        UserGoogleToken.refresh_token != "pending_auth",
+        UserGoogleToken.refresh_token != ""
+    ).first()
+    if token:
+        try:
+            g_events = fetch_google_events(token.refresh_token, selected_date.strftime("%Y-%m"))
+            for g in g_events:
+                if g.get('date') == selected_date.isoformat():
+                    sh, sm = map(int, g.get('start_time', '00:00').split(':'))
+                    eh, em = map(int, g.get('end_time', '23:59').split(':'))
+                    busy_intervals.append((datetime.combine(selected_date, time(sh, sm)), datetime.combine(selected_date, time(eh, em))))
+        except Exception as e:
+            print(f"Error fetching Google events for availability: {e}")
+
+    # 3. Calculate the FREE gaps
+    busy_intervals.sort(key=lambda x: x[0])
+
+    free_slots = []
+    current_time = day_start
+
+    slot_minutes = getattr(working_hours, 'duration_minutes', 30) or 30
+    slot_duration = timedelta(minutes=slot_minutes)
+
+    for busy_start, busy_end in busy_intervals:
+        if busy_end <= day_start or busy_start >= day_end:
+            continue
+        busy_start = max(busy_start, day_start)
+        busy_end = min(busy_end, day_end)
+
+        # If current time is before the busy block starts, we have a free gap
+        while current_time + slot_duration <= busy_start:
+            free_slots.append({
+                "start": current_time.time().strftime("%H:%M"),
+                "end": (current_time + slot_duration).time().strftime("%H:%M")
+            })
+            current_time += slot_duration
+
+        # Move current_time to the end of the busy block
+        if current_time < busy_end:
+            current_time = busy_end
+
+    # Check the remaining time after the last busy block
+    while current_time + slot_duration <= day_end:
+        free_slots.append({
+            "start": current_time.time().strftime("%H:%M"),
+            "end": (current_time + slot_duration).time().strftime("%H:%M")
+        })
+        current_time += slot_duration
+
+    return {
+        "date": selected_date.isoformat(),
+        "host_id": host_id,
+        "available_slots": free_slots
+    }
+
+
+@router.get("/available-slots/{host_id}")
+def get_smart_available_slots(
+    host_id: int,
+    selected_date: date,
+    db: Session = Depends(get_db)
+):
+    return compute_smart_slots_for_host(host_id, selected_date, db)
+
+
 @router.get("/available-slots")
 def get_available_slots(
     selected_date: date,
-    admin_id: int,
+    admin_id: Optional[int] = None,
+    host_id: Optional[int] = None,
     db: Session = Depends(get_db),
 ):
-    schedules = (
-        db.query(AdminSchedule)
-        .filter(and_(AdminSchedule.date == selected_date, AdminSchedule.admin_id == admin_id))
-        .order_by(AdminSchedule.start_time)
-        .all()
-    )
-    if len(schedules) == 0:
-        all_schedules = db.query(AdminSchedule).filter(AdminSchedule.date == selected_date).all()
-        if all_schedules:
-            schedules = all_schedules
+    target_id = host_id or admin_id or 2
+    return compute_smart_slots_for_host(target_id, selected_date, db)
 
-    response = []
-    for schedule in schedules:
-        booking = (
-            db.query(Booking)
-            .filter(Booking.schedule_id == schedule.id, Booking.booking_status == "confirmed")
-            .first()
-        )
-        is_booked = schedule.status == "booked" or booking
-        response.append({
-            "id": schedule.id,
-            "time": f"{schedule.start_time.strftime('%I:%M %p')} - {schedule.end_time.strftime('%I:%M %p')}",
-            "status": "booked" if is_booked else "available",
-        })
-    return response
+
+@router.get("/user-availability/{user_id}")
+def get_user_availability(user_id: int, db: Session = Depends(get_db)):
+    rows = db.query(UserAvailability).filter(UserAvailability.user_id == user_id).order_by(UserAvailability.day_of_week).all()
+    if not rows:
+        default_schedule = []
+        for d in range(7):
+            is_avail = (d < 5)  # Mon-Fri
+            default_schedule.append({
+                "day_of_week": d,
+                "start_time": "09:00",
+                "end_time": "17:00",
+                "is_available": is_avail,
+            })
+        return {
+            "user_id": user_id,
+            "title": "Bookable appointment schedule",
+            "duration_minutes": 30,
+            "schedule": default_schedule
+        }
+
+    first_row = rows[0]
+    days_map = {r.day_of_week: r for r in rows}
+    schedule = []
+    for d in range(7):
+        if d in days_map:
+            r = days_map[d]
+            schedule.append({
+                "day_of_week": d,
+                "start_time": r.start_time.strftime("%H:%M") if r.start_time else "09:00",
+                "end_time": r.end_time.strftime("%H:%M") if r.end_time else "17:00",
+                "is_available": r.is_available if r.is_available is not None else True,
+            })
+        else:
+            schedule.append({
+                "day_of_week": d,
+                "start_time": "09:00",
+                "end_time": "17:00",
+                "is_available": (d < 5),
+            })
+    return {
+        "user_id": user_id,
+        "title": first_row.title or "Bookable appointment schedule",
+        "duration_minutes": first_row.duration_minutes or 30,
+        "schedule": schedule
+    }
+
+
+@router.post("/user-availability")
+def set_user_availability(req: SetUserAvailabilityRequest, db: Session = Depends(get_db)):
+    db.query(UserAvailability).filter(UserAvailability.user_id == req.user_id).delete()
+    for item in req.schedule:
+        try:
+            sh, sm = map(int, item.start_time.split(":"))
+            eh, em = map(int, item.end_time.split(":"))
+            row = UserAvailability(
+                user_id=req.user_id,
+                day_of_week=item.day_of_week,
+                start_time=time(sh, sm),
+                end_time=time(eh, em),
+                is_available=item.is_available,
+                title=req.title,
+                duration_minutes=req.duration_minutes or 30
+            )
+            db.add(row)
+        except Exception as e:
+            print(f"Error saving availability for day {item.day_of_week}: {e}")
+    db.commit()
+    return {"status": "success", "message": "Availability updated successfully"}
 
 
 @router.post("/generate-schedule")
