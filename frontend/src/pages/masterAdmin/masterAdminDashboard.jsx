@@ -529,8 +529,15 @@ export function PulseGauge({ data }) {
 }
 
 const MasterAdminDashboard = () => {
-  const [dashboardData, setDashboardData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Instant Cache Hydration: 0ms load with zero blocking spinner
+  const [dashboardData, setDashboardData] = useState(() => {
+    try {
+      const cached = localStorage.getItem("saarthi_admin_dashboard_cache");
+      if (cached) return JSON.parse(cached);
+    } catch {}
+    return DEFAULT_ADMIN_SNAPSHOT;
+  });
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showAuditLogs, setShowAuditLogs] = useState(false);
   const [leaderboardData, setLeaderboardData] = useState([]);
@@ -561,25 +568,23 @@ const MasterAdminDashboard = () => {
   useEffect(() => {
     if (!hasPermission) {
       setError("You don't have permission to access this dashboard");
-      setLoading(false);
       return;
     }
-    if (!dashboardData) {
-      loadDashboard();
-    }
+    loadDashboard();
   }, [userRoleId]);
 
   const loadDashboard = async () => {
     try {
-      setLoading(true);
       setError(null);
       const data = await fetchAdminDashboard(userId, userRoleId);
-      setDashboardData(data || DEFAULT_ADMIN_SNAPSHOT);
+      if (data) {
+        setDashboardData(data);
+        try {
+          localStorage.setItem("saarthi_admin_dashboard_cache", JSON.stringify(data));
+        } catch {}
+      }
     } catch (err) {
       console.warn("Using resilient fallback snapshot:", err);
-      setDashboardData(DEFAULT_ADMIN_SNAPSHOT);
-    } finally {
-      setLoading(false);
     }
   };
 

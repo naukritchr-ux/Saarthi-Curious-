@@ -9,12 +9,23 @@ import json
 router = APIRouter(prefix="/ai", tags=["AI Assistant"])
 
 
+_AI_INSIGHTS_CACHE = {}
+_AI_INSIGHTS_TTL = 30.0
+
 @router.get("/insights/{admin_id}")
 def get_ai_insights(admin_id: int, db: Session = Depends(get_db)):
     """
     Fetch comprehensive AI schedule insights, KPI metrics, upcoming list,
     and weekly utilization for the given admin.
+    Cached for 30s to eliminate multi-second database delays on dashboard load.
     """
+    import time as pytime
+    now_ts = pytime.time()
+    if admin_id in _AI_INSIGHTS_CACHE:
+        cached_ts, cached_data = _AI_INSIGHTS_CACHE[admin_id]
+        if (now_ts - cached_ts) < _AI_INSIGHTS_TTL:
+            return cached_data
+
     today = date.today()
     # Week start (Monday or Sunday)
     start_of_week = today - timedelta(days=today.weekday() + 1 if today.weekday() != 6 else 0)
@@ -144,7 +155,7 @@ def get_ai_insights(admin_id: int, db: Session = Depends(get_db)):
         }
     }
 
-    return {
+    result = {
         "success": True,
         "admin_id": admin_id,
         "kpis": {
@@ -159,6 +170,8 @@ def get_ai_insights(admin_id: int, db: Session = Depends(get_db)):
         "utilization": utilization,
         "upcoming": real_upcoming
     }
+    _AI_INSIGHTS_CACHE[admin_id] = (now_ts, result)
+    return result
 
 
 from typing import Optional

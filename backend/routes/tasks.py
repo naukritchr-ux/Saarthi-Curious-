@@ -12,7 +12,7 @@ router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
 
 class TaskCreate(BaseModel):
-    admin_id: int
+    admin_id: Optional[int] = 2
     title: str
     description: Optional[str] = None
     date: DateType
@@ -33,13 +33,32 @@ class TaskUpdate(BaseModel):
 
 @router.post("")
 def create_task(payload: TaskCreate, db: Session = Depends(get_db)):
+    # Determine valid admin_id
+    admin_id = payload.admin_id or 2
+    admin_user = db.query(User).filter(User.user_id == admin_id).first()
+    if not admin_user:
+        # Fallback to first existing user
+        first_user = db.query(User).first()
+        if first_user:
+            admin_id = first_user.user_id
+        else:
+            admin_id = 2
+
+    # Calculate valid start and end times
+    st = payload.start_time
+    et = payload.end_time
+    if st and et and et <= st:
+        from datetime import datetime as dt, timedelta
+        tmp_dt = dt.combine(payload.date, st) + timedelta(minutes=30)
+        et = tmp_dt.time()
+
     task = Task(
-        admin_id=payload.admin_id,
+        admin_id=admin_id,
         title=payload.title,
         description=payload.description,
         date=payload.date,
-        start_time=payload.start_time,
-        end_time=payload.end_time,
+        start_time=st,
+        end_time=et,
         task_type=payload.task_type or "task",
         is_completed=False,
     )
@@ -50,7 +69,7 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db)):
     token_row = (
         db.query(UserGoogleToken)
         .filter(
-            UserGoogleToken.user_id == payload.admin_id,
+            UserGoogleToken.user_id == admin_id,
             UserGoogleToken.refresh_token.isnot(None),
             UserGoogleToken.refresh_token != "pending_auth",
             UserGoogleToken.refresh_token != "",
@@ -61,14 +80,15 @@ def create_task(payload: TaskCreate, db: Session = Depends(get_db)):
 
     if token_row and token_row.refresh_token:
         try:
-            from datetime import time as dt_time
-            st = payload.start_time or dt_time(9, 0)
-            et = payload.end_time or dt_time(10, 0)
-            start_dt = datetime.combine(payload.date, st)
-            end_dt = datetime.combine(payload.date, et)
+            from datetime import time as dt_time, timedelta
+            cal_st = st or dt_time(9, 0)
+            cal_et = et or dt_time(10, 0)
+            start_dt = datetime.combine(payload.date, cal_st)
+            end_dt = datetime.combine(payload.date, cal_et)
+            if end_dt <= start_dt:
+                end_dt = start_dt + timedelta(minutes=30)
 
             attendee_list = []
-            admin_user = db.query(User).filter(User.user_id == payload.admin_id).first()
             if admin_user and admin_user.email:
                 attendee_list.append(admin_user.email)
             if token_row.google_email and token_row.google_email not in attendee_list:
@@ -148,6 +168,7 @@ def get_tasks(
 
 
 @router.patch("/{task_id}")
+@router.put("/{task_id}")
 def update_task(task_id: int, payload: TaskUpdate, db: Session = Depends(get_db)):
     task = db.query(Task).filter(Task.id == task_id).first()
     if not task:

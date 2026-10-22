@@ -330,6 +330,11 @@ def get_schedule(
     ]
 
 
+# In-memory Google events cache to prevent multi-second Google API latency on every request
+# Key: (admin_id, month) -> Value: (timestamp, google_events_map)
+_GOOGLE_EVENTS_CACHE = {}
+_GOOGLE_CACHE_TTL = 45.0  # seconds
+
 # ─────────────────────────────────────────────────────────────
 # GET /bookings/calendar  ← Unified Calendar Feed (Bookings + Tasks + Google + Events)
 # ─────────────────────────────────────────────────────────────
@@ -338,9 +343,11 @@ def get_calendar(
     month: str = Query(..., description="YYYY-MM"),
     admin_id: int = Query(...),
     device_id: Optional[str] = Query(None),
+    force_sync: bool = Query(False),
     db: Session = Depends(get_db),
 ):
     import calendar as pycal
+    import time as pytime
     try:
         year, month_num = map(int, month.split("-"))
     except Exception:
@@ -420,31 +427,44 @@ def get_calendar(
     except Exception as e:
         print(f"Error fetching tasks in /calendar: {e}")
 
-    # 3. FETCH REAL GOOGLE EVENTS FIRST (to enable 2-way sync with CalendarEvent)
+    # 3. FETCH REAL GOOGLE EVENTS (Fast cache avoids 2.5s network lag unless force_sync requested)
     google_events_map = {}
     google_fetch_successful = False
-    try:
-        tokens = db.query(UserGoogleToken).filter(
-            UserGoogleToken.user_id == admin_id,
-            UserGoogleToken.refresh_token.isnot(None),
-            UserGoogleToken.refresh_token != "pending_auth",
-            UserGoogleToken.refresh_token != "",
-        ).all()
+    cache_key = (admin_id, month)
+    now_ts = pytime.time()
 
-        for tok in tokens:
-            if tok and tok.refresh_token and tok.refresh_token != "pending_auth":
-                try:
-                    from services.google_calendar import fetch_google_events
-                    g_evs = fetch_google_events(tok.refresh_token, month)
-                    google_fetch_successful = True
-                    for g in g_evs:
-                        gid = g.get("id") or g.get("google_event_id")
-                        if gid:
-                            google_events_map[str(gid)] = g
-                except Exception as err:
-                    print(f"Error fetching Google events: {err}")
-    except Exception as e:
-        print(f"Error checking google tokens in /calendar: {e}")
+    if not force_sync and cache_key in _GOOGLE_EVENTS_CACHE:
+        cached_ts, cached_map = _GOOGLE_EVENTS_CACHE[cache_key]
+        if (now_ts - cached_ts) < _GOOGLE_CACHE_TTL:
+            google_events_map = dict(cached_map)
+            google_fetch_successful = True
+
+    if not google_fetch_successful:
+        try:
+            tokens = db.query(UserGoogleToken).filter(
+                UserGoogleToken.user_id == admin_id,
+                UserGoogleToken.refresh_token.isnot(None),
+                UserGoogleToken.refresh_token != "pending_auth",
+                UserGoogleToken.refresh_token != "",
+            ).all()
+
+            for tok in tokens:
+                if tok and tok.refresh_token and tok.refresh_token != "pending_auth":
+                    try:
+                        from services.google_calendar import fetch_google_events
+                        g_evs = fetch_google_events(tok.refresh_token, month)
+                        google_fetch_successful = True
+                        for g in g_evs:
+                            gid = g.get("id") or g.get("google_event_id")
+                            if gid:
+                                google_events_map[str(gid)] = g
+                    except Exception as err:
+                        print(f"Error fetching Google events: {err}")
+            
+            if google_fetch_successful:
+                _GOOGLE_EVENTS_CACHE[cache_key] = (now_ts, dict(google_events_map))
+        except Exception as e:
+            print(f"Error checking google tokens in /calendar: {e}")
 
     # 4. FETCH CALENDAR EVENTS AND SYNC WITH GOOGLE CHANGES
     try:
