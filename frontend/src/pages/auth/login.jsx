@@ -17,6 +17,7 @@ export default function LoginPage() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   const handleSubmit = async (event) => {
   event.preventDefault();
@@ -188,6 +189,12 @@ export default function LoginPage() {
                     </div>
                   )}
 
+                  {successMessage && (
+                    <div className="mt-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700 border border-emerald-200">
+                      {successMessage}
+                    </div>
+                  )}
+
                   <form
                     className="mt-8 space-y-5"
                     onSubmit={async (event) => {
@@ -319,20 +326,28 @@ export default function LoginPage() {
                       onClick={async () => {
                         setIsLoading(true);
                         setError("");
+                        setSuccessMessage("");
 
                         try {
-                          await axios.post(`${API_BASE}/login`, {
-                            email,
-                            password,
-                          });
+                          try {
+                            await axios.post(`${API_BASE}/resend-login-otp`, {
+                              email,
+                            });
+                          } catch (resendErr) {
+                            // Fallback to /login with email & password
+                            await axios.post(`${API_BASE}/login`, {
+                              email,
+                              password,
+                            });
+                          }
 
                           setLoginOtp("");
                           setError("");
-                          alert("OTP resent successfully");
+                          setSuccessMessage("A fresh OTP has been sent to your Gmail.");
                         } catch (error) {
                           setError(
                             error.response?.data?.detail ||
-                              "Failed to resend OTP"
+                              "Failed to resend OTP. Please check your connection and try again."
                           );
                         } finally {
                           setIsLoading(false);

@@ -20,10 +20,16 @@ router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 # ADMIN DASHBOARD ENDPOINT
 # ============================================
 
+import time as pytime
+
+_ADMIN_DASHBOARD_CACHE = {}
+_ADMIN_DASHBOARD_TTL = 60.0  # Cache for 60 seconds
+
 @router.get("/admin/{user_id}")
 def get_admin_dashboard(
     user_id: int,
     role_id: int = Query(..., description="User's role ID from frontend"),
+    force_refresh: bool = Query(False),
     db: Session = Depends(get_db)
 ):
     """
@@ -36,16 +42,24 @@ def get_admin_dashboard(
             status_code=403,
             detail="Access denied. Admin or Master Admin privileges required."
         )
-    
+
+    now_ts = pytime.time()
+    cache_key = (role_id)
+    if not force_refresh and cache_key in _ADMIN_DASHBOARD_CACHE:
+        cached_ts, cached_data = _ADMIN_DASHBOARD_CACHE[cache_key]
+        if (now_ts - cached_ts) < _ADMIN_DASHBOARD_TTL:
+            return cached_data
+
     # Get all dashboard data using helpers
     dashboard_data = get_admin_dashboard_data(db)
-    
+
     # Add role-specific info
     dashboard_data["user_role"] = {
         "role_id": role_id,
         "role_type": "master_admin" if role_id == 1 else "admin"
     }
-    
+
+    _ADMIN_DASHBOARD_CACHE[cache_key] = (now_ts, dashboard_data)
     return dashboard_data
 
 

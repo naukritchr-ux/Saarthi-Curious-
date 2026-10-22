@@ -202,9 +202,24 @@ export default function SaarthiDashboard({ adminId = null }) {
     ];
   });
 
-  // Data States (100% Real DB Data)
-  const [dbEvents, setDbEvents] = useState([]);
-  const [aiData, setAiData] = useState(null);
+  // Data States (Instant Cache Hydration: 0ms first render)
+  const [dbEvents, setDbEvents] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`saarthi_db_events_${effectiveAdminId || 2}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return [];
+  });
+  const [aiData, setAiData] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`saarthi_ai_data_${effectiveAdminId || 2}`);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return null;
+  });
   const [googleStatus, setGoogleStatus] = useState(() => {
     try {
       if (effectiveAdminId) {
@@ -236,7 +251,43 @@ export default function SaarthiDashboard({ adminId = null }) {
   const [isAppointmentScheduleOpen, setIsAppointmentScheduleOpen] = useState(false);
   const [isMoreOptionsOpen, setIsMoreOptionsOpen] = useState(false);
   const [showMiniPicker, setShowMiniPicker] = useState(false);
-  const [userAvailability, setUserAvailability] = useState(null);
+  const [userAvailability, setUserAvailability] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`saarthi_user_avail_${effectiveAdminId || 2}`);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return null;
+  });
+
+  // ── System Contacts State (Instant Cache Hydration) ──
+  const [systemContacts, setSystemContacts] = useState(() => {
+    try {
+      const saved = localStorage.getItem("saarthi_system_contacts");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return [];
+  });
+
+  // Fetch all active system contacts in background (non-blocking)
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      try {
+        const res = await axios.get(`${BACKEND_URL}/calendar/contacts`);
+        if (Array.isArray(res.data)) {
+          setSystemContacts(res.data);
+          try {
+            localStorage.setItem("saarthi_system_contacts", JSON.stringify(res.data));
+          } catch {}
+        }
+      } catch (err) {
+        console.warn("Could not fetch calendar contacts:", err);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Google Calendar Link Modal State
   const [isLinkGoogleOpen, setIsLinkGoogleOpen] = useState(false);
@@ -261,6 +312,7 @@ export default function SaarthiDashboard({ adminId = null }) {
     work: true,
     personal: true,
     tasks: true,
+    availability: false, // Default hidden: only appear during appointment schedule, or when user needs to see free slots
   });
 
   const toggleFilter = (key) => {
@@ -295,6 +347,9 @@ export default function SaarthiDashboard({ adminId = null }) {
           return !t.includes("available slot") && !t.includes("available");
         });
         setDbEvents(cleaned);
+        try {
+          localStorage.setItem(`saarthi_db_events_${effectiveAdminId || 2}`, JSON.stringify(cleaned));
+        } catch {}
       }
       setLastSyncedTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
       if (showToast) {
@@ -307,12 +362,15 @@ export default function SaarthiDashboard({ adminId = null }) {
     }
   }, [effectiveAdminId, deviceId]);
 
-  // 2. Fetch AI Insights & Utilization Data
+  // 2. Fetch AI Insights & Utilization Data (Background)
   const fetchAiInsights = useCallback(async () => {
     try {
       const res = await axios.get(`${BACKEND_URL}/ai/insights/${effectiveAdminId}`);
       if (res.data && res.data.success) {
         setAiData(res.data);
+        try {
+          localStorage.setItem(`saarthi_ai_data_${effectiveAdminId || 2}`, JSON.stringify(res.data));
+        } catch {}
       }
     } catch (err) {
       console.warn("AI insights live sync notice:", err);
@@ -382,11 +440,16 @@ export default function SaarthiDashboard({ adminId = null }) {
     }
   }, [effectiveAdminId, fetchCalendarEvents, fetchAiInsights, fetchGoogleStatus]);
 
-  // Auto-refresh & live 2-way sync: Refetch on mount, on window focus, and every 20 seconds
+  // Auto-refresh & live 2-way sync: Refetch on mount, on window focus, and every 30 seconds
   useEffect(() => {
+    // 1. High-priority: Load calendar events first
     fetchCalendarEvents();
-    fetchAiInsights();
-    fetchGoogleStatus();
+
+    // 2. Background-priority: Stagger other requests so dashboard displays in 0ms without UI freezing
+    const bgTimer = setTimeout(() => {
+      fetchAiInsights();
+      fetchGoogleStatus();
+    }, 200);
 
     const handleWindowFocus = () => {
       fetchCalendarEvents();
@@ -395,8 +458,10 @@ export default function SaarthiDashboard({ adminId = null }) {
     window.addEventListener("focus", handleWindowFocus);
     const interval = setInterval(() => {
       fetchCalendarEvents();
-    }, 20000); // Poll every 20s for continuous 2-way sync with Google Calendar
+    }, 30000); // Poll every 30s for continuous sync
+
     return () => {
+      clearTimeout(bgTimer);
       window.removeEventListener("focus", handleWindowFocus);
       clearInterval(interval);
     };
@@ -463,8 +528,16 @@ export default function SaarthiDashboard({ adminId = null }) {
       }
     }
 
-    // 4. Bookable Appointment Schedule Blocks (Matching Image 1)
-    if (userAvailability?.schedule && (isAppointmentScheduleOpen || activeSidebarTab === "calendar")) {
+    // 4. Bookable Appointment Schedule Blocks (Only shown when configuring schedule, in appointment tab, or when availability filter is toggled)
+    const shouldShowAvailability = Boolean(
+      userAvailability?.schedule && (
+        isAppointmentScheduleOpen ||
+        (isModalOpen && activeTab === "appointment") ||
+        calFilters.availability
+      )
+    );
+
+    if (shouldShowAvailability) {
       try {
         const activeBase = new Date(getActiveCalendarDate() + "T00:00:00");
         const curDay = activeBase.getDay();
@@ -488,11 +561,14 @@ export default function SaarthiDashboard({ adminId = null }) {
             const dayNum = String(d.getDate()).padStart(2, "0");
             const dateStr = `${y}-${m}-${dayNum}`;
 
+            const sTime = schedItem.start_time?.length === 5 ? `${schedItem.start_time}:00` : schedItem.start_time;
+            const eTime = schedItem.end_time?.length === 5 ? `${schedItem.end_time}:00` : schedItem.end_time;
+
             deduped.push({
               id: `bookable-appt-slot-${dateStr}`,
               title: userAvailability.title || "Bookable Schedule",
-              start: `${dateStr}T${schedItem.start_time}:00`,
-              end: `${dateStr}T${schedItem.end_time}:00`,
+              start: `${dateStr}T${sTime}`,
+              end: `${dateStr}T${eTime}`,
               display: "auto",
               backgroundColor: isDarkMode ? "rgba(11, 87, 208, 0.16)" : "rgba(194, 231, 255, 0.35)",
               borderColor: isDarkMode ? "#3b82f6" : "#7cacf8",
@@ -509,7 +585,7 @@ export default function SaarthiDashboard({ adminId = null }) {
     }
 
     return deduped;
-  }, [dbEvents, searchQuery, activeSidebarTab, calFilters, userAvailability, isAppointmentScheduleOpen, isDarkMode, getActiveCalendarDate]);
+  }, [dbEvents, searchQuery, activeSidebarTab, calFilters, userAvailability, isAppointmentScheduleOpen, isModalOpen, activeTab, isDarkMode, getActiveCalendarDate]);
 
   // Derived Real Data Lists
   const meetingsList = useMemo(() => {
@@ -527,6 +603,19 @@ export default function SaarthiDashboard({ adminId = null }) {
 
   const contactsList = useMemo(() => {
     const map = new Map();
+    // 1. Add all system users from backend
+    (systemContacts || []).forEach(u => {
+      if (u.email) {
+        const em = u.email.toLowerCase().trim();
+        map.set(em, {
+          email: em,
+          name: u.name || em.split("@")[0],
+          count: 1,
+        });
+      }
+    });
+
+    // 2. Add contacts from calendar events
     (events || []).forEach(e => {
       const guests = e.extendedProps?.guests || "";
       const emails = [];
@@ -536,20 +625,188 @@ export default function SaarthiDashboard({ adminId = null }) {
         emails.push(e.booking.user_email);
       }
       emails.filter(Boolean).forEach(em => {
-        if (em.includes("@") && em.toLowerCase() !== userEmail.toLowerCase()) {
-          const prev = map.get(em) || { email: em, count: 0, name: em.split("@")[0].replace(/[._]/g, " ") };
+        const emLower = em.toLowerCase().trim();
+        if (emLower.includes("@") && emLower !== userEmail.toLowerCase()) {
+          const prev = map.get(emLower) || { email: emLower, count: 0, name: emLower.split("@")[0].replace(/[._]/g, " ") };
           prev.count += 1;
-          map.set(em, prev);
+          map.set(emLower, prev);
         }
       });
     });
+
     if (map.size === 0) {
       map.set("team@saarthicurious.com", { email: "team@saarthicurious.com", name: "Team Leader", count: 4 });
       map.set("intern@talentcorner.in", { email: "intern@talentcorner.in", name: "Intern Candidate", count: 2 });
       map.set("client.review@curious.edu", { email: "client.review@curious.edu", name: "Client Partner", count: 3 });
     }
     return Array.from(map.values());
-  }, [events, userEmail]);
+  }, [systemContacts, events, userEmail]);
+
+  // ── Guest Chip System State & Helpers (Safely placed after contactsList) ──
+  const [guestChips, setGuestChips] = useState([]);          // [{email, name, status, freeSlots}]
+  const [guestInputVal, setGuestInputVal] = useState("");
+  const [guestSuggestions, setGuestSuggestions] = useState([]);
+  const [isCheckingGuest, setIsCheckingGuest] = useState(false);
+
+  const checkGuestAvailability = useCallback(async (email) => {
+    if (!email || !email.includes("@")) return null;
+    setIsCheckingGuest(true);
+    try {
+      const res = await axios.post(`${BACKEND_URL}/calendar/guest-availability`, {
+        guest_email: email,
+        date: formData.date || new Date().toISOString().slice(0, 10),
+        start_time: formData.start || "09:00",
+        end_time: formData.end || "10:00",
+        admin_id: effectiveAdminId || 2,
+      });
+      return {
+        is_free: res.data.is_free,
+        freeSlots: res.data.free_slots || [],
+        source: res.data.source || "db",
+      };
+    } catch (err) {
+      console.warn("Check guest availability notice:", err);
+      return { is_free: null, freeSlots: [], source: "unknown" };
+    } finally {
+      setIsCheckingGuest(false);
+    }
+  }, [formData.date, formData.start, formData.end, effectiveAdminId]);
+
+  const addGuestChip = useCallback(async (inputStr) => {
+    if (!inputStr) return;
+    const raw = inputStr.replace(/,/g, "").trim();
+    if (!raw) return;
+
+    let targetEmail = "";
+    let displayName = "";
+
+    // 1. Direct email input
+    if (raw.includes("@")) {
+      targetEmail = raw.toLowerCase();
+      const allKnown = [...systemContacts, ...contactsList];
+      const match = allKnown.find(c => c.email?.toLowerCase() === targetEmail);
+      displayName = match ? match.name : targetEmail.split("@")[0];
+    } else {
+      // 2. Name input: Search saved contacts
+      const q = raw.toLowerCase();
+      const allKnown = [...systemContacts, ...contactsList];
+      const match = allKnown.find(c =>
+        c.name?.toLowerCase() === q ||
+        c.name?.toLowerCase().includes(q) ||
+        c.email?.toLowerCase().startsWith(q)
+      );
+
+      if (match && match.email) {
+        targetEmail = match.email.trim().toLowerCase();
+        displayName = match.name;
+        toast.success(`Found contact: ${displayName} (${targetEmail})`, { icon: "👤" });
+      } else {
+        toast.error(`"${raw}" not found in contacts. Please enter a valid Gmail address.`);
+        return;
+      }
+    }
+
+    if (guestChips.some(g => g.email === targetEmail)) {
+      toast("Guest is already added");
+      setGuestInputVal("");
+      setGuestSuggestions([]);
+      return;
+    }
+
+    // Immediately display chip with checking badge
+    const newChip = {
+      email: targetEmail,
+      name: displayName,
+      status: "checking",
+      freeSlots: [],
+      source: "",
+    };
+    setGuestChips(prev => [...prev, newChip]);
+    setGuestInputVal("");
+    setGuestSuggestions([]);
+
+    // Check availability
+    const result = await checkGuestAvailability(targetEmail);
+    setGuestChips(prev => prev.map(g =>
+      g.email === targetEmail
+        ? {
+            ...g,
+            status: result?.is_free === true ? "free" : result?.is_free === false ? "busy" : "unknown",
+            freeSlots: result?.freeSlots || [],
+            source: result?.source || "",
+          }
+        : g
+    ));
+
+    // Update formData.guests
+    setFormData(prev => {
+      const existing = prev.guests ? prev.guests.split(",").map(e => e.trim()).filter(Boolean) : [];
+      if (!existing.includes(targetEmail)) {
+        existing.push(targetEmail);
+      }
+      return { ...prev, guests: existing.join(", ") };
+    });
+  }, [guestChips, contactsList, systemContacts, checkGuestAvailability]);
+
+  const removeGuestChip = useCallback((email) => {
+    setGuestChips(prev => {
+      const updated = prev.filter(g => g.email !== email);
+      setFormData(fd => ({ ...fd, guests: updated.map(g => g.email).join(", ") }));
+      return updated;
+    });
+  }, []);
+
+  // Re-check guest availability whenever date, start time, or end time changes
+  useEffect(() => {
+    if (guestChips.length === 0) return;
+    const recheckAll = async () => {
+      for (const chip of guestChips) {
+        try {
+          const res = await axios.post(`${BACKEND_URL}/calendar/guest-availability`, {
+            guest_email: chip.email,
+            date: formData.date || new Date().toISOString().slice(0, 10),
+            start_time: formData.start || "09:00",
+            end_time: formData.end || "10:00",
+            admin_id: effectiveAdminId || 2,
+          });
+          setGuestChips(prev => prev.map(g =>
+            g.email === chip.email
+              ? {
+                  ...g,
+                  status: res.data.is_free === true ? "free" : res.data.is_free === false ? "busy" : "unknown",
+                  freeSlots: res.data.free_slots || [],
+                  source: res.data.source || "",
+                }
+              : g
+          ));
+        } catch (err) {
+          console.warn("Recheck notice:", err);
+        }
+      }
+    };
+    recheckAll();
+  }, [formData.date, formData.start, formData.end]);
+
+  // Auto-suggest from system contacts & contactsList when typing in guest input
+  useEffect(() => {
+    if (!guestInputVal.trim()) {
+      setGuestSuggestions([]);
+      return;
+    }
+    const q = guestInputVal.toLowerCase();
+    const allKnown = [...systemContacts, ...contactsList];
+    const seen = new Set();
+    const matches = [];
+    for (const c of allKnown) {
+      if (!c.email || seen.has(c.email.toLowerCase())) continue;
+      if (c.email.toLowerCase().includes(q) || c.name?.toLowerCase().includes(q)) {
+        seen.add(c.email.toLowerCase());
+        matches.push(c);
+      }
+      if (matches.length >= 6) break;
+    }
+    setGuestSuggestions(matches);
+  }, [guestInputVal, systemContacts, contactsList]);
 
   // Dynamic Meetings Analytics Calculations
   const analyticsData = useMemo(() => {
@@ -630,6 +887,11 @@ export default function SaarthiDashboard({ adminId = null }) {
   // ── Event Handlers for 2-Way Sync & Click Interaction ──
   const handleEventClick = (info) => {
     const ev = info.event;
+    if (ev.extendedProps?.isBookableSchedule) {
+      setIsAppointmentScheduleOpen(true);
+      toast("Opened Appointment Schedule configuration", { icon: "📅" });
+      return;
+    }
     const dbId = ev.extendedProps?.db_id || (ev.id.startsWith("calev_") ? Number(ev.id.replace("calev_", "")) : null);
     const gId = ev.extendedProps?.google_event_id || (ev.id.startsWith("gcal_") ? ev.id.replace("gcal_", "") : null);
 
@@ -772,12 +1034,22 @@ export default function SaarthiDashboard({ adminId = null }) {
       return;
     }
     try {
+      const finalAdminId = effectiveAdminId || 2;
+      const sTime = newTaskTime ? (newTaskTime.length === 5 ? `${newTaskTime}:00` : newTaskTime) : "17:00:00";
+      let [h, m] = sTime.slice(0, 5).split(":").map(Number);
+      m += 30;
+      if (m >= 60) {
+        h = (h + 1) % 24;
+        m -= 60;
+      }
+      const eTime = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
+
       await axios.post(`${BACKEND_URL}/tasks`, {
-        admin_id: effectiveAdminId,
+        admin_id: finalAdminId,
         title: newTaskTitle.trim(),
-        date: newTaskDate,
-        start_time: `${newTaskTime}:00`,
-        end_time: `${newTaskTime}:00`,
+        date: newTaskDate || new Date().toISOString().slice(0, 10),
+        start_time: sTime,
+        end_time: eTime,
         description: "Created from Saarthi Tasks Hub",
       });
       toast.success("Task created successfully!", { icon: "✅" });
@@ -785,7 +1057,7 @@ export default function SaarthiDashboard({ adminId = null }) {
       fetchCalendarEvents();
     } catch (err) {
       console.error("Task create error:", err);
-      toast.error("Failed to create task");
+      toast.error("Failed to create task: " + (err.response?.data?.detail || err.message));
     }
   };
 
@@ -793,7 +1065,7 @@ export default function SaarthiDashboard({ adminId = null }) {
     try {
       const dbId = taskItem.extendedProps?.db_id || (taskItem.id.startsWith("task_") ? Number(taskItem.id.replace("task_", "")) : null);
       if (dbId) {
-        await axios.put(`${BACKEND_URL}/tasks/${dbId}`, {
+        await axios.patch(`${BACKEND_URL}/tasks/${dbId}`, {
           is_completed: !taskItem.extendedProps?.is_completed,
         });
         fetchCalendarEvents();
@@ -831,6 +1103,9 @@ export default function SaarthiDashboard({ adminId = null }) {
       location: "",
       description: ""
     });
+    setGuestChips([]);
+    setGuestInputVal("");
+    setGuestSuggestions([]);
     setTaskDeadline("");
     setActiveTab("event");
     setIsModalOpen(true);
@@ -845,16 +1120,20 @@ export default function SaarthiDashboard({ adminId = null }) {
 
     setIsSaving(true);
     try {
+      const finalAdminId = effectiveAdminId || 2;
       if (activeTab === "task") {
+        const sTime = formData.start ? (formData.start.length === 5 ? formData.start + ":00" : formData.start) : "09:00:00";
+        const eTime = formData.end ? (formData.end.length === 5 ? formData.end + ":00" : formData.end) : "10:00:00";
+
         await axios.post(`${BACKEND_URL}/tasks`, {
-          admin_id: effectiveAdminId,
+          admin_id: finalAdminId,
           title: formData.title,
-          date: formData.date,
-          start_time: formData.start ? formData.start + ":00" : "09:00:00",
-          end_time: formData.end ? formData.end + ":00" : "10:00:00",
+          date: formData.date || new Date().toISOString().slice(0, 10),
+          start_time: sTime,
+          end_time: eTime,
           description: formData.description || (taskDeadline ? `Deadline: ${taskDeadline}` : undefined)
         });
-        toast.success("Task created successfully!");
+        toast.success("Task created successfully!", { icon: "✅" });
       } else if (activeTab === "appointment") {
         await axios.post(`${BACKEND_URL}/bookings/create-custom`, {
           admin_id: effectiveAdminId,
@@ -876,39 +1155,48 @@ export default function SaarthiDashboard({ adminId = null }) {
           end_time: formData.end || "10:00",
           description: formData.description,
           add_meet: meetEnabled,
-          attendee_emails: formData.guests
-            ? formData.guests.split(",").map(e => e.trim()).filter(Boolean)
-            : []
+          attendee_emails: guestChips.length > 0
+            ? guestChips.map(g => g.email)
+            : (formData.guests
+                ? formData.guests.split(",").map(e => e.trim()).filter(Boolean)
+                : [])
         });
         toast.success("Event scheduled & synchronized!");
       }
       setIsModalOpen(false);
+      setGuestChips([]);
+      setGuestInputVal("");
       fetchCalendarEvents();
       fetchAiInsights();
     } catch (err) {
       console.error(err);
       toast.success("Saved successfully!");
       setIsModalOpen(false);
+      setGuestChips([]);
+      setGuestInputVal("");
       fetchCalendarEvents();
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Fetch User Availability for Bookable Schedule
+  // Fetch User Availability in background (staggered)
   useEffect(() => {
-    const fetchAvail = async () => {
+    const timer = setTimeout(async () => {
       if (!effectiveAdminId) return;
       try {
         const res = await axios.get(`${BACKEND_URL}/bookings/user-availability/${effectiveAdminId}`);
         if (res.data?.schedule) {
           setUserAvailability(res.data);
+          try {
+            localStorage.setItem(`saarthi_user_avail_${effectiveAdminId || 2}`, JSON.stringify(res.data));
+          } catch {}
         }
       } catch (err) {
         console.error("Error loading availability:", err);
       }
-    };
-    fetchAvail();
+    }, 600);
+    return () => clearTimeout(timer);
   }, [effectiveAdminId]);
 
   // Save from More Options Full View (Matching Image 3)
@@ -1411,6 +1699,9 @@ export default function SaarthiDashboard({ adminId = null }) {
               location: "",
               description: ""
             });
+            setGuestChips([]);
+            setGuestInputVal("");
+            setGuestSuggestions([]);
             setActiveTab("event");
             setIsModalOpen(true);
           }}
@@ -1583,6 +1874,18 @@ export default function SaarthiDashboard({ adminId = null }) {
               </div>
               <span>Tasks</span>
             </div>
+            <div
+              role="button"
+              tabIndex={0}
+              className={`cal-check-item ${calFilters.availability ? "checked" : "unchecked"}`}
+              onClick={() => toggleFilter("availability")}
+              title="Toggle bookable free slots on calendar"
+            >
+              <div className="cal-box-check teal">
+                {calFilters.availability && <Check size={10} color="#fff" strokeWidth={3} />}
+              </div>
+              <span>Availability & Free Slots</span>
+            </div>
           </div>
           <div className="cal-last-sync-caption">
             <span>Synced: {lastSyncedTime}</span>
@@ -1678,25 +1981,37 @@ export default function SaarthiDashboard({ adminId = null }) {
                 <span className="cal-range-text">{dateRangeText}</span>
               </div>
 
-              <div className="cal-views-pills">
+              <div className="cal-controls-right-group">
                 <button
-                  className={`cal-view-pill-btn ${currentView === "timeGridDay" ? "active" : ""}`}
-                  onClick={() => handleViewChange("timeGridDay")}
+                  type="button"
+                  className={`cal-avail-toggle-btn ${calFilters.availability || isAppointmentScheduleOpen ? "active" : ""}`}
+                  onClick={() => toggleFilter("availability")}
+                  title={calFilters.availability ? "Hide available free slots" : "Show available free slots"}
                 >
-                  Day
+                  <CalendarCheck size={13} />
+                  <span>{calFilters.availability ? "Hide Free Slots" : "Show Free Slots"}</span>
                 </button>
-                <button
-                  className={`cal-view-pill-btn ${currentView === "timeGridWeek" ? "active" : ""}`}
-                  onClick={() => handleViewChange("timeGridWeek")}
-                >
-                  Week
-                </button>
-                <button
-                  className={`cal-view-pill-btn ${currentView === "dayGridMonth" ? "active" : ""}`}
-                  onClick={() => handleViewChange("dayGridMonth")}
-                >
-                  Month
-                </button>
+
+                <div className="cal-views-pills">
+                  <button
+                    className={`cal-view-pill-btn ${currentView === "timeGridDay" ? "active" : ""}`}
+                    onClick={() => handleViewChange("timeGridDay")}
+                  >
+                    Day
+                  </button>
+                  <button
+                    className={`cal-view-pill-btn ${currentView === "timeGridWeek" ? "active" : ""}`}
+                    onClick={() => handleViewChange("timeGridWeek")}
+                  >
+                    Week
+                  </button>
+                  <button
+                    className={`cal-view-pill-btn ${currentView === "dayGridMonth" ? "active" : ""}`}
+                    onClick={() => handleViewChange("dayGridMonth")}
+                  >
+                    Month
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -3012,18 +3327,139 @@ export default function SaarthiDashboard({ adminId = null }) {
                   </div>
                 </div>
 
-                <div className="gcal-form-row">
+                <div className="gcal-form-row gcal-guests-row">
                   <div className="gcal-row-icon">
                     <Users size={18} />
                   </div>
-                  <div className="gcal-row-content">
-                    <input
-                      type="text"
-                      placeholder="Add guests"
-                      value={formData.guests}
-                      onChange={e => setFormData({ ...formData, guests: e.target.value })}
-                      className="gcal-text-input"
-                    />
+                  <div className="gcal-row-content gcal-guests-col">
+                    {/* Guest Chips */}
+                    {guestChips.length > 0 && (
+                      <div className="guest-chips-wrap">
+                        {guestChips.map((chip) => (
+                          <div key={chip.email} className={`guest-chip ${chip.status}`}>
+                            <div className="guest-chip-avatar">
+                              {(chip.name || chip.email)[0].toUpperCase()}
+                            </div>
+                            <div className="guest-chip-body">
+                              <span className="guest-chip-email">
+                                {chip.name && chip.name !== chip.email ? `${chip.name} (${chip.email})` : chip.email}
+                              </span>
+                              {chip.status === "checking" && (
+                                <span className="guest-chip-badge checking">Checking…</span>
+                              )}
+                              {chip.status === "free" && (
+                                <span className="guest-chip-badge free">✓ Free at {formData.start}–{formData.end}</span>
+                              )}
+                              {chip.status === "busy" && (
+                                <span className="guest-chip-badge busy">✗ Busy at {formData.start}–{formData.end}</span>
+                              )}
+                              {chip.status === "unknown" && (
+                                <span className="guest-chip-badge unknown">? Unavailable</span>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              className="guest-chip-x"
+                              onClick={() => removeGuestChip(chip.email)}
+                              title="Remove guest"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {/* Guest Input with Inline Add Button & Contact Autocomplete */}
+                    <div className="guest-input-wrapper" style={{ position: "relative" }}>
+                      <input
+                        type="text"
+                        placeholder="Add guests by name or Gmail (e.g. Rahul or anuj@gmail.com)"
+                        value={guestInputVal}
+                        onChange={e => setGuestInputVal(e.target.value)}
+                        onKeyDown={e => {
+                          if ((e.key === "Enter" || e.key === "," || e.key === "Tab") && guestInputVal.trim()) {
+                            e.preventDefault();
+                            addGuestChip(guestInputVal);
+                          }
+                        }}
+                        className="gcal-text-input"
+                        style={{ paddingRight: "76px" }}
+                      />
+                      {guestInputVal.trim() && (
+                        <button
+                          type="button"
+                          className="btn-guest-inline-add"
+                          onClick={() => addGuestChip(guestInputVal)}
+                          title="Add guest"
+                        >
+                          Add
+                        </button>
+                      )}
+                      {isCheckingGuest && (
+                        <span className="guest-checking-spinner" title="Checking availability...">⟳</span>
+                      )}
+                      {/* Autocomplete dropdown */}
+                      {guestSuggestions.length > 0 && (
+                        <div className="guest-suggestions-dropdown">
+                          {guestSuggestions.map((sug) => (
+                            <button
+                              key={sug.email}
+                              type="button"
+                              className="guest-suggestion-item"
+                              onClick={() => addGuestChip(sug.email)}
+                            >
+                              <div className="guest-sug-avatar">{sug.name[0]?.toUpperCase()}</div>
+                              <div className="guest-sug-info">
+                                <span className="guest-sug-name">{sug.name}</span>
+                                <span className="guest-sug-email">{sug.email}</span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {/* Available Working Hours Free Slots (09:00 - 18:00) */}
+                    {guestChips.some(g => g.freeSlots?.length > 0) && (
+                      <div className="guest-free-slots-panel">
+                        <div className="free-slots-header">
+                          <span className="free-slots-label">
+                            Available free slots (09:00 – 18:00):
+                          </span>
+                          <span className="free-slots-sub">Click to set meeting time</span>
+                        </div>
+                        <div className="free-slots-row">
+                          {(() => {
+                            const slotsMap = new Map();
+                            guestChips.forEach(chip => {
+                              (chip.freeSlots || []).forEach(slot => {
+                                const key = `${slot.start}-${slot.end}`;
+                                slotsMap.set(key, slot);
+                              });
+                            });
+                            return Array.from(slotsMap.values()).slice(0, 6).map((slot, i) => (
+                              <button
+                                key={i}
+                                type="button"
+                                className="free-slot-pill"
+                                onClick={() => {
+                                  setFormData(fd => ({ ...fd, start: slot.start, end: slot.end }));
+                                  toast.success(`Meeting time set to ${slot.start} – ${slot.end}`);
+                                }}
+                                title="Click to apply this slot"
+                              >
+                                {slot.start} – {slot.end}
+                              </button>
+                            ));
+                          })()}
+                        </div>
+                      </div>
+                    )}
+                    {/* All Guests Free Confirmation */}
+                    {guestChips.length > 0 && guestChips.every(g => g.status === "free") && (
+                      <div className="guest-all-free-note">
+                        ✓ All guest{guestChips.length > 1 ? "s are" : " is"} free during {formData.start}–{formData.end} (0 conflicts)
+                      </div>
+                    )}
                   </div>
                 </div>
 

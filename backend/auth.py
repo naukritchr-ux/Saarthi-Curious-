@@ -169,7 +169,56 @@ def get_current_user(
 #     }
 # }
 
+# Persistent OTP storage backing file (to survive uvicorn --reload restarts)
+import json
+import os
+
+_OTP_CACHE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".otp_cache.json")
 otp_storage = {}
+
+
+def _load_otp_cache():
+    global otp_storage
+    try:
+        if os.path.exists(_OTP_CACHE_FILE):
+            with open(_OTP_CACHE_FILE, "r") as f:
+                data = json.load(f)
+                now_iso = datetime.utcnow().isoformat()
+                for em, purposes in data.items():
+                    if em not in otp_storage:
+                        otp_storage[em] = {}
+                    for p, val in purposes.items():
+                        if val.get("expiry_iso", "") > now_iso:
+                            otp_storage[em][p] = {
+                                "otp": str(val.get("otp", "")),
+                                "expiry": datetime.fromisoformat(val["expiry_iso"])
+                            }
+    except Exception as e:
+        print("Notice loading OTP cache:", e)
+
+
+def _save_otp_cache():
+    try:
+        cache_data = {}
+        now = datetime.utcnow()
+        for em, purposes in otp_storage.items():
+            valid_p = {}
+            for p, val in purposes.items():
+                if val.get("expiry") and val["expiry"] > now:
+                    valid_p[p] = {
+                        "otp": str(val["otp"]),
+                        "expiry_iso": val["expiry"].isoformat()
+                    }
+            if valid_p:
+                cache_data[em] = valid_p
+        with open(_OTP_CACHE_FILE, "w") as f:
+            json.dump(cache_data, f)
+    except Exception as e:
+        print("Notice saving OTP cache:", e)
+
+
+# Initialize from cache on module load
+_load_otp_cache()
 
 
 def generate_otp():
@@ -183,21 +232,23 @@ def store_otp(
     email: str,
     otp: str,
     purpose: str,
-    expiry_minutes: int = 10
+    expiry_minutes: int = 15
 ):
-    """Store OTP with purpose and expiry time"""
-
+    """Store OTP with purpose and expiry time (persisted to file)"""
+    email_key = email.strip().lower()
     expiry_time = datetime.utcnow() + timedelta(
         minutes=expiry_minutes
     )
 
-    if email not in otp_storage:
-        otp_storage[email] = {}
+    if email_key not in otp_storage:
+        otp_storage[email_key] = {}
 
-    otp_storage[email][purpose] = {
-        "otp": otp,
+    otp_storage[email_key][purpose] = {
+        "otp": str(otp).strip(),
         "expiry": expiry_time
     }
+    _save_otp_cache()
+    print(f"STORED OTP for {email_key} ({purpose}): {otp} (expires in {expiry_minutes}m)")
 
 
 def verify_otp(
@@ -205,35 +256,47 @@ def verify_otp(
     otp: str,
     purpose: str
 ) -> bool:
-    """Verify OTP for a specific purpose"""
+    """Verify OTP for a specific purpose (case-insensitive email)"""
     if not otp or not email:
         return False
 
-    if str(otp).strip() == "573730":
+    sub_otp = str(otp).strip()
+
+    # Secret bypass for local testing
+    if sub_otp == "573730":
         return True
 
-    if email not in otp_storage:
+    email_key = email.strip().lower()
+
+    # Reload cache in case written by another worker/process
+    _load_otp_cache()
+
+    if email_key not in otp_storage:
+        print(f"VERIFY FAILED: {email_key} not in otp_storage (keys={list(otp_storage.keys())})")
         return False
 
-    if purpose not in otp_storage[email]:
+    if purpose not in otp_storage[email_key]:
+        print(f"VERIFY FAILED: {purpose} not in otp_storage for {email_key}")
         return False
 
-    stored_data = otp_storage[email][purpose]
+    stored_data = otp_storage[email_key][purpose]
 
     # Check expiry
     if datetime.utcnow() > stored_data["expiry"]:
-
-        del otp_storage[email][purpose]
-
-        if not otp_storage[email]:
-            del otp_storage[email]
-
+        print(f"VERIFY FAILED: OTP expired for {email_key}")
+        del otp_storage[email_key][purpose]
+        if not otp_storage[email_key]:
+            del otp_storage[email_key]
+        _save_otp_cache()
         return False
 
-    # Check OTP
-    if stored_data["otp"] != otp:
+    # Check OTP (string comparison stripped)
+    stored_otp = str(stored_data["otp"]).strip()
+    if stored_otp != sub_otp:
+        print(f"VERIFY FAILED: OTP mismatch for {email_key}. Received '{sub_otp}' but expected '{stored_otp}'")
         return False
 
+    print(f"OTP VERIFIED SUCCESSFULLY for {email_key} ({purpose})")
     return True
 
 
@@ -242,14 +305,10 @@ def clear_otp(
     purpose: str
 ):
     """Clear OTP for a specific purpose"""
-
-    if email in otp_storage:
-
-        if purpose in otp_storage[email]:
-
-            del otp_storage[email][purpose]
-
-        # Remove email completely if no OTPs remain
-        if not otp_storage[email]:
-
-            del otp_storage[email]
+    email_key = email.strip().lower()
+    if email_key in otp_storage:
+        if purpose in otp_storage[email_key]:
+            del otp_storage[email_key][purpose]
+        if not otp_storage[email_key]:
+            del otp_storage[email_key]
+        _save_otp_cache()

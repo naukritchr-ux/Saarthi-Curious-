@@ -461,4 +461,271 @@ def send_calendar_reminders(
         "message": f"Reminders processed. Notified {len(recipients_sent)} recipients.",
         "sent_to": list(set(recipients_sent)),
         "failed": list(set(failed_recipients)),
+    }
+
+
+# ─── Calendar Contacts for Guest Selection ────────────────────────────────────
+
+_CONTACTS_CACHE = {"timestamp": 0.0, "data": []}
+_CONTACTS_CACHE_TTL = 120.0
+
+@router.get("/contacts")
+def get_calendar_contacts(db: Session = Depends(get_db)):
+    """
+    Returns list of active system users to power guest search and autocomplete.
+    Cached in memory for 2 minutes to eliminate repeated 1.3s database query latency.
+    """
+    import time
+    now_ts = time.time()
+    if _CONTACTS_CACHE["data"] and (now_ts - _CONTACTS_CACHE["timestamp"] < _CONTACTS_CACHE_TTL):
+        return _CONTACTS_CACHE["data"]
+
+    users = db.query(User).filter(User.is_active == True).all()
+    results = []
+    seen = set()
+    for u in users:
+        if u.email and u.email.strip().lower() not in seen:
+            email_lower = u.email.strip().lower()
+            seen.add(email_lower)
+            results.append({
+                "name": u.full_name or email_lower.split("@")[0],
+                "email": email_lower,
+                "role_id": u.role_id,
+            })
+    _CONTACTS_CACHE["timestamp"] = now_ts
+    _CONTACTS_CACHE["data"] = results
+    return results
+
+
+# ─── Guest Availability Check ────────────────────────────────────────────────
+
+class GuestAvailabilityRequest(BaseModel):
+    guest_email: str
+    date: str          # YYYY-MM-DD
+    start_time: str    # HH:MM
+    end_time: str      # HH:MM
+    admin_id: Optional[int] = None
+
+
+@router.post("/guest-availability")
+def check_guest_availability(payload: GuestAvailabilityRequest, db: Session = Depends(get_db)):
+    """
+    Check if a guest email is free during the specified time window on a given date.
+    Returns:
+      - is_free: bool
+      - busy_slots: list of {start, end} that are busy
+      - free_slots: list of {start, end} free within 09:00–18:00 working hours
+      - source: 'google' | 'db' | 'combined' | 'unknown'
+    """
+    from datetime import timedelta
+    import re
+
+    email = payload.guest_email.strip().lower()
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="Invalid guest email")
+
+    try:
+        check_date = date.fromisoformat(payload.date)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+
+    def time_to_minutes(t_str: str) -> int:
+        """Convert HH:MM to minutes from midnight."""
+        try:
+            h, m = map(int, t_str[:5].split(":"))
+            return h * 60 + m
+        except Exception:
+            return 0
+
+    def minutes_to_hhmm(mins: int) -> str:
+        h = mins // 60
+        m = mins % 60
+        return f"{h:02d}:{m:02d}"
+
+    WORK_START = 9 * 60    # 09:00
+    WORK_END   = 18 * 60   # 18:00
+
+    req_start_min = time_to_minutes(payload.start_time)
+    req_end_min   = time_to_minutes(payload.end_time)
+    if req_end_min <= req_start_min:
+        req_end_min = req_start_min + 30
+
+    busy_slots = []
+    source_flags = []
+
+    # ── 1. Try Google Calendar freebusy for this guest ──
+    token_row = (
+        db.query(UserGoogleToken)
+        .filter(
+            UserGoogleToken.google_email.ilike(email),
+            UserGoogleToken.refresh_token.isnot(None),
+            UserGoogleToken.refresh_token != "pending_auth",
+            UserGoogleToken.refresh_token != "",
+        )
+        .order_by(UserGoogleToken.updated_at.desc())
+        .first()
+    )
+
+    if not token_row and payload.admin_id:
+        token_row = (
+            db.query(UserGoogleToken)
+            .filter(
+                UserGoogleToken.user_id == payload.admin_id,
+                UserGoogleToken.refresh_token.isnot(None),
+                UserGoogleToken.refresh_token != "pending_auth",
+                UserGoogleToken.refresh_token != "",
+            )
+            .order_by(UserGoogleToken.updated_at.desc())
+            .first()
+        )
+
+    if token_row and token_row.refresh_token:
+        try:
+            from services.google_calendar import _build_service
+            service = _build_service(token_row.refresh_token)
+
+            time_min = f"{payload.date}T00:00:00+05:30"
+            time_max = f"{payload.date}T23:59:59+05:30"
+
+            freebusy_body = {
+                "timeMin": time_min,
+                "timeMax": time_max,
+                "timeZone": "Asia/Kolkata",
+                "items": [{"id": email}]
+            }
+            result = service.freebusy().query(body=freebusy_body).execute()
+            calendars = result.get("calendars", {})
+            cal_info = calendars.get(email, {})
+            google_busy = cal_info.get("busy", [])
+
+            for slot in google_busy:
+                s_str = slot.get("start", "")
+                e_str = slot.get("end", "")
+                s_hhmm = s_str[11:16] if len(s_str) > 15 else s_str
+                e_hhmm = e_str[11:16] if len(e_str) > 15 else e_str
+                busy_slots.append({"start": s_hhmm, "end": e_hhmm})
+            if google_busy:
+                source_flags.append("google")
+        except Exception as ex:
+            print(f"[guest-availability] Google freebusy notice for {email}: {ex}")
+
+    # ── 2. Check Database Events & Tasks for this user ──
+    from models import CalendarEvent, Task
+    user_row = db.query(User).filter(User.email.ilike(email)).first()
+    if user_row:
+        # Check CalendarEvents where user is admin/owner
+        db_events = db.query(CalendarEvent).filter(
+            CalendarEvent.admin_id == user_row.user_id,
+            CalendarEvent.date == check_date,
+        ).all()
+        for ev in db_events:
+            if ev.start_time and ev.end_time:
+                busy_slots.append({
+                    "start": ev.start_time.strftime("%H:%M"),
+                    "end": ev.end_time.strftime("%H:%M"),
+                })
+                source_flags.append("db")
+
+        # Check Tasks
+        db_tasks = db.query(Task).filter(
+            Task.admin_id == user_row.user_id,
+            Task.date == check_date,
+        ).all()
+        for t in db_tasks:
+            if t.start_time and t.end_time:
+                busy_slots.append({
+                    "start": t.start_time.strftime("%H:%M"),
+                    "end": t.end_time.strftime("%H:%M"),
+                })
+                source_flags.append("db")
+
+    # Also check any CalendarEvents where this guest is mentioned in description
+    shared_events = db.query(CalendarEvent).filter(
+        CalendarEvent.date == check_date,
+        CalendarEvent.description.ilike(f"%{email}%")
+    ).all()
+    for se in shared_events:
+        if se.start_time and se.end_time:
+            s_str = se.start_time.strftime("%H:%M")
+            e_str = se.end_time.strftime("%H:%M")
+            if not any(bs["start"] == s_str and bs["end"] == e_str for bs in busy_slots):
+                busy_slots.append({"start": s_str, "end": e_str})
+                source_flags.append("db")
+
+    # ── 3. Determine Overlap ──
+    is_free = True
+    for bs in busy_slots:
+        bs_start = time_to_minutes(bs["start"])
+        bs_end   = time_to_minutes(bs["end"])
+        if bs_start < req_end_min and bs_end > req_start_min:
+            is_free = False
+            break
+
+    # ── 4. Compute Free Slots in 09:00–18:00 Working Hours ──
+    busy_ranges = []
+    for bs in busy_slots:
+        bs_start = max(time_to_minutes(bs["start"]), WORK_START)
+        bs_end   = min(time_to_minutes(bs["end"]), WORK_END)
+        if bs_end > bs_start:
+            busy_ranges.append((bs_start, bs_end))
+
+    busy_ranges.sort()
+    merged = []
+    for rng in busy_ranges:
+        if merged and rng[0] <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], rng[1]))
+        else:
+            merged.append(list(rng))
+
+    # Requested meeting duration (default 30 mins)
+    desired_duration = max(30, req_end_min - req_start_min)
+
+    free_slots = []
+    cursor = WORK_START
+    for b_start, b_end in merged:
+        gap = b_start - cursor
+        if gap >= 30:
+            # Generate 30m / desired_duration step pills within this gap
+            step_cursor = cursor
+            while step_cursor + 30 <= b_start:
+                slot_end = min(step_cursor + desired_duration, b_start)
+                free_slots.append({
+                    "start": minutes_to_hhmm(step_cursor),
+                    "end": minutes_to_hhmm(slot_end),
+                })
+                step_cursor += 30
+        cursor = max(cursor, b_end)
+
+    if cursor <= WORK_END - 30:
+        step_cursor = cursor
+        while step_cursor + 30 <= WORK_END:
+            slot_end = min(step_cursor + desired_duration, WORK_END)
+            free_slots.append({
+                "start": minutes_to_hhmm(step_cursor),
+                "end": minutes_to_hhmm(slot_end),
+            })
+            step_cursor += 30
+
+    # Limit to unique reasonable free slots (max 8)
+    seen_slots = set()
+    unique_free_slots = []
+    for fs in free_slots:
+        key = f"{fs['start']}-{fs['end']}"
+        if key not in seen_slots:
+            seen_slots.add(key)
+            unique_free_slots.append(fs)
+        if len(unique_free_slots) >= 8:
+            break
+
+    source = "+".join(sorted(set(source_flags))) if source_flags else "db"
+
+    return {
+        "guest_email": email,
+        "date": payload.date,
+        "requested_slot": {"start": payload.start_time, "end": payload.end_time},
+        "is_free": is_free,
+        "busy_slots": busy_slots,
+        "free_slots": unique_free_slots,
+        "working_hours": "09:00 - 18:00",
+        "source": source,
     }

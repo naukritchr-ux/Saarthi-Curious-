@@ -512,17 +512,26 @@ def get_admin_dashboard_data(db: Session) -> Dict[str, Any]:
     
     # Generate learning activity data for the last 7 days (organization-wide)
     all_user_ids = [user.user_id for user in db.query(User.user_id).filter(User.role_id != 1, User.role_id != 2).all()]
+    seven_days_start = datetime.combine(seven_days_ago, datetime.min.time())
     
     learning_activity = []
-    quiz_attempts_all = db.query(QuizAttempt).filter(QuizAttempt.user_id.in_(all_user_ids)).all()
+    quiz_attempts_all = db.query(QuizAttempt).filter(
+        QuizAttempt.user_id.in_(all_user_ids),
+        QuizAttempt.attempted_at >= seven_days_start
+    ).all() if all_user_ids else []
     video_completions_all = db.query(VideoCompletion).filter(
         VideoCompletion.user_id.in_(all_user_ids),
-        VideoCompletion.is_completed == True
-    ).all()
+        VideoCompletion.is_completed == True,
+        VideoCompletion.completed_at >= seven_days_start
+    ).all() if all_user_ids else []
     program_progress_all = db.query(UserProgramProgress).filter(
-        UserProgramProgress.user_id.in_(all_user_ids)
-    ).all()
-    all_users = db.query(User).filter(User.user_id.in_(all_user_ids)).all()
+        UserProgramProgress.user_id.in_(all_user_ids),
+        UserProgramProgress.completed_at >= seven_days_start
+    ).all() if all_user_ids else []
+    all_users = db.query(User).filter(
+        User.user_id.in_(all_user_ids),
+        User.last_login >= seven_days_start
+    ).all() if all_user_ids else []
     
     for day_offset in range(6, -1, -1):
         date_value = today - timedelta(days=day_offset)
