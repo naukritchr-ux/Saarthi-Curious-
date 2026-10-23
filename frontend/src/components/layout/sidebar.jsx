@@ -140,7 +140,7 @@ const Sidebar = ({ isExpanded, onMouseEnter, onMouseLeave, onNavigate }) => {
       {
         id: "reports-analytics",
         icon: BarChart3,
-        label: "Analytics",
+        label: "Report & Analytics",
         path: "/reports",
         section: "Reports",
       },
