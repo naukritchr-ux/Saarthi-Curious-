@@ -569,38 +569,46 @@ def get_calendar(
 
 
 def compute_smart_slots_for_host(host_id: int, selected_date: date, db: Session):
-    # 1. Get Host's standard working hours for this day of the week
+    # 1. Get Host's standard working hours for this day of the week (support multiple intervals)
     day_of_week = selected_date.weekday()  # 0=Monday, 6=Sunday
-    working_hours = db.query(UserAvailability).filter(
+    avail_rows = db.query(UserAvailability).filter(
         UserAvailability.user_id == host_id,
         UserAvailability.day_of_week == day_of_week
-    ).first()
+    ).order_by(UserAvailability.start_time).all()
 
-    # If day marked unavailable
-    if working_hours and not working_hours.is_available:
+    work_intervals = []
+    slot_minutes = 30
+
+    if avail_rows:
+        slot_minutes = getattr(avail_rows[0], "duration_minutes", 30) or 30
+        available_rows = [r for r in avail_rows if r.is_available]
+        if not available_rows:
+            return {
+                "date": selected_date.isoformat(),
+                "host_id": host_id,
+                "available_slots": []
+            }
+        for r in available_rows:
+            if r.start_time and r.end_time and r.start_time < r.end_time:
+                work_intervals.append((datetime.combine(selected_date, r.start_time), datetime.combine(selected_date, r.end_time)))
+    else:
+        if day_of_week >= 5:  # Saturday or Sunday default unavailable
+            return {
+                "date": selected_date.isoformat(),
+                "host_id": host_id,
+                "available_slots": []
+            }
+        work_intervals.append((datetime.combine(selected_date, time(9, 0)), datetime.combine(selected_date, time(17, 0))))
+
+    if not work_intervals:
         return {
             "date": selected_date.isoformat(),
             "host_id": host_id,
             "available_slots": []
         }
 
-    # If no custom working hours set: default Mon-Fri 9:00 - 17:00, Sat/Sun unavailable
-    if working_hours:
-        start_work = working_hours.start_time
-        end_work = working_hours.end_time
-    else:
-        if day_of_week >= 5:  # Saturday or Sunday
-            return {
-                "date": selected_date.isoformat(),
-                "host_id": host_id,
-                "available_slots": []
-            }
-        start_work = time(9, 0)
-        end_work = time(17, 0)
-
-    # Convert to datetime for calculation
-    day_start = datetime.combine(selected_date, start_work)
-    day_end = datetime.combine(selected_date, end_work)
+    overall_day_start = min(iv[0] for iv in work_intervals)
+    overall_day_end = max(iv[1] for iv in work_intervals)
 
     # 2. Find all BUSY times for this host
     busy_intervals = []
@@ -621,7 +629,7 @@ def compute_smart_slots_for_host(host_id: int, selected_date: date, db: Session)
     ).all()
     for ev in cal_events:
         if ev.all_day:
-            busy_intervals.append((day_start, day_end))
+            busy_intervals.append((overall_day_start, overall_day_end))
         elif ev.start_time and ev.end_time:
             busy_intervals.append((datetime.combine(selected_date, ev.start_time), datetime.combine(selected_date, ev.end_time)))
 
@@ -649,40 +657,39 @@ def compute_smart_slots_for_host(host_id: int, selected_date: date, db: Session)
         except Exception as e:
             print(f"Error fetching Google events for availability: {e}")
 
-    # 3. Calculate the FREE gaps
+    # 3. Calculate the FREE gaps within each working interval
     busy_intervals.sort(key=lambda x: x[0])
 
     free_slots = []
-    current_time = day_start
-
-    slot_minutes = getattr(working_hours, 'duration_minutes', 30) or 30
     slot_duration = timedelta(minutes=slot_minutes)
 
-    for busy_start, busy_end in busy_intervals:
-        if busy_end <= day_start or busy_start >= day_end:
-            continue
-        busy_start = max(busy_start, day_start)
-        busy_end = min(busy_end, day_end)
+    for iv_start, iv_end in work_intervals:
+        current_time = iv_start
+        for busy_start, busy_end in busy_intervals:
+            if busy_end <= iv_start or busy_start >= iv_end:
+                continue
+            effective_busy_start = max(busy_start, iv_start)
+            effective_busy_end = min(busy_end, iv_end)
 
-        # If current time is before the busy block starts, we have a free gap
-        while current_time + slot_duration <= busy_start:
+            # If current time is before the busy block starts, we have a free gap
+            while current_time + slot_duration <= effective_busy_start:
+                free_slots.append({
+                    "start": current_time.time().strftime("%H:%M"),
+                    "end": (current_time + slot_duration).time().strftime("%H:%M")
+                })
+                current_time += slot_duration
+
+            # Move current_time to the end of the busy block
+            if current_time < effective_busy_end:
+                current_time = effective_busy_end
+
+        # Check the remaining time after the last busy block in this interval
+        while current_time + slot_duration <= iv_end:
             free_slots.append({
                 "start": current_time.time().strftime("%H:%M"),
                 "end": (current_time + slot_duration).time().strftime("%H:%M")
             })
             current_time += slot_duration
-
-        # Move current_time to the end of the busy block
-        if current_time < busy_end:
-            current_time = busy_end
-
-    # Check the remaining time after the last busy block
-    while current_time + slot_duration <= day_end:
-        free_slots.append({
-            "start": current_time.time().strftime("%H:%M"),
-            "end": (current_time + slot_duration).time().strftime("%H:%M")
-        })
-        current_time += slot_duration
 
     return {
         "date": selected_date.isoformat(),
@@ -713,7 +720,7 @@ def get_available_slots(
 
 @router.get("/user-availability/{user_id}")
 def get_user_availability(user_id: int, db: Session = Depends(get_db)):
-    rows = db.query(UserAvailability).filter(UserAvailability.user_id == user_id).order_by(UserAvailability.day_of_week).all()
+    rows = db.query(UserAvailability).filter(UserAvailability.user_id == user_id).order_by(UserAvailability.day_of_week, UserAvailability.start_time).all()
     if not rows:
         default_schedule = []
         for d in range(7):
@@ -732,18 +739,18 @@ def get_user_availability(user_id: int, db: Session = Depends(get_db)):
         }
 
     first_row = rows[0]
-    days_map = {r.day_of_week: r for r in rows}
     schedule = []
+    days_present = set()
+    for r in rows:
+        days_present.add(r.day_of_week)
+        schedule.append({
+            "day_of_week": r.day_of_week,
+            "start_time": r.start_time.strftime("%H:%M") if r.start_time else "09:00",
+            "end_time": r.end_time.strftime("%H:%M") if r.end_time else "17:00",
+            "is_available": r.is_available if r.is_available is not None else True,
+        })
     for d in range(7):
-        if d in days_map:
-            r = days_map[d]
-            schedule.append({
-                "day_of_week": d,
-                "start_time": r.start_time.strftime("%H:%M") if r.start_time else "09:00",
-                "end_time": r.end_time.strftime("%H:%M") if r.end_time else "17:00",
-                "is_available": r.is_available if r.is_available is not None else True,
-            })
-        else:
+        if d not in days_present:
             schedule.append({
                 "day_of_week": d,
                 "start_time": "09:00",

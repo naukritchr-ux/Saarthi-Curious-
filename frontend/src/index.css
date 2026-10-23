@@ -64,3 +64,19 @@ textarea {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Custom smooth dark-glow scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(14, 11, 25, 0.7);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(168, 85, 247, 0.4);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(168, 85, 247, 0.75);
+}

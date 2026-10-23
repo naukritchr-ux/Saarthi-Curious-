@@ -14,7 +14,7 @@ const QUICK = [
   { label: "Role Management", path: "/admin/roles", icon: ShieldCheck, c: "#0ea5e9" },
   { label: "Add Notification Scripts", path: "/communication/notification-scripts", icon: BellRing, c: "#f97316" },
   { label: "Add Users", path: "/admin/users", icon: UserPlus, c: "#a855f7" },
-  { label: "Reports & Analytics", path: "/reports", icon: ChartColumn, c: "#14b8a6" },
+  { label: "Analytics", path: "/reports", icon: ChartColumn, c: "#14b8a6" },
   { label: "Add Programs", path: "/programs/create", icon: BookOpen, c: "#db2777" },
   { label: "Streak Management", path: "/admin/streak-management", icon: Flame, c: "#ef4444" },
   { label: "Saarthi Calendar", path: "/admin/reschedule", icon: CalendarDays, c: "#22c55e" },

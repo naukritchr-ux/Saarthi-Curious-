@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 const items = [
   {
-    title: "Franchise Reports",
+    title: "Analytics",
     icon: ChartPie,
     path: "/reports",
   },

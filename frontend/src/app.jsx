@@ -28,7 +28,7 @@ import Profile from "./pages/profile/profile";
 import Settings from "./pages/settings/settings";
 import PrivacyPolicy from "./pages/privacyPolicy/privacyPolicy";
 import LearnerDashboard from "./pages/learner/learnerDashboard";
-import ReportsPage from "./pages/Reports/ReportsPage";
+import ReportsAnalytics from "./pages/Reports/ReportsAnalytics";
 import OpenProgram from "./pages/learner/openProgram/openProgram";
 import CertificatePage from "./pages/learner/openProgram/certificatePage";
 import RetentionQuizPage from "./pages/learner/RetentionQuizPage";
@@ -289,7 +289,7 @@ function App() {
           path="/reports"
           element={
             <ProtectedRoute>
-              <ReportsPage />
+              <ReportsAnalytics />
             </ProtectedRoute>
           }
         />
