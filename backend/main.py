@@ -40,6 +40,7 @@ from database import SessionLocal
 from routes.calendar_events import router as calendar_events_router
 from routes.tasks import router as tasks_router
 from routes.ai_assistant import router as ai_assistant_router
+from routes.analytics import router as analytics_router
 
 
 app = FastAPI(
@@ -99,6 +100,8 @@ app.include_router(ai_schedule_router)
 app.include_router(calendar_events_router)
 app.include_router(tasks_router)
 app.include_router(ai_assistant_router)
+app.include_router(analytics_router)
+app.include_router(analytics_router, prefix="/api")
 
 # ============================
 # DEBUG - Print all routes (fixed)

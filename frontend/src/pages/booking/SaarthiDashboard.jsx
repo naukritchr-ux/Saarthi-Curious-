@@ -544,39 +544,43 @@ export default function SaarthiDashboard({ adminId = null }) {
         const startOfWeek = new Date(activeBase);
         startOfWeek.setDate(activeBase.getDate() - curDay);
 
-        const schedMap = {};
-        userAvailability.schedule.forEach(s => {
-          schedMap[s.day_of_week] = s;
-        });
+        // Render visible weeks so slots stay visible across navigation
+        for (let weekOffset = -2; weekOffset <= 4; weekOffset++) {
+          for (let offset = 0; offset < 7; offset++) {
+            const d = new Date(startOfWeek);
+            d.setDate(startOfWeek.getDate() + (weekOffset * 7) + offset);
+            const dayOfWeek = (d.getDay() + 6) % 7; // 0=Mon..6=Sun
 
-        for (let offset = 0; offset < 7; offset++) {
-          const d = new Date(startOfWeek);
-          d.setDate(startOfWeek.getDate() + offset);
-          const dayOfWeek = (d.getDay() + 6) % 7;
-          const schedItem = schedMap[dayOfWeek];
+            // Find all intervals for this day of week that are available
+            const dayIntervals = (userAvailability.schedule || []).filter(
+              s => s.day_of_week === dayOfWeek && s.is_available
+            );
 
-          if (schedItem && schedItem.is_available) {
-            const y = d.getFullYear();
-            const m = String(d.getMonth() + 1).padStart(2, "0");
-            const dayNum = String(d.getDate()).padStart(2, "0");
-            const dateStr = `${y}-${m}-${dayNum}`;
+            if (dayIntervals.length > 0) {
+              const y = d.getFullYear();
+              const m = String(d.getMonth() + 1).padStart(2, "0");
+              const dayNum = String(d.getDate()).padStart(2, "0");
+              const dateStr = `${y}-${m}-${dayNum}`;
 
-            const sTime = schedItem.start_time?.length === 5 ? `${schedItem.start_time}:00` : schedItem.start_time;
-            const eTime = schedItem.end_time?.length === 5 ? `${schedItem.end_time}:00` : schedItem.end_time;
+              dayIntervals.forEach((schedItem, ivIdx) => {
+                const sTime = schedItem.start_time?.length === 5 ? `${schedItem.start_time}:00` : schedItem.start_time;
+                const eTime = schedItem.end_time?.length === 5 ? `${schedItem.end_time}:00` : schedItem.end_time;
 
-            deduped.push({
-              id: `bookable-appt-slot-${dateStr}`,
-              title: userAvailability.title || "Bookable Schedule",
-              start: `${dateStr}T${sTime}`,
-              end: `${dateStr}T${eTime}`,
-              display: "auto",
-              backgroundColor: isDarkMode ? "rgba(11, 87, 208, 0.16)" : "rgba(194, 231, 255, 0.35)",
-              borderColor: isDarkMode ? "#3b82f6" : "#7cacf8",
-              extendedProps: {
-                isBookableSchedule: true,
-                durationMinutes: userAvailability.duration_minutes || 60,
-              }
-            });
+                deduped.push({
+                  id: `bookable-appt-slot-${dateStr}-${ivIdx}`,
+                  title: userAvailability.title || "Bookable Schedule",
+                  start: `${dateStr}T${sTime}`,
+                  end: `${dateStr}T${eTime}`,
+                  display: "auto",
+                  backgroundColor: isDarkMode ? "rgba(11, 87, 208, 0.16)" : "rgba(194, 231, 255, 0.35)",
+                  borderColor: isDarkMode ? "#3b82f6" : "#7cacf8",
+                  extendedProps: {
+                    isBookableSchedule: true,
+                    durationMinutes: userAvailability.duration_minutes || 60,
+                  }
+                });
+              });
+            }
           }
         }
       } catch (err) {
@@ -2831,7 +2835,16 @@ export default function SaarthiDashboard({ adminId = null }) {
               <button
                 type="button"
                 className="ai-card-action-btn"
-                onClick={() => toast("Highlighting conflicting slots on Thursday 22 Oct", { icon: "📅" })}
+                onClick={() => {
+                  if (calendarRef.current) {
+                    const api = calendarRef.current.getApi();
+                    api.gotoDate("2026-10-22");
+                    api.changeView("timeGridDay");
+                    setCurrentView("timeGridDay");
+                    updateDateRangeText(api);
+                    toast.success("Navigated to Thursday, 22 Oct: Showing overlapping meetings", { icon: "📅" });
+                  }
+                }}
               >
                 View conflicts →
               </button>
@@ -2843,8 +2856,30 @@ export default function SaarthiDashboard({ adminId = null }) {
                 <Zap size={14} className="text-amber-400" />
                 <span className="ai-card-title text-amber">Best focus window:</span>
               </div>
-              <p className="ai-card-sub bold-time">2:00 – 4:00 PM</p>
-              <p className="ai-card-detail">2h of uninterrupted time</p>
+              <p className="ai-card-sub bold-time">2:00 – 4:30 PM</p>
+              <p className="ai-card-detail">2.5h of uninterrupted time</p>
+              <button
+                type="button"
+                className="ai-card-action-btn"
+                style={{ color: "#f59e0b" }}
+                onClick={() => {
+                  const activeDate = getActiveCalendarDate();
+                  setFormData({
+                    title: "Focus Time: Deep Work",
+                    date: activeDate,
+                    start: "14:00",
+                    end: "16:30",
+                    guests: "",
+                    location: "",
+                    description: "Protected uninterrupted focus block."
+                  });
+                  setActiveTab("event");
+                  setIsModalOpen(true);
+                  toast.success("Focus block pre-filled for 2:00 PM – 4:30 PM", { icon: "⚡" });
+                }}
+              >
+                Schedule focus time →
+              </button>
             </div>
 
             {/* Card 3: Pending Responses */}

@@ -9,7 +9,7 @@ const items = [
   },
   {
     icon: ChartPie,
-    label: "Team Reports",
+    label: "Analytics",
     path: "/reports",
   },
   {
