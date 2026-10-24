@@ -1399,7 +1399,7 @@ export default function CandidateAttrition({ backendData = null }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#080711] text-slate-100 font-sans p-5 space-y-5 selection:bg-cyan-400 selection:text-black overflow-x-hidden">
+    <div className="h-screen w-full bg-[#080711] text-slate-100 font-sans selection:bg-cyan-400 selection:text-black overflow-y-auto overflow-x-hidden scroll-smooth candidate-attrition-scroll-container">
       <style>{`
         @keyframes robotFloat {
           0%, 100% { transform: translateY(0px) rotate(0deg); }
@@ -1408,9 +1408,29 @@ export default function CandidateAttrition({ backendData = null }) {
         .animate-robot-float {
           animation: robotFloat 3.6s ease-in-out infinite;
         }
+
+        /* Custom smooth scrollbar matching the electric cyan theme */
+        .candidate-attrition-scroll-container {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(6, 182, 212, 0.45) #080711;
+        }
+        .candidate-attrition-scroll-container::-webkit-scrollbar {
+          width: 8px;
+        }
+        .candidate-attrition-scroll-container::-webkit-scrollbar-track {
+          background: #080711;
+        }
+        .candidate-attrition-scroll-container::-webkit-scrollbar-thumb {
+          background: rgba(6, 182, 212, 0.35);
+          border-radius: 9999px;
+        }
+        .candidate-attrition-scroll-container::-webkit-scrollbar-thumb:hover {
+          background: rgba(6, 182, 212, 0.7);
+        }
       `}</style>
 
-      {/* HEADER */}
+      <div className="w-full p-5 pb-28 space-y-5">
+        {/* HEADER */}
       <header className="flex flex-wrap items-center justify-between gap-4 bg-[#12101E]/95 backdrop-blur-xl px-6 py-4 rounded-2xl border border-amber-500/25 shadow-[0_0_25px_-5px_rgba(245,158,11,0.15)]">
         <div className="flex items-center gap-3.5">
           <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-rose-500 via-amber-500 to-cyan-500 p-[1.5px] shadow-[0_0_20px_rgba(244,63,94,0.35)]">
@@ -1961,6 +1981,7 @@ export default function CandidateAttrition({ backendData = null }) {
           </div>
         </div>
       </section>
+      </div>
 
       {/* CENTERED STUDENT DETAIL MODAL */}
       <StudentDetailModal
