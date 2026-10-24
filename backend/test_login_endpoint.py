@@ -1,4 +1,12 @@
+import sys
 import time
+
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
 import unittest
 from fastapi import BackgroundTasks
 from types import SimpleNamespace

@@ -1,3 +1,12 @@
+import sys
+
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 from sqlalchemy import create_engine, inspect
 from database import engine, Base  # Import your live engine and Base
 import models  # Ensure your models are actively imported so Base knows them
