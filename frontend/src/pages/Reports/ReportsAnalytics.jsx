@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import axios from "axios";
+import CandidateTelemetrySection from "./CandidateTelemetrySection";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -881,6 +882,7 @@ function CenteredExecutiveModal({
 // ============================================================================
 export default function ReportsAnalytics({ backendData = null }) {
   const [dashboard, setDashboard] = useState(backendData);
+  const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(!backendData);
   const [error, setError] = useState(null);
 
@@ -889,12 +891,28 @@ export default function ReportsAnalytics({ backendData = null }) {
   const [activeModal, setActiveModal] = useState(null);
 
   useEffect(() => {
+    let isMounted = true;
+
+    // Fetch candidate telemetry for individual candidate reports
+    axios
+      .get(`${API_BASE_URL}/analytics/candidate-attrition`, {
+        params: { _t: Date.now() },
+      })
+      .then((res) => {
+        if (isMounted && res.data?.candidates) {
+          setCandidates(res.data.candidates);
+        }
+      })
+      .catch((err) => {
+        console.warn("Candidate telemetry fetch error:", err);
+      });
+
     if (backendData) {
       setDashboard(backendData);
       setLoading(false);
       return;
     }
-    let isMounted = true;
+
     setLoading(true);
     axios
       .get(`${API_BASE_URL}/analytics/dashboard`, {
@@ -1859,6 +1877,11 @@ export default function ReportsAnalytics({ backendData = null }) {
             </div>
           </div>
         </section>
+
+        {/* ===================================================================
+            ROW 5: INDIVIDUAL CANDIDATE TELEMETRY & BEHAVIORAL REPORTS SECTION
+        =================================================================== */}
+        <CandidateTelemetrySection candidates={candidates} />
       </div>
 
       {/* ===================================================================

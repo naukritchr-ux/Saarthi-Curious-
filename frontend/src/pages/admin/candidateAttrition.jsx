@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import {
   ResponsiveContainer,
@@ -14,23 +14,17 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
+import { API_BASE } from "../../config/api";
 
-const API_BASE_URL =
-  import.meta.env?.VITE_API_URL ||
-  (typeof window !== "undefined" &&
-  (window.location.hostname === "localhost" ||
-    window.location.hostname === "127.0.0.1")
-    ? "http://localhost:8000"
-    : "https://saarthi-curious-00e8.onrender.com");
 const ROBOT_AVATAR_URL = "/saarthi-robot.png";
 
 // ============================================================================
-// 1. DARK-GLOW RECHARTS TOOLTIP
+// 1. OBSIDIAN DARK-GLOW TOOLTIP
 // ============================================================================
 const ObsidianTooltip = ({ active, payload, label }) => {
   if (!active || !payload || !payload.length) return null;
   return (
-    <div className="bg-[#070B16]/95 backdrop-blur-xl border border-cyan-400/40 px-3.5 py-2.5 rounded-xl shadow-[0_0_25px_rgba(34,211,238,0.35)] text-xs z-50">
+    <div className="bg-[#080B16]/95 backdrop-blur-xl border border-cyan-400/40 px-3.5 py-2.5 rounded-xl shadow-[0_0_25px_rgba(34,211,238,0.35)] text-xs z-50">
       {label && (
         <p className="font-bold text-cyan-200 mb-1 border-b border-white/10 pb-1">
           {label}
@@ -56,784 +50,521 @@ const ObsidianTooltip = ({ active, payload, label }) => {
 };
 
 // ============================================================================
-// 2. PREFETCHED CANDIDATE TELEMETRY & RETENTION ENGINE (ARCHETYPE-TAILORED)
+// 2. POLYMORPHIC LOCKER INTELLIGENCE ENGINE (Original Survey Scoring)
 // ============================================================================
-function buildPersonalizedBackupReport(student, cohortSize = 19) {
-  const name = student?.name || "Candidate";
-  const firstName = name.split(" ")[0];
-  const prog = student?.program_name || "Client Relationships";
-  const comp = Number(student?.completion_pct ?? 0);
-  const quiz = Number(student?.quiz_mastery_pct ?? 0);
-  const attempts = Number(student?.quiz_attempts_count ?? 0);
-  const videos = Number(student?.videos_completed_count ?? 0);
-  const curos = Number(student?.curos ?? 0);
-  const risk = Number(student?.risk_score ?? 100);
+function buildLockerConfiguration(lockerId, kpiCounts, effectiveness, responses) {
+  const total = Math.max(1, kpiCounts.total_responses);
+  const highPct = Math.round((kpiCounts.high_risk / total) * 100);
+  const medPct = Math.round((kpiCounts.medium_risk / total) * 100);
+  const lowPct = Math.round((kpiCounts.low_risk / total) * 100);
+  const scorePct = Math.round((effectiveness.overall_score / 10) * 100);
 
-  const nameHash = name
-    .split("")
-    .reduce((acc, ch, idx) => acc + ch.charCodeAt(0) * (idx + 1), 0);
-  const personalLift = 18 + (nameHash % 14);
+  const baseRadar =
+    Array.isArray(effectiveness.questions) && effectiveness.questions.length > 0
+      ? effectiveness.questions.map((q, i) => ({
+          subject: q.short || `Q${i + 1}`,
+          score: Number(q.score_pct || 0),
+          benchmark: 80,
+        }))
+      : [
+          { subject: "Curriculum", score: scorePct || 20, benchmark: 80 },
+          { subject: "Instruction", score: Math.max(10, scorePct - 5), benchmark: 80 },
+          { subject: "Assessment", score: Math.min(100, scorePct + 10), benchmark: 80 },
+          { subject: "Support", score: Math.max(15, scorePct), benchmark: 80 },
+          { subject: "Retention", score: Math.min(100, 100 - highPct), benchmark: 80 },
+        ];
 
-  let archetype = "mid_funnel_stalled";
-  if (comp === 0 && attempts === 0 && videos === 0) {
-    archetype = "zero_start_dormant";
-  } else if (comp >= 75 || (quiz >= 80 && comp >= 50)) {
-    archetype = "high_velocity_champion";
-  } else if (quiz < 65 && attempts > 0) {
-    archetype = "assessment_friction";
-  }
-
-  // ARCHETYPE A: ZERO-START / DORMANT ENROLLMENT
-  if (archetype === "zero_start_dormant") {
-    const projectedDay7 = Math.min(85, 42 + personalLift);
-    return {
-      archetype: "Onboarding Ignition Required",
-      badgeColor: "#F43F5E",
-      headline: `${name} is enrolled in "${prog}" but has not initiated Module 1 yet (0 videos, 0 quizzes).`,
-      customParameters: [
-        { label: "Onboarding Stage", value: "Pre-Start (0%)", sub: "Awaiting First Login" },
-        { label: "Ignition Potential", value: `${projectedDay7}%`, sub: "7-Day AI Projected Lift" },
-        { label: "Starter Bounty", value: "+50 Curos", sub: "Recommended Unlock" },
-        { label: "Flight Hazard", value: `${risk}%`, sub: "Dormant Enrollment" },
+  const configs = {
+    total_responses: {
+      badge: "KPI LOCKER • COHORT SUBMISSIONS & PARTICIPATION",
+      title: "Total Responses & Survey Participation Intelligence",
+      subtitle: `${kpiCounts.total_responses} Survey Submissions • ${scorePct}% Overall Survey Effectiveness`,
+      accentColor: "#A855F7",
+      hasRisk: highPct > 40,
+      parameters: [
+        { label: "Total Submissions", value: `${kpiCounts.total_responses}`, sub: "Original Surveys" },
+        { label: "High Risk Share", value: `${highPct}%`, sub: `${kpiCounts.high_risk} Candidates` },
+        { label: "Stable Share", value: `${lowPct}%`, sub: `${kpiCounts.low_risk} Candidates` },
+        { label: "Survey Score", value: `${effectiveness.overall_score}/10`, sub: effectiveness.ratingBadge.label },
       ],
-      radarTitle: "5-Axis Onboarding Readiness & Activation Profile",
-      radarData: [
-        { subject: "Urgency", score: 95, benchmark: 70 },
-        { subject: "Curos Pull", score: 78 + (nameHash % 15), benchmark: 75 },
-        { subject: "Track Fit", score: 72 + (nameHash % 12), benchmark: 80 },
-        { subject: "7D AI Lift", score: projectedDay7, benchmark: 75 },
-        { subject: "Velocity", score: 14, benchmark: 80 },
-      ],
-      waveTitle: "7-Day AI Onboarding Ignition vs. Baseline Trajectory",
-      waveSub: "Projected completion & mastery surge once 3-min starter clip is triggered",
+      radarTitle: "5-Axis Survey Competency & Sentiment Balance",
+      radarData: baseRadar,
+      waveTitle: "Cohort Retention vs. 7-Day AI Projected Lift",
+      waveSub: "Projected shift in survey feedback positivity over next 7 days",
       waveData: [
-        { name: "Today", progress: 4, quiz_score: 8 },
-        { name: "Day 2 (Nudge)", progress: 18 + (nameHash % 6), quiz_score: 32 },
-        { name: "Day 4 (Video 1)", progress: 38 + (nameHash % 8), quiz_score: 58 },
-        { name: "Day 6 (Quiz 1)", progress: 54 + (nameHash % 7), quiz_score: 74 },
-        { name: "Day 7 Target", progress: projectedDay7, quiz_score: 82 },
+        { name: "Day 1", primary: Math.max(15, scorePct), secondary: Math.max(10, 100 - highPct) },
+        { name: "Day 3", primary: Math.min(100, scorePct + 16), secondary: Math.min(100, 100 - highPct + 18) },
+        { name: "Day 5", primary: Math.min(100, scorePct + 32), secondary: Math.min(100, 100 - highPct + 34) },
+        { name: "Day 7 Target", primary: Math.min(95, scorePct + 48), secondary: Math.min(95, 100 - highPct + 46) },
       ],
-      dynamicSections: [
+      sections: [
         {
-          badge: "ARCHETYPE: PRE-START DORMANT",
-          title: `Zero-Activity Root Cause Analysis for ${firstName}`,
+          badge: "ORIGINAL SURVEY AUDIT",
+          title: "1. Survey Submission & Keyword Sentiment Synthesis",
+          tone: "cyan",
+          body: `Across ${kpiCounts.total_responses} survey submissions in the database, the average survey score is ${effectiveness.overall_score}/10 (${effectiveness.ratingBadge.label}). Currently, ${kpiCounts.high_risk} candidates (${highPct}%) flagged high-risk keywords in their feedback, ${kpiCounts.medium_risk} (${medPct}%) show moderate sentiment, and ${kpiCounts.low_risk} (${lowPct}%) show positive feedback.`,
+        },
+        ...(highPct > 0
+          ? [
+              {
+                badge: "RETENTION BOTTLENECK",
+                title: `2. High Risk Concentration (${highPct}% of Cohort)`,
+                tone: "rose",
+                body: `Candidates flagging high-risk sentiment report primary dissatisfaction around "${effectiveness.needs_improvement_topic}" (${effectiveness.needs_improvement_pct}% score).`,
+              },
+            ]
+          : []),
+        {
+          badge: "AI SURVEY PRESCRIPTION",
+          title: `${highPct > 0 ? "3." : "2."} Survey & Curriculum Action Plan`,
+          tone: "emerald",
+          body: `Address feedback for "${effectiveness.needs_improvement_topic}" through targeted micro-learning recaps and a follow-up survey check-in.`,
+        },
+      ],
+      quickPrompts: [
+        "How can we improve feedback for lowest-rated questions?",
+        "What is driving the current high-risk survey responses?",
+        "Give me a 7-day action plan to reduce candidate survey dissatisfaction.",
+      ],
+    },
+
+    high_risk: {
+      badge: "RISK LOCKER • HIGH RISK CANDIDATE INTERVENTION",
+      title: "High Risk Cohort Forensics (Score 8/10)",
+      subtitle: `${kpiCounts.high_risk} High Risk Candidates (${highPct}% of Total) • Immediate Attention Required`,
+      accentColor: "#F43F5E",
+      hasRisk: kpiCounts.high_risk > 0,
+      parameters: [
+        { label: "High Risk Count", value: `${kpiCounts.high_risk}`, sub: `${highPct}% of Total` },
+        { label: "Original Risk Score", value: "8 / 10", sub: "Critical Trigger" },
+        { label: "Lowest Question", value: `${effectiveness.needs_improvement_pct}%`, sub: "Needs Work" },
+        { label: "Action Status", value: "Urgent", sub: "Immediate Review" },
+      ],
+      radarTitle: "High-Risk Friction Points Radar",
+      radarData: baseRadar.map((r) => ({
+        ...r,
+        score: Math.max(15, Math.round(r.score * 0.65)),
+      })),
+      waveTitle: "High-Risk Feedback Decay vs. AI Recovery Wave",
+      waveSub: "Forecasted risk decrease with targeted mentor check-ins",
+      waveData: [
+        { name: "Today", primary: 15, secondary: 88 },
+        { name: "48h Nudge", primary: 38, secondary: 64 },
+        { name: "Day 5 Clip", primary: 62, secondary: 42 },
+        { name: "Day 7 Saved", primary: 79, secondary: 24 },
+      ],
+      sections: [
+        {
+          badge: "KEYWORD ATTRITION FORENSICS",
+          title: "1. Root-Cause Analysis for High-Risk Responses",
           tone: "rose",
-          body: `${name} holds an active seat in ${prog} among ${cohortSize} tracked candidates, but telemetry records 0 video completions and 0 quiz submissions. In enterprise L&D models, 82% of pre-start stalls stem from initial module length friction rather than disengagement.`,
-          metricsRow: [
-            { k: "Current Progress", v: "0.0%" },
-            { k: "Recommended First Step", v: "3-Min Welcome Clip" },
-            { k: "Risk Drop on Login", v: "-38% Instant Drop" },
-          ],
+          body: `${kpiCounts.high_risk} candidates submitted feedback containing critical stress or departure keywords. The lowest rated survey dimension is "${effectiveness.needs_improvement_topic}" (${effectiveness.needs_improvement_pct}% rating).`,
         },
         {
-          badge: "48-HOUR IGNITION PROTOCOL",
-          title: `Personalized 3-Step Activation Roadmap for ${firstName}`,
-          tone: "cyan",
-          body: `Deploy a low-friction "Quick Win" sequence tailored to ${firstName}:`,
-          steps: [
-            `Send a direct deep-link to a 3-minute micro-preview of "${prog}" so ${firstName} can complete their first learning unit in under 180 seconds.`,
-            `Escrow +50 Curos into ${firstName}'s pending wallet—unlocked automatically upon finishing the 2-question warm-up check.`,
-            `Pair ${firstName} with a high-velocity cohort finisher (such as Lav Chokhani) for onboarding momentum.`,
-          ],
-        },
-        {
-          badge: "PREDICTIVE IMPACT",
-          title: "7-Day Risk Reduction Forecast",
+          badge: "INTERVENTION PROTOCOL",
+          title: "2. Urgent Action Sequence",
           tone: "emerald",
-          body: `Completing the starter clip + warm-up quiz is projected to reduce ${name}'s flight risk from ${risk}% down to ${Math.max(22, 100 - projectedDay7)}% within 7 days.`,
+          body: `Execute a 3-step intervention for all ${kpiCounts.high_risk} high-risk candidates:`,
+          steps: [
+            `Conduct an individual check-in addressing their feedback regarding "${effectiveness.needs_improvement_topic}".`,
+            "Offer a 15-minute 1-on-1 mentor sync to resolve roadblocks.",
+            "Send an updated feedback pulse check in 5 days.",
+          ],
         },
       ],
       quickPrompts: [
-        `What is the primary barrier preventing ${firstName} from starting Module 1?`,
-        `Draft a personalized 1-on-1 onboarding message for ${firstName}.`,
-        `Design a 3-day micro-learning ignition plan for ${firstName}.`,
+        `Draft an urgent re-engagement message for the ${kpiCounts.high_risk} high-risk candidates.`,
+        "Why are candidates flagging high risk in survey feedback?",
+        "What questions are high-risk candidates rating the lowest?",
       ],
-    };
-  }
+    },
 
-  // ARCHETYPE B: HIGH-VELOCITY CHAMPION / TOP PERFORMER
-  if (archetype === "high_velocity_champion") {
-    return {
-      archetype: "Top Performer & Peer Mentor",
-      badgeColor: "#10B981",
-      headline: `${name} is a high-velocity champion in "${prog}" (${comp}% completion, ${quiz}% quiz mastery).`,
-      customParameters: [
-        { label: "Cohort Standing", value: "Top 10%", sub: "Pacesetter" },
-        { label: "Course Completion", value: `${comp}%`, sub: "Verified Progress" },
-        { label: "Quiz Accuracy", value: `${quiz}%`, sub: `${attempts} Attempts` },
-        { label: "Mentor Readiness", value: "96%", sub: "Eligible for +100 Curos" },
+    medium_risk: {
+      badge: "RISK LOCKER • MEDIUM RISK COHORT (SCORE 5/10)",
+      title: "Medium Risk Cohort Review & Support",
+      subtitle: `${kpiCounts.medium_risk} Medium Risk Candidates (${medPct}% of Total) • Should Be Reviewed`,
+      accentColor: "#F59E0B",
+      hasRisk: kpiCounts.medium_risk > 0,
+      parameters: [
+        { label: "Medium Risk Count", value: `${kpiCounts.medium_risk}`, sub: `${medPct}% of Total` },
+        { label: "Original Risk Score", value: "5 / 10", sub: "Neutral / Uncertain" },
+        { label: "Conversion Rate", value: "85%", sub: "Potential to Low Risk" },
+        { label: "Recommended Sync", value: "Weekly", sub: "Cohort Review" },
       ],
-      radarTitle: "5-Axis Executive Mastery & Leadership Polygon",
-      radarData: [
-        { subject: "Completion", score: Math.max(80, comp), benchmark: 75 },
-        { subject: "Quiz Mastery", score: Math.max(85, quiz), benchmark: 75 },
-        { subject: "Retention", score: Math.max(88, 100 - risk), benchmark: 75 },
-        { subject: "Consistency", score: 92, benchmark: 75 },
-        { subject: "Peer Impact", score: 90, benchmark: 70 },
-      ],
-      waveTitle: "Mastery Acceleration & Stretch Certification Trajectory",
-      waveSub: "Continuous high-mastery progression curve across curriculum stages",
+      radarTitle: "Medium-Risk Competency Radar",
+      radarData: baseRadar.map((r) => ({
+        ...r,
+        score: Math.min(100, Math.max(35, r.score + 22)),
+      })),
+      waveTitle: "Medium-Risk Conversion Curve",
+      waveSub: "Lifting neutral candidates into positive pacesetters",
       waveData: [
-        { name: "Mod 1", progress: Math.max(60, comp * 0.6), quiz_score: Math.max(75, quiz * 0.85) },
-        { name: "Mod 2", progress: Math.max(75, comp * 0.8), quiz_score: Math.max(82, quiz * 0.92) },
-        { name: "Current", progress: Math.max(85, comp), quiz_score: Math.max(85, quiz) },
-        { name: "Stretch Goal", progress: 100, quiz_score: Math.min(100, Math.max(92, quiz + 5)) },
+        { name: "Current", primary: 48, secondary: 52 },
+        { name: "Day 3 Sync", primary: 64, secondary: 68 },
+        { name: "Day 5 Recap", primary: 78, secondary: 82 },
+        { name: "Day 7 Stable", primary: 88, secondary: 90 },
       ],
-      dynamicSections: [
+      sections: [
         {
-          badge: "ZERO ATTRITION RISK • CHAMPION PROFILE",
-          title: `High-Velocity Telemetry Synthesis for ${firstName}`,
-          tone: "emerald",
-          body: `${name} demonstrates exceptional learning velocity with ${comp}% curriculum completion and ${quiz}% assessment accuracy. Zero attrition risk indicators are present.`,
-          metricsRow: [
-            { k: "Flight Risk", v: `${risk}% (Minimal)` },
-            { k: "Quiz Accuracy", v: `${quiz}%` },
-            { k: "Recommended Role", v: "Squad Peer Champion" },
-          ],
+          badge: "SENTIMENT DIAGNOSTIC",
+          title: "1. Why Medium Risk Responses Occur",
+          tone: "amber",
+          body: `The ${kpiCounts.medium_risk} candidates in Medium Risk submitted neutral responses ("maybe", "unsure", "concern"). A supportive check-in quickly shifts these learners to Low Risk.`,
         },
         {
-          badge: "TALENT MULTIPLIER PRESCRIPTION",
-          title: "Peer Mentorship & Stretch Track Assignment",
-          tone: "cyan",
-          body: `Channel ${firstName}'s momentum to elevate lagging peers while keeping top talent challenged:`,
-          steps: [
-            `Award ${firstName} a +100 Curos "Cohort Pacesetter" badge in ${prog}.`,
-            `Invite ${firstName} to co-lead a 15-minute peer revision huddle for stalled learners.`,
-            `Unlock the Advanced Executive Case-Study track ahead of schedule.`,
-          ],
+          badge: "RECOMMENDED ACTION",
+          title: "2. Mid-Course Encouragement Sequence",
+          tone: "emerald",
+          body: "Provide supportive mid-curriculum summaries and quick check-in prompts.",
         },
       ],
       quickPrompts: [
-        `Write a congratulatory recognition message for ${firstName}.`,
-        `Which stalled learners should we pair with ${firstName}?`,
-        `What stretch certification should ${firstName} take next?`,
+        "How do we convert Medium Risk candidates to Low Risk?",
+        "Draft a supportive encouragement message for neutral respondents.",
+        "What are the main concerns flagged in Medium Risk feedback?",
       ],
-    };
-  }
+    },
 
-  // ARCHETYPE C: MID-FUNNEL STALLED OR ASSESSMENT FRICTION
-  const targetComp = Math.min(100, Math.round(comp + 32));
-  const targetQuiz = Math.min(100, Math.round(Math.max(78, quiz + 18)));
-  return {
-    archetype:
-      archetype === "assessment_friction"
-        ? "Assessment Remediation Needed"
-        : "Mid-Funnel Momentum Boost",
-    badgeColor: "#38BDF8",
-    headline: `${name} is mid-stream in "${prog}" (${comp}% completed, ${quiz}% quiz mastery) and requires a targeted push to graduate.`,
-    customParameters: [
-      { label: "Current Stage", value: `${comp}%`, sub: `${(100 - comp).toFixed(0)}% Remaining` },
-      { label: "Quiz Mastery", value: `${quiz}%`, sub: `${attempts} Submissions` },
-      { label: "7D Target Lift", value: `${targetComp}%`, sub: "With AI Nudge" },
-      { label: "Flight Risk", value: `${risk}%`, sub: "Mid-Funnel Hazard" },
-    ],
-    radarTitle: "5-Axis Mid-Funnel Competency & Friction Radar",
-    radarData: [
-      { subject: "Completion", score: Math.max(25, comp), benchmark: 80 },
-      { subject: "Quiz Mastery", score: Math.max(30, quiz), benchmark: 75 },
-      { subject: "Video Watch", score: Math.max(35, comp + 12), benchmark: 80 },
-      { subject: "Retention", score: Math.max(30, 100 - risk), benchmark: 75 },
-      { subject: "Momentum", score: 64, benchmark: 75 },
-    ],
-    waveTitle: "Mid-Funnel Progression vs. 7-Day AI Completion Curve",
-    waveSub: "Current progression trajectory compared to AI-assisted graduation path",
-    waveData: [
-      { name: "Stage 1", progress: Math.max(15, Math.round(comp * 0.5)), quiz_score: Math.max(30, Math.round(quiz * 0.7)) },
-      { name: "Current", progress: comp, quiz_score: quiz },
-      { name: "Day 4 (AI Recap)", progress: Math.min(100, Math.round(comp + 16)), quiz_score: Math.min(100, Math.round(quiz + 10)) },
-      { name: "Day 7 Target", progress: targetComp, quiz_score: targetQuiz },
-    ],
-    dynamicSections: [
-      {
-        badge: "MID-FUNNEL TELEMETRY FORENSICS",
-        title: `Where ${firstName} Paused in "${prog}"`,
-        tone: "cyan",
-        body: `${name} cleared initial onboarding and reached ${comp}% completion with ${quiz}% quiz accuracy, but progression velocity has plateaued mid-curriculum.`,
-        metricsRow: [
-          { k: "Completed So Far", v: `${comp}%` },
-          { k: "Remaining Backlog", v: `${(100 - comp).toFixed(1)}%` },
-          { k: "Quiz Accuracy", v: `${quiz}%` },
-        ],
-      },
-      {
-        badge: "ACTIVE RETENTION RISK",
-        title: `Mid-Stream Drop-Off Diagnosis (${risk}% Risk)`,
-        tone: "rose",
-        body: `Candidates pausing between 25% and 65% completion experience mid-syllabus fatigue. A targeted micro-milestone nudge within 48 hours prevents permanent drop-off.`,
-      },
-      {
-        badge: "AI GRADUATION PRESCRIPTION",
-        title: `Fast-Track Completion Protocol for ${firstName}`,
-        tone: "emerald",
-        body: `Re-engage ${firstName} by splitting the remaining ${(100 - comp).toFixed(0)}% of ${prog} into two 5-minute sprint checkpoints:`,
-        steps: [
-          `Send an AI-generated 2-minute concept summary covering the next module's assessment questions.`,
-          `Offer a +50 Curos "Finish Line" bonus when ${firstName} reaches ${targetComp}% completion.`,
-        ],
-      },
-    ],
-    quickPrompts: [
-      `How can we help ${firstName} move from ${comp}% to 100%?`,
-      `Draft a mid-course encouragement message for ${firstName}.`,
-      `Create a quick quiz revision guide for ${firstName}.`,
-    ],
+    low_risk: {
+      badge: "STABILITY LOCKER • LOW RISK & PACESETTERS (SCORE 2/10)",
+      title: "Low Risk & Satisfied Cohort Intelligence",
+      subtitle: `${kpiCounts.low_risk} Low Risk Candidates (${lowPct}% of Total) • Currently Stable`,
+      accentColor: "#10B981",
+      hasRisk: false,
+      parameters: [
+        { label: "Low Risk Count", value: `${kpiCounts.low_risk}`, sub: `${lowPct}% of Cohort` },
+        { label: "Original Risk Score", value: "2 / 10", sub: "Positive Feedback" },
+        { label: "Top Rated Topic", value: `${effectiveness.highest_rated_pct}%`, sub: effectiveness.highest_rated_topic },
+        { label: "Stability Index", value: "Optimal", sub: "No Flight Risk" },
+      ],
+      radarTitle: "Low-Risk Satisfaction Polygon",
+      radarData: baseRadar.map((r) => ({
+        ...r,
+        score: Math.min(100, Math.max(78, r.score + 40)),
+      })),
+      waveTitle: "Sustained Satisfaction Trajectory",
+      waveSub: "High retention consistency and peer leadership",
+      waveData: [
+        { name: "Week 1", primary: 76, secondary: 80 },
+        { name: "Week 2", primary: 84, secondary: 86 },
+        { name: "Current", primary: 92, secondary: 91 },
+        { name: "Projected", primary: 98, secondary: 96 },
+      ],
+      sections: [
+        {
+          badge: "HIGH SATISFACTION TELEMETRY",
+          title: "1. Positive Feedback Synthesis",
+          tone: "emerald",
+          body: `${kpiCounts.low_risk} candidates submitted highly positive survey ratings with strong agreement in "${effectiveness.highest_rated_topic}" (${effectiveness.highest_rated_pct}%).`,
+        },
+        {
+          badge: "PEER MENTORSHIP RECOMMENDATION",
+          title: "2. Leverage Top Performers",
+          tone: "cyan",
+          body: "Invite satisfied low-risk candidates to share study tips with peers.",
+        },
+      ],
+      quickPrompts: [
+        "How can we recognize and reward our lowest-risk candidates?",
+        "Write a thank-you note to candidates with positive survey responses.",
+        "What aspects of the training are working best according to feedback?",
+      ],
+    },
+
+    survey_effectiveness: {
+      badge: "EFFECTIVENESS LOCKER • ORIGINAL LIKERT AUDIT",
+      title: "Survey Effectiveness & Question Deep-Dive",
+      subtitle: `Overall Score: ${effectiveness.overall_score}/10 (${effectiveness.ratingBadge.label}) • Top: ${effectiveness.highest_rated_topic}`,
+      accentColor: "#38BDF8",
+      hasRisk: effectiveness.overall_score < 6.0,
+      parameters: [
+        { label: "Overall Score", value: `${effectiveness.overall_score}/10`, sub: effectiveness.ratingBadge.label },
+        { label: "Highest Rated", value: `${effectiveness.highest_rated_pct}%`, sub: effectiveness.highest_rated_topic },
+        { label: "Needs Improvement", value: `${effectiveness.needs_improvement_pct}%`, sub: effectiveness.needs_improvement_topic },
+        { label: "Enterprise Target", value: "8.0 / 10", sub: "Standard SLA" },
+      ],
+      radarTitle: "Survey Dimension Radar",
+      radarData: baseRadar,
+      waveTitle: "Dimension Scores vs. 80% SLA Benchmark",
+      waveSub: "Original Likert survey averages across modules",
+      waveData:
+        effectiveness.questions.length > 0
+          ? effectiveness.questions.map((q) => ({
+              name: q.short,
+              primary: q.score_pct,
+              secondary: 80,
+            }))
+          : [
+              { name: "Dim 1", primary: 20, secondary: 80 },
+              { name: "Dim 2", primary: 35, secondary: 80 },
+              { name: "Dim 3", primary: 50, secondary: 80 },
+              { name: "Dim 4", primary: 75, secondary: 80 },
+            ],
+      sections: [
+        {
+          badge: "LIKERT SCALE ANALYSIS",
+          title: "1. Survey Effectiveness Breakdown",
+          tone: "cyan",
+          body: `The overall training effectiveness score is ${effectiveness.overall_score}/10 (${effectiveness.ratingBadge.label}). "${effectiveness.highest_rated_topic}" leads at ${effectiveness.highest_rated_pct}%, while "${effectiveness.needs_improvement_topic}" trails at ${effectiveness.needs_improvement_pct}%.`,
+        },
+        ...(effectiveness.overall_score < 6.0
+          ? [
+              {
+                badge: "IMPROVEMENT ALERT",
+                title: `2. Priority Remediation (${effectiveness.overall_score}/10)`,
+                tone: "rose",
+                body: `"${effectiveness.needs_improvement_topic}" (${effectiveness.needs_improvement_pct}%) requires review to raise the overall score to the 8.0/10 target.`,
+              },
+            ]
+          : []),
+        {
+          badge: "RECOMMENDED ACTION",
+          title: `${effectiveness.overall_score < 6.0 ? "3." : "2."} Score Improvement Plan`,
+          tone: "emerald",
+          body: `Restructure "${effectiveness.needs_improvement_topic}" with quick interactive video checkpoints.`,
+        },
+      ],
+      quickPrompts: [
+        `How do we lift Overall Score from ${effectiveness.overall_score}/10 to 8.5/10?`,
+        `Why is "${effectiveness.needs_improvement_topic}" scoring ${effectiveness.needs_improvement_pct}%?`,
+        "Recommend curriculum updates based on these Likert scores.",
+      ],
+    },
+
+    question_analysis: {
+      badge: "QUESTION LOCKER • GRANULAR QUESTION BREAKDOWN",
+      title: "Question-by-Question Likert Scores",
+      subtitle: `Analyzing ${effectiveness.questions.length} Survey Evaluation Dimensions`,
+      accentColor: "#C084FC",
+      hasRisk: effectiveness.needs_improvement_pct < 60,
+      parameters: effectiveness.questions.slice(0, 4).map((q) => ({
+        label: q.short,
+        value: `${q.score_pct}%`,
+        sub: q.question,
+      })),
+      radarTitle: "Question-Level Competency Polygon",
+      radarData: baseRadar,
+      waveTitle: "Question Score Velocity",
+      waveSub: "Current question scores vs. target lift",
+      waveData:
+        effectiveness.questions.length > 0
+          ? effectiveness.questions.map((q) => ({
+              name: q.short,
+              primary: q.score_pct,
+              secondary: Math.min(95, q.score_pct + 35),
+            }))
+          : [
+              { name: "Q1", primary: 20, secondary: 65 },
+              { name: "Q2", primary: 35, secondary: 75 },
+              { name: "Q3", primary: 50, secondary: 85 },
+              { name: "Q4", primary: 65, secondary: 90 },
+            ],
+      sections: [
+        {
+          badge: "QUESTION SCORES",
+          title: "1. Granular Question Averages",
+          tone: "cyan",
+          body: effectiveness.questions
+            .map((q) => `${q.question}: ${q.score_pct}%`)
+            .join(" • ") || "No survey question data submitted yet.",
+        },
+        {
+          badge: "TARGETED REMEDIATION",
+          title: "2. Curriculum Action Plan",
+          tone: "emerald",
+          body: `Focus immediate instructional enhancements on "${effectiveness.needs_improvement_topic}" (${effectiveness.needs_improvement_pct}%).`,
+        },
+      ],
+      quickPrompts: [
+        "Rank all survey questions from highest to lowest score.",
+        "Which question has the biggest impact on candidate retention?",
+        "What questions should we add to future surveys?",
+      ],
+    },
+
+    feedback_responses: {
+      badge: "RESPONSES LOCKER • INDIVIDUAL CANDIDATE LOGS",
+      title: "Survey Feedback Responses & Audit Table",
+      subtitle: `Showing ${responses.length} Filtered Survey Submissions`,
+      accentColor: "#10B981",
+      hasRisk: kpiCounts.high_risk > 0,
+      parameters: [
+        { label: "Total Responses", value: `${responses.length}`, sub: "Filtered Records" },
+        { label: "Overall Score", value: `${effectiveness.overall_score}/10`, sub: "Survey Mean" },
+        { label: "High Risk (8/10)", value: `${kpiCounts.high_risk}`, sub: "Requires Action" },
+        { label: "Low Risk (2/10)", value: `${kpiCounts.low_risk}`, sub: "Stable / Satisfied" },
+      ],
+      radarTitle: "Response Sentiment Alignment",
+      radarData: baseRadar,
+      waveTitle: "Candidate Risk Score Distribution",
+      waveSub: "Individual candidate risk scores (8: High, 5: Med, 2: Low)",
+      waveData: responses.slice(0, 8).map((r) => ({
+        name: (r.employee_name || "User").split(" ")[0],
+        primary: (r.risk_score || 2) * 10,
+        secondary: 20,
+      })),
+      sections: [
+        {
+          badge: "RESPONSE AUDIT",
+          title: "1. Candidate Feedback Records",
+          tone: "cyan",
+          body: `Auditing ${responses.length} survey response records from the database. High risk candidates (score 8) flagged keyword concerns, while low risk candidates (score 2) submitted positive ratings.`,
+        },
+        {
+          badge: "NEXT STEPS",
+          title: "2. Follow-Up Plan",
+          tone: "emerald",
+          body: "Click on any response in the table to review their answers, or follow up directly with high-risk candidates.",
+        },
+      ],
+      quickPrompts: [
+        "Which candidates in the responses list need immediate follow-up?",
+        "Summarize the main themes in candidate survey feedback.",
+        "Draft a follow-up email for candidates who reported challenges.",
+      ],
+    },
+
+    risk_insights: {
+      badge: "EXECUTIVE LOCKER • RISK SUMMARY & RECOVERY",
+      title: "Risk Summary Insights & Executive Briefing",
+      subtitle: effectiveness.risk_summary_insight,
+      accentColor: "#06B6D4",
+      hasRisk: kpiCounts.high_risk > 0,
+      parameters: [
+        { label: "Total Surveys", value: `${kpiCounts.total_responses}`, sub: "Original DB Records" },
+        { label: "High Risk", value: `${kpiCounts.high_risk}`, sub: "Immediate Attention" },
+        { label: "Overall Score", value: `${effectiveness.overall_score}/10`, sub: effectiveness.ratingBadge.label },
+        { label: "Target Score", value: "8.0 / 10", sub: "Enterprise SLA" },
+      ],
+      radarTitle: "Retention & Sentiment Radar",
+      radarData: baseRadar,
+      waveTitle: "Risk Reduction Forecast",
+      waveSub: "Projected cohort stabilization over 7 days",
+      waveData: [
+        { name: "Day 1", primary: scorePct || 20, secondary: 25 },
+        { name: "Day 3", primary: Math.min(100, (scorePct || 20) + 18), secondary: 48 },
+        { name: "Day 5", primary: Math.min(100, (scorePct || 20) + 35), secondary: 68 },
+        { name: "Day 7 Target", primary: Math.min(95, (scorePct || 20) + 52), secondary: 84 },
+      ],
+      sections: [
+        {
+          badge: "ORIGINAL RISK SUMMARY",
+          title: "1. Candidate Attrition Risk Synthesis",
+          tone: "cyan",
+          body: effectiveness.risk_summary_insight,
+        },
+        ...(kpiCounts.high_risk > 0
+          ? [
+              {
+                badge: "CRITICAL ALERT",
+                title: `2. ${kpiCounts.high_risk} Candidate(s) Require Immediate Attention`,
+                tone: "rose",
+                body: "High-risk candidates reported significant hurdles in survey feedback.",
+              },
+            ]
+          : []),
+        {
+          badge: "RECOMMENDED STRATEGY",
+          title: `${kpiCounts.high_risk > 0 ? "3." : "2."} 7-Day Recovery Protocol`,
+          tone: "emerald",
+          body: "Direct support to high-risk candidates within 48 hours to resolve survey-identified friction.",
+        },
+      ],
+      quickPrompts: [
+        "Give me an executive summary of our candidate retention.",
+        "What are the top 3 actions to take today to address survey risks?",
+        "Predict our survey score improvement if we address lowest-rated topics.",
+      ],
+    },
   };
+
+  return configs[lockerId] || configs.total_responses;
 }
 
 // ============================================================================
-// 3. REALISTIC VOLUMETRIC HORIZON, PARTICLE-RIDGE & WAVE STREAM GRAPH
-//    High-definition upgrade of Screenshot (10).jpg combining 0,3.JPG & 0,4.JPG:
-//    - Volumetric stipple/particle-cloud 3D mountain ridges (not a flat cutout)
-//    - 18 silky-smooth flowing 3D cyan/sapphire wave ribbons with photon streams
-//    - 110+ fine golden equalizer micro-filaments + star-flare candidate laser stems
+// 3. CENTERED LOCKER MODAL (Opens on Card/Section Click)
 // ============================================================================
-function RealisticNeuralHorizonGraph({ candidates = [], onSelectCandidate }) {
-  const canvasRef = useRef(null);
-  const [hoveredNode, setHoveredNode] = useState(null);
-  const nodesRef = useRef([]);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    let animId;
-    let time = 0;
-
-    // Soft Depth-of-Field Bokeh Orbs (Foreground & Midground)
-    const bokehOrbs = Array.from({ length: 48 }, (_, i) => ({
-      xFrac: ((i * 61 + 13) % 100) / 100,
-      yFrac: ((i * 37 + 19) % 100) / 100,
-      radius: i % 6 === 0 ? 5.5 : 1.3 + (i % 4) * 1.1,
-      alpha: i % 6 === 0 ? 0.14 : 0.42,
-      speed: 0.0003 + (i % 5) * 0.00014,
-      color: i % 3 === 0 ? "251, 191, 36" : i % 3 === 1 ? "56, 189, 248" : "244, 63, 94",
-    }));
-
-    const render = () => {
-      time += 0.02;
-      const width = (canvas.width = canvas.parentElement.clientWidth || 780);
-      const height = (canvas.height = 315);
-      const baseHorizonY = height * 0.66;
-
-      // -------------------------------------------------------------------
-      // 1. DEEP CINEMATIC NIGHT-ABYSS BACKGROUND & VOLUMETRIC LIGHTING
-      // -------------------------------------------------------------------
-      const bgGrad = ctx.createLinearGradient(0, 0, width, height);
-      bgGrad.addColorStop(0, "#03050F");
-      bgGrad.addColorStop(0.45, "#070B1E");
-      bgGrad.addColorStop(0.75, "#0F0822");
-      bgGrad.addColorStop(1, "#02040A");
-      ctx.fillStyle = bgGrad;
-      ctx.fillRect(0, 0, width, height);
-
-      // Subtle Blueprint Telemetry Grid in Upper-Right Sky (From 0,3.JPG)
-      ctx.strokeStyle = "rgba(56, 189, 248, 0.045)";
-      ctx.lineWidth = 0.8;
-      for (let gx = width * 0.52; gx < width; gx += 26) {
-        ctx.beginPath();
-        ctx.moveTo(gx, 0);
-        ctx.lineTo(gx, baseHorizonY);
-        ctx.stroke();
-      }
-      for (let gy = 16; gy < baseHorizonY; gy += 26) {
-        ctx.beginPath();
-        ctx.moveTo(width * 0.52, gy);
-        ctx.lineTo(width, gy);
-        ctx.stroke();
-      }
-
-      // Warm Amber-Crimson & Sapphire Atmospheric Backlights Behind Peaks
-      const backGlowRight = ctx.createRadialGradient(
-        width * 0.76,
-        baseHorizonY - 55,
-        10,
-        width * 0.76,
-        baseHorizonY - 55,
-        width * 0.42
-      );
-      backGlowRight.addColorStop(0, "rgba(251, 146, 60, 0.28)");
-      backGlowRight.addColorStop(0.45, "rgba(225, 29, 72, 0.14)");
-      backGlowRight.addColorStop(1, "rgba(0, 0, 0, 0)");
-      ctx.fillStyle = backGlowRight;
-      ctx.fillRect(0, 0, width, height);
-
-      const backGlowLeft = ctx.createRadialGradient(
-        width * 0.24,
-        baseHorizonY - 15,
-        10,
-        width * 0.24,
-        baseHorizonY - 15,
-        width * 0.36
-      );
-      backGlowLeft.addColorStop(0, "rgba(56, 189, 248, 0.20)");
-      backGlowLeft.addColorStop(0.5, "rgba(139, 92, 246, 0.12)");
-      backGlowLeft.addColorStop(1, "rgba(0, 0, 0, 0)");
-      ctx.fillStyle = backGlowLeft;
-      ctx.fillRect(0, 0, width, height);
-
-      // -------------------------------------------------------------------
-      // 2. REALISTIC MULTI-LAYERED RIDGE ELEVATION FUNCTION (0,4.JPG & 0,3.JPG)
-      // -------------------------------------------------------------------
-      const ridgeElevation = (xNorm, layer = 0) => {
-        // Natural sweeping ascent from left to right with 4 organic mountain crests
-        const p1 = Math.exp(-Math.pow((xNorm - 0.11) / 0.055, 2)) * 42;
-        const p2 = Math.exp(-Math.pow((xNorm - 0.31) / 0.075, 2)) * 68;
-        const p3 = Math.exp(-Math.pow((xNorm - 0.56) / 0.085, 2)) * 88;
-        const p4 = Math.exp(-Math.pow((xNorm - 0.83) / 0.078, 2)) * 134;
-        const slopeAscent = Math.pow(xNorm, 1.35) * 32;
-        const microWave =
-          Math.sin(xNorm * 22 + time * 1.1 + layer * 1.3) * 7 +
-          Math.cos(xNorm * 11 - time * 0.8 + layer) * 5;
-        return Math.max(12, p1 + p2 + p3 + p4 + slopeAscent + microWave);
-      };
-
-      // -------------------------------------------------------------------
-      // 3. VOLUMETRIC POINT-CLOUD / STIPPLE MOUNTAIN LAYERS (0,4.JPG REALISM)
-      //    Instead of flat 2D fills, we render glowing stipple particle fields
-      //    inside the mountain silhouette + soft volumetric gradient shading
-      // -------------------------------------------------------------------
-      for (let layer = 2; layer >= 0; layer--) {
-        const scaleH = layer === 0 ? 1.0 : layer === 1 ? 0.76 : 0.54;
-        const phase = layer * 1.15;
-
-        ctx.beginPath();
-        ctx.moveTo(0, baseHorizonY);
-        for (let x = 0; x <= width; x += 6) {
-          const xn = x / width;
-          const y = baseHorizonY - ridgeElevation(xn, phase) * scaleH;
-          ctx.lineTo(x, y);
-        }
-        ctx.lineTo(width, baseHorizonY);
-        ctx.closePath();
-
-        const volGrad = ctx.createLinearGradient(0, baseHorizonY - 165, 0, baseHorizonY);
-        if (layer === 0) {
-          volGrad.addColorStop(0, "rgba(251, 113, 133, 0.34)");
-          volGrad.addColorStop(0.45, "rgba(245, 158, 11, 0.16)");
-          volGrad.addColorStop(1, "rgba(14, 165, 233, 0.0)");
-        } else if (layer === 1) {
-          volGrad.addColorStop(0, "rgba(168, 85, 247, 0.22)");
-          volGrad.addColorStop(1, "rgba(15, 23, 42, 0.0)");
-        } else {
-          volGrad.addColorStop(0, "rgba(56, 189, 248, 0.15)");
-          volGrad.addColorStop(1, "rgba(15, 23, 42, 0.0)");
-        }
-        ctx.fillStyle = volGrad;
-        ctx.fill();
-      }
-
-      // Stippled Particle Matrix Inside Primary Mountain Slope (Signature of 0,4.JPG!)
-      for (let sx = 8; sx < width; sx += 7) {
-        const xn = sx / width;
-        const elev = ridgeElevation(xn, 0);
-        const topY = baseHorizonY - elev;
-        const dotsInCol = Math.min(14, Math.floor(elev / 9));
-
-        for (let d = 1; d <= dotsInCol; d++) {
-          const frac = d / (dotsInCol + 1);
-          const py = topY + frac * elev * 0.88;
-          const alpha = (1 - frac) * 0.55;
-          ctx.fillStyle =
-            frac < 0.35
-              ? `rgba(253, 186, 116, ${alpha})`
-              : `rgba(244, 63, 94, ${alpha * 0.75})`;
-          ctx.fillRect(sx, py, 1.3, 1.3);
-        }
-      }
-
-      // -------------------------------------------------------------------
-      // 4. 110+ FINE GOLDEN EQUALIZER FILAMENTS (0,3.JPG HISTOGRAM DENSITY)
-      // -------------------------------------------------------------------
-      const numFilaments = 115;
-      for (let i = 0; i < numFilaments; i++) {
-        const xn = i / (numFilaments - 1);
-        const fx = xn * width;
-        const ridgeY = baseHorizonY - ridgeElevation(xn, 0);
-        const waveFloorY =
-          height * 0.78 -
-          xn * 28 +
-          Math.sin(xn * 6.2 + time) * 14;
-
-        if (waveFloorY > ridgeY) {
-          const filGrad = ctx.createLinearGradient(fx, ridgeY, fx, waveFloorY);
-          filGrad.addColorStop(0, "rgba(253, 224, 71, 0.48)");
-          filGrad.addColorStop(0.5, "rgba(245, 158, 11, 0.16)");
-          filGrad.addColorStop(1, "rgba(56, 189, 248, 0.02)");
-
-          ctx.beginPath();
-          ctx.strokeStyle = filGrad;
-          ctx.lineWidth = 1.0;
-          ctx.moveTo(fx, waveFloorY);
-          ctx.lineTo(fx, ridgeY);
-          ctx.stroke();
-        }
-      }
-
-      // Secondary Weaving Golden Dotted Trajectory Spline (0,4.JPG)
-      ctx.save();
-      ctx.beginPath();
-      ctx.setLineDash([2.5, 5.5]);
-      for (let x = 0; x <= width; x += 6) {
-        const xn = x / width;
-        const y =
-          baseHorizonY -
-          ridgeElevation(xn, 0.85) * 0.64 -
-          Math.sin(xn * 9 - time * 1.1) * 12;
-        if (x === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.strokeStyle = "rgba(253, 224, 71, 0.9)";
-      ctx.lineWidth = 1.9;
-      ctx.stroke();
-      ctx.restore();
-
-      // Dual-Pass Glowing Neon Rim Light Along the Primary Mountain Crest (0,4.JPG)
-      ctx.save();
-      ctx.beginPath();
-      for (let x = 0; x <= width; x += 4) {
-        const xn = x / width;
-        const y = baseHorizonY - ridgeElevation(xn, 0);
-        if (x === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      // Outer Coral-Red Neon Bloom
-      ctx.strokeStyle = "#FB7185";
-      ctx.lineWidth = 4.2;
-      ctx.shadowColor = "#F43F5E";
-      ctx.shadowBlur = 18;
-      ctx.stroke();
-      // Inner White-Gold Hot Core
-      ctx.strokeStyle = "#FEF08A";
-      ctx.lineWidth = 1.6;
-      ctx.shadowBlur = 6;
-      ctx.stroke();
-      ctx.restore();
-
-      // -------------------------------------------------------------------
-      // 5. 18 SILKY-SMOOTH 3D TOPOGRAPHIC CYAN/BLUE WAVE RIBBONS (0,3.JPG)
-      // -------------------------------------------------------------------
-      const NUM_WAVES = 18;
-      for (let w = 0; w < NUM_WAVES; w++) {
-        const wf = w / (NUM_WAVES - 1);
-        ctx.beginPath();
-        const isHighlightWave = w === 0 || w === 12 || w === NUM_WAVES - 1;
-        ctx.strokeStyle =
-          w > 13
-            ? `rgba(251, 191, 36, ${0.16 + wf * 0.35})`
-            : `rgba(56, 189, 248, ${0.14 + (1 - wf) * 0.52})`;
-        ctx.lineWidth = isHighlightWave ? 1.65 : 0.9;
-
-        for (let x = 0; x <= width; x += 10) {
-          const xn = x / width;
-          const wy =
-            height * 0.72 +
-            w * 4.2 -
-            xn * 34 +
-            Math.sin(xn * 6.0 + time + w * 0.15) * (15 + w * 0.65) +
-            Math.cos(xn * 3.5 - time * 0.75 + w * 0.12) * 9;
-          if (x === 0) ctx.moveTo(x, wy);
-          else ctx.lineTo(x, wy);
-        }
-        ctx.stroke();
-
-        // Flowing Glowing Photon Beads Riding Along the Wave Ribbons (0,3.JPG)
-        if (w % 2 === 0) {
-          const beadXNorm = ((time * 0.14 + w * 0.19) % 1);
-          const bx = beadXNorm * width;
-          const by =
-            height * 0.72 +
-            w * 4.2 -
-            beadXNorm * 34 +
-            Math.sin(beadXNorm * 6.0 + time + w * 0.15) * (15 + w * 0.65) +
-            Math.cos(beadXNorm * 3.5 - time * 0.75 + w * 0.12) * 9;
-
-          ctx.beginPath();
-          ctx.fillStyle = w > 12 ? "#FDE047" : "#7DD3FC";
-          ctx.shadowColor = w > 12 ? "#F59E0B" : "#38BDF8";
-          ctx.shadowBlur = 10;
-          ctx.arc(bx, by, 2.3, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.shadowBlur = 0;
-        }
-      }
-
-      // -------------------------------------------------------------------
-      // 6. CANDIDATE FIBER-OPTIC LASER STEMS, CONSTELLATIONS & STAR FLARES
-      // -------------------------------------------------------------------
-      const list = candidates.slice(0, 22);
-      const count = Math.max(1, list.length);
-      const padX = 40;
-      const usableW = Math.max(100, width - padX * 2);
-
-      const computedNodes = list.map((cand, idx) => {
-        const t = count === 1 ? 0.5 : idx / (count - 1);
-        const x = padX + t * usableW;
-        const ridgeY = baseHorizonY - ridgeElevation(t, 0);
-        const floorY =
-          height * 0.76 -
-          t * 30 +
-          Math.sin(t * 6.0 + time) * 14;
-
-        const riskNorm = Math.max(0.25, (cand.risk_score ?? 50) / 100);
-        const stagger = ((idx * 23) % 36) + Math.sin(time * 2.0 + idx) * 4.5;
-        const y = Math.max(20, ridgeY - (12 + stagger * riskNorm));
-
-        let coreColor = "#FDE047";
-        let haloRgba = "rgba(251, 191, 36, 0.85)";
-        if (cand.risk_level === "high") {
-          coreColor = idx % 2 === 0 ? "#FB7185" : "#FBBF24";
-          haloRgba =
-            idx % 2 === 0
-              ? "rgba(251, 113, 133, 0.85)"
-              : "rgba(251, 191, 36, 0.85)";
-        } else if (cand.risk_level === "low" || cand.is_top_performer) {
-          coreColor = "#38BDF8";
-          haloRgba = "rgba(56, 189, 248, 0.9)";
-        }
-
-        return { x, y, floorY, coreColor, haloRgba, cand };
-      });
-
-      nodesRef.current = computedNodes;
-
-      // Constellation Web Lines Between Nearby Candidate Nodes (0,3.JPG)
-      ctx.lineWidth = 0.75;
-      for (let i = 0; i < computedNodes.length; i++) {
-        for (let j = i + 1; j <= Math.min(computedNodes.length - 1, i + 2); j++) {
-          const a = computedNodes[i];
-          const b = computedNodes[j];
-          const d = Math.hypot(a.x - b.x, a.y - b.y);
-          if (d < 140) {
-            ctx.strokeStyle = `rgba(253, 224, 71, ${Math.max(0.08, 0.32 - d / 450)})`;
-            ctx.beginPath();
-            ctx.moveTo(a.x, a.y);
-            ctx.lineTo(b.x, b.y);
-            ctx.stroke();
-          }
-        }
-      }
-
-      // Draw Vertical Laser Stems & Cross-Star Lens Flares
-      computedNodes.forEach((node, idx) => {
-        const stemGrad = ctx.createLinearGradient(node.x, node.y, node.x, node.floorY);
-        stemGrad.addColorStop(0, "#FFFFFF");
-        stemGrad.addColorStop(0.2, node.coreColor);
-        stemGrad.addColorStop(1, "rgba(56, 189, 248, 0.04)");
-
-        ctx.beginPath();
-        ctx.strokeStyle = stemGrad;
-        ctx.lineWidth = 1.5;
-        ctx.moveTo(node.x, node.floorY);
-        ctx.lineTo(node.x, node.y);
-        ctx.stroke();
-
-        // Outer Glowing Orb Halo
-        const halo = ctx.createRadialGradient(node.x, node.y, 1, node.x, node.y, 14);
-        halo.addColorStop(0, node.haloRgba);
-        halo.addColorStop(1, "rgba(0,0,0,0)");
-        ctx.fillStyle = halo;
-        ctx.beginPath();
-        ctx.arc(node.x, node.y, 14, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Subtle Horizontal & Vertical Star-Flare Rays on High/Key Nodes (0,3.JPG & 0,4.JPG)
-        if (idx % 2 === 0) {
-          ctx.strokeStyle = "rgba(255, 255, 255, 0.55)";
-          ctx.lineWidth = 0.8;
-          ctx.beginPath();
-          ctx.moveTo(node.x - 8, node.y);
-          ctx.lineTo(node.x + 8, node.y);
-          ctx.moveTo(node.x, node.y - 8);
-          ctx.lineTo(node.x, node.y + 8);
-          ctx.stroke();
-        }
-
-        // Bright White-Gold Pinhead
-        ctx.fillStyle = "#FFFFFF";
-        ctx.beginPath();
-        ctx.arc(node.x, node.y, 2.8, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Candidate Name Label Along Bottom
-        if (count <= 14 || idx % 2 === 0) {
-          const shortName = (node.cand.name || "User").split(" ")[0].slice(0, 8);
-          ctx.fillStyle = "rgba(226, 232, 240, 0.85)";
-          ctx.font = "bold 9.5px Inter, sans-serif";
-          ctx.textAlign = "center";
-          ctx.fillText(shortName, node.x, height - 7);
-        }
-      });
-
-      // 7. Render Depth-of-Field Bokeh Orbs
-      bokehOrbs.forEach((b, idx) => {
-        const py = ((b.yFrac - time * b.speed * 10) % 1 + 1) % 1;
-        const px = b.xFrac + Math.sin(time * 0.5 + idx) * 0.012;
-        ctx.beginPath();
-        ctx.fillStyle = `rgba(${b.color}, ${b.alpha})`;
-        ctx.arc(px * width, py * height, b.radius, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      animId = requestAnimationFrame(render);
-    };
-
-    render();
-    return () => cancelAnimationFrame(animId);
-  }, [candidates]);
-
-  const handleMouseMove = (e) => {
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
-
-    let closest = null;
-    let minDist = 30;
-    nodesRef.current.forEach((n) => {
-      const d = Math.hypot(mx - n.x, my - n.y);
-      if (d < minDist) {
-        minDist = d;
-        closest = n;
-      }
-    });
-    setHoveredNode(closest);
-  };
-
-  return (
-    <div className="relative w-full rounded-2xl overflow-hidden border border-cyan-500/30 shadow-[0_0_40px_-5px_rgba(6,182,212,0.22)]">
-      <canvas
-        ref={canvasRef}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={() => setHoveredNode(null)}
-        onClick={() => {
-          if (hoveredNode?.cand && onSelectCandidate) {
-            onSelectCandidate(hoveredNode.cand);
-          } else if (candidates[0] && onSelectCandidate) {
-            onSelectCandidate(candidates[0]);
-          }
-        }}
-        className="w-full h-[315px] block cursor-pointer"
-      />
-
-      {/* Top HUD */}
-      <div className="absolute top-3 left-3.5 flex items-center gap-2 bg-[#050914]/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-cyan-400/40 pointer-events-none">
-        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-        <span className="text-[10px] font-extrabold text-cyan-100 tracking-wider uppercase">
-          Volumetric Neural Horizon & Harmonic Wave • Click Any Star Orb to Inspect
-        </span>
-      </div>
-
-      {/* Hover Tooltip */}
-      {hoveredNode && (
-        <div
-          style={{
-            left: Math.min(Math.max(hoveredNode.x - 95, 12), 480),
-            top: Math.max(hoveredNode.y - 78, 12),
-          }}
-          className="pointer-events-none absolute z-20 bg-[#070B16]/95 backdrop-blur-xl border border-cyan-400/60 px-3.5 py-2 rounded-xl shadow-[0_0_25px_rgba(6,182,212,0.45)] text-xs"
-        >
-          <p className="font-extrabold text-white">{hoveredNode.cand.name}</p>
-          <div className="flex items-center gap-3 mt-1 text-[11px]">
-            <span className="text-rose-300 font-bold">
-              Risk: {hoveredNode.cand.risk_score ?? 0}%
-            </span>
-            <span className="text-emerald-300 font-bold">
-              Mastery: {hoveredNode.cand.quiz_mastery_pct ?? 0}%
-            </span>
-            <span className="text-amber-300 font-bold">
-              🪙 {hoveredNode.cand.curos ?? 0}
-            </span>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ============================================================================
-// 4. CENTERED STUDENT DETAIL MODAL
-//    - Restored 3D Robot Analyst Avatar (`ROBOT_AVATAR_URL`) in its exact spot!
-//    - Removed ONLY the flat 2D robot-face icon next to the title & in chat bubbles
-//    - Upgraded `SAARTHI AI` & `Ask AI` button to Electric Cyan-Sapphire-Indigo
-// ============================================================================
-function StudentDetailModal({ student, cohortSize, onClose }) {
-  const [aiReport, setAiReport] = useState(null);
+function LockerDetailModal({
+  activeLockerId,
+  onClose,
+  onSwitchLocker,
+  kpiCounts,
+  effectiveness,
+  responses,
+}) {
   const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
   const [chatHistory, setChatHistory] = useState([]);
 
-  useEffect(() => {
-    if (!student) return;
+  const lockerConfig = useMemo(() => {
+    if (!activeLockerId) return null;
+    return buildLockerConfiguration(
+      activeLockerId,
+      kpiCounts,
+      effectiveness,
+      responses
+    );
+  }, [activeLockerId, kpiCounts, effectiveness, responses]);
 
-    // Use instant prefetched report derived from candidate telemetry
-    const prefetchedReport = buildPersonalizedBackupReport(student, cohortSize);
-    setAiReport(prefetchedReport);
+  useEffect(() => {
+    if (!lockerConfig) return;
     setChatHistory([
       {
         role: "ai",
-        text: `Telemetry diagnostic loaded for **${student.name}** (${prefetchedReport.archetype}). ${prefetchedReport.headline} Select a prompt above or ask a question below.`,
+        text: `Locker loaded for **${lockerConfig.title}**. ${lockerConfig.sections[0]?.body || ""} Select a quick prompt above or ask any question below!`,
       },
     ]);
-  }, [student, cohortSize]);
+  }, [lockerConfig]);
 
-  if (!student || !aiReport) return null;
+  if (!activeLockerId || !lockerConfig) return null;
 
-  const handleSendChat = (customQ) => {
+  const handleSendChat = async (customQ) => {
     const q = (customQ || chatInput).trim();
     if (!q) return;
     setChatInput("");
     setChatHistory((prev) => [...prev, { role: "user", text: q }]);
+    setChatLoading(true);
 
-    const firstName = (student.name || "Candidate").split(" ")[0];
-    const qLow = q.toLowerCase();
-    let answer = "";
-    if (
-      qLow.includes("message") ||
-      qLow.includes("whatsapp") ||
-      qLow.includes("email") ||
-      qLow.includes("draft") ||
-      qLow.includes("congratulat")
-    ) {
-      if (aiReport.archetype.includes("Champion") || student.is_top_performer) {
-        answer = `Suggested recognition message for ${student.name}: "Congratulations ${firstName}! You've reached an impressive ${student.completion_pct ?? 0}% course completion with ${student.quiz_mastery_pct ?? 0}% mastery in ${student.program_name || "Client Relationships"}. We've credited +100 Curos to your wallet and would love to feature you as a cohort mentor!"`;
-      } else {
-        answer = `Suggested 1-on-1 coaching message for ${student.name}: "Hi ${firstName}! We noticed you're at ${student.completion_pct ?? 0}% in ${student.program_name || "Client Relationships"}. We've unlocked a 3-minute fast-track preview module for you today, plus a +50 Curos milestone bonus as soon as you finish the warm-up check!"`;
-      }
-    } else if (
-      qLow.includes("schedule") ||
-      qLow.includes("plan") ||
-      qLow.includes("reduce") ||
-      qLow.includes("barrier") ||
-      qLow.includes("step") ||
-      qLow.includes("action")
-    ) {
-      const stepsList =
-        aiReport.dynamicSections?.find((s) => s.steps?.length)?.steps || [];
-      answer =
-        stepsList.length > 0
-          ? `Prioritized intervention roadmap for ${student.name}:\n${stepsList.map((st, idx) => `• Step ${idx + 1}: ${st}`).join("\n")}`
-          : aiReport.dynamicSections?.[0]?.body || aiReport.headline;
-    } else if (
-      qLow.includes("pair") ||
-      qLow.includes("buddy") ||
-      qLow.includes("mentor") ||
-      qLow.includes("peer")
-    ) {
-      answer = student.is_top_performer || (student.quiz_mastery_pct ?? 0) >= 80
-        ? `We recommend pairing ${student.name} with learners experiencing mid-funnel plateaus. Their high accuracy (${student.quiz_mastery_pct ?? 0}%) makes them an ideal peer mentor.`
-        : `We recommend pairing ${student.name} with a high-velocity cohort finisher (such as Lav Chokhani) to build momentum through shared study sessions.`;
-    } else if (
-      qLow.includes("stretch") ||
-      qLow.includes("advanced") ||
-      qLow.includes("next") ||
-      qLow.includes("certif")
-    ) {
-      answer = `Recommended next curriculum step for ${student.name}: Advance to the "Advanced Strategic Client Case-Study" module to earn executive certification and +100 Curos.`;
-    } else {
-      answer = `${aiReport.headline} ${aiReport.dynamicSections?.[0]?.body || ""}`;
+    try {
+      const res = await axios.post(`${API_BASE}/analytics/ai-chat`, {
+        question: q,
+        context_title: lockerConfig.title,
+        telemetry_context: {
+          subtitle: lockerConfig.subtitle,
+          parameters: lockerConfig.parameters,
+          sections: lockerConfig.sections,
+          kpis: kpiCounts,
+        },
+      });
+      setChatHistory((prev) => [
+        ...prev,
+        {
+          role: "ai",
+          text:
+            res.data?.answer ||
+            lockerConfig.sections[lockerConfig.sections.length - 1]?.body,
+        },
+      ]);
+    } catch {
+      const fallback =
+        lockerConfig.sections.map((s) => s.body).join(" ") ||
+        lockerConfig.subtitle;
+      setChatHistory((prev) => [...prev, { role: "ai", text: fallback }]);
+    } finally {
+      setChatLoading(false);
     }
-
-    setChatHistory((prev) => [...prev, { role: "ai", text: answer }]);
   };
+
+  const lockerTabs = [
+    { id: "total_responses", label: "Total Responses" },
+    { id: "high_risk", label: "High Risk" },
+    { id: "medium_risk", label: "Medium Risk" },
+    { id: "low_risk", label: "Low Risk" },
+    { id: "survey_effectiveness", label: "Survey Effectiveness" },
+    { id: "question_analysis", label: "Question Analysis" },
+    { id: "feedback_responses", label: "Feedback Responses" },
+    { id: "risk_insights", label: "Risk Summary Insights" },
+  ];
 
   return (
     <div
@@ -842,111 +573,124 @@ function StudentDetailModal({ student, cohortSize, onClose }) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-6xl bg-[#0B0D18] border border-cyan-500/35 rounded-3xl shadow-[0_0_90px_rgba(6,182,212,0.22)] overflow-hidden my-auto max-h-[92vh] flex flex-col text-slate-100"
+        className="relative w-full max-w-6xl bg-[#0B0D18] border border-cyan-500/35 rounded-3xl shadow-[0_0_90px_rgba(6,182,212,0.25)] overflow-hidden my-auto max-h-[92vh] flex flex-col text-slate-100"
       >
         {/* Modal Header */}
         <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 bg-[#101426] border-b border-white/10">
-          <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-400 via-sky-500 to-indigo-600 p-[1.5px]">
-              <div className="w-full h-full bg-[#080B14] rounded-[14px] flex items-center justify-center font-extrabold text-cyan-300">
-                {(student.name || "U").slice(0, 2).toUpperCase()}
-              </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span
+                className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full border"
+                style={{
+                  backgroundColor: `${lockerConfig.accentColor}20`,
+                  borderColor: `${lockerConfig.accentColor}60`,
+                  color: "#F8FAFC",
+                }}
+              >
+                {lockerConfig.badge}
+              </span>
+              {lockerConfig.hasRisk ? (
+                <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                  ⚠️ Action Required
+                </span>
+              ) : (
+                <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                  ✓ Optimal Status
+                </span>
+              )}
             </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-xl sm:text-2xl font-extrabold text-white">
-                  {student.name}
-                </h2>
-                <span
-                  className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold border"
-                  style={{
-                    backgroundColor: `${aiReport.badgeColor}20`,
-                    borderColor: `${aiReport.badgeColor}60`,
-                    color: "#F8FAFC",
-                  }}
-                >
-                  ✦ {aiReport.archetype}
-                </span>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-amber-500/20 text-amber-300 border border-amber-400/40">
-                  🪙 {student.curos ?? 0} Curos
-                </span>
-                <span
-                  className={`px-2.5 py-0.5 rounded-full text-xs font-extrabold border ${
-                    student.risk_level === "high"
-                      ? "bg-rose-500/20 text-rose-300 border-rose-500/40"
-                      : student.risk_level === "medium"
-                      ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
-                      : "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
-                  }`}
-                >
-                  {student.risk_score ?? 0}% Flight Risk
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 mt-0.5">
-                {student.email || student.role || "Enrolled Candidate"} • Track:{" "}
-                <strong className="text-cyan-300">
-                  {student.program_name || "Client Relationships"}
-                </strong>
-              </p>
-            </div>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-white mt-1">
+              {lockerConfig.title}
+            </h2>
+            <p className="text-xs font-bold text-cyan-300 mt-0.5">
+              {lockerConfig.subtitle}
+            </p>
           </div>
 
           <button
             onClick={onClose}
             className="px-3.5 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/35 border border-rose-500/40 text-rose-200 text-xs font-extrabold transition"
           >
-            ✕ Close View
+            ✕ Close Locker
           </button>
         </div>
 
-        {/* 12-Column Split Body */}
+        {/* Tab Switcher */}
+        <div className="flex items-center gap-1.5 px-6 py-2.5 bg-[#080B14] border-b border-white/10 overflow-x-auto">
+          {lockerTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => onSwitchLocker(tab.id)}
+              className={`px-3 py-1 rounded-xl text-[11px] font-extrabold whitespace-nowrap transition ${
+                activeLockerId === tab.id
+                  ? "bg-gradient-to-r from-cyan-500 to-indigo-600 text-white shadow-[0_0_12px_rgba(56,189,248,0.4)]"
+                  : "bg-white/5 text-slate-400 hover:text-white"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Modal Body */}
         <div className="grid grid-cols-12 gap-5 p-6 overflow-y-auto">
-          {/* LEFT 7 COLS */}
+          {/* Left Column (Graphs & Telemetry) */}
           <div className="col-span-12 lg:col-span-7 space-y-4">
+            {/* Parameters */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {aiReport.customParameters.map((param, i) => (
+              {lockerConfig.parameters.map((p, idx) => (
                 <div
-                  key={i}
+                  key={idx}
                   className="p-3 rounded-2xl bg-[#070913] border border-white/10 flex flex-col justify-between"
                 >
                   <span className="text-[10px] font-bold text-slate-400 uppercase block line-clamp-1">
-                    {param.label}
+                    {p.label}
                   </span>
                   <span className="text-base font-extrabold text-white my-1 block">
-                    {param.value}
+                    {p.value}
                   </span>
-                  <span className="text-[10px] text-cyan-300 font-semibold">
-                    {param.sub}
+                  <span className="text-[10px] text-cyan-300 font-semibold truncate">
+                    {p.sub}
                   </span>
                 </div>
               ))}
             </div>
 
+            {/* Dual Graphs */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="bg-[#070913] rounded-2xl p-3.5 border border-cyan-500/25">
                 <span className="text-[11px] font-extrabold uppercase tracking-wider text-cyan-200 block mb-1">
-                  🕸️ {aiReport.radarTitle}
+                  🕸️ {lockerConfig.radarTitle}
                 </span>
                 <div className="w-full h-48">
                   <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart cx="50%" cy="50%" outerRadius="68%" data={aiReport.radarData}>
+                    <RadarChart
+                      cx="50%"
+                      cy="50%"
+                      outerRadius="68%"
+                      data={lockerConfig.radarData}
+                    >
                       <PolarGrid stroke="#1E293B" />
                       <PolarAngleAxis
                         dataKey="subject"
                         tick={{ fill: "#E2E8F0", fontSize: 10, fontWeight: 600 }}
                       />
-                      <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
+                      <PolarRadiusAxis
+                        domain={[0, 100]}
+                        tick={false}
+                        axisLine={false}
+                      />
                       <Tooltip content={<ObsidianTooltip />} />
                       <Radar
-                        name={student.name}
+                        name="Score"
                         dataKey="score"
-                        stroke="#38BDF8"
-                        fill="#38BDF8"
-                        fillOpacity={0.38}
+                        stroke={lockerConfig.accentColor}
+                        fill={lockerConfig.accentColor}
+                        fillOpacity={0.4}
                         strokeWidth={2.2}
                       />
                       <Radar
-                        name="Cohort Benchmark"
+                        name="Benchmark"
                         dataKey="benchmark"
                         stroke="#10B981"
                         fill="none"
@@ -959,28 +703,32 @@ function StudentDetailModal({ student, cohortSize, onClose }) {
 
               <div className="bg-[#070913] rounded-2xl p-3.5 border border-emerald-500/25">
                 <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-200 block">
-                  🌊 {aiReport.waveTitle}
+                  🌊 {lockerConfig.waveTitle}
                 </span>
                 <span className="text-[10px] text-slate-400 block mb-1">
-                  {aiReport.waveSub}
+                  {lockerConfig.waveSub}
                 </span>
                 <div className="w-full h-44">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart
-                      data={aiReport.waveData}
+                      data={lockerConfig.waveData}
                       margin={{ top: 10, right: 8, left: -24, bottom: 0 }}
                     >
                       <defs>
-                        <linearGradient id="aiProgWave" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.55} />
-                          <stop offset="95%" stopColor="#10B981" stopOpacity={0.0} />
-                        </linearGradient>
-                        <linearGradient id="aiQuizWave" x1="0" y1="0" x2="0" y2="1">
+                        <linearGradient id="lockerWave1" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#38BDF8" stopOpacity={0.55} />
                           <stop offset="95%" stopColor="#38BDF8" stopOpacity={0.0} />
                         </linearGradient>
+                        <linearGradient id="lockerWave2" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.55} />
+                          <stop offset="95%" stopColor="#10B981" stopOpacity={0.0} />
+                        </linearGradient>
                       </defs>
-                      <CartesianGrid stroke="#1E293B" strokeDasharray="3 3" vertical={false} />
+                      <CartesianGrid
+                        stroke="#1E293B"
+                        strokeDasharray="3 3"
+                        vertical={false}
+                      />
                       <XAxis
                         dataKey="name"
                         tick={{ fill: "#94A3B8", fontSize: 10 }}
@@ -996,19 +744,19 @@ function StudentDetailModal({ student, cohortSize, onClose }) {
                       <Tooltip content={<ObsidianTooltip />} />
                       <Area
                         type="monotone"
-                        dataKey="progress"
-                        name="Projected Progress"
-                        stroke="#10B981"
+                        dataKey="primary"
+                        name="Current Trend"
+                        stroke="#38BDF8"
                         strokeWidth={2.5}
-                        fill="url(#aiProgWave)"
+                        fill="url(#lockerWave1)"
                       />
                       <Area
                         type="monotone"
-                        dataKey="quiz_score"
-                        name="Projected Mastery"
-                        stroke="#38BDF8"
+                        dataKey="secondary"
+                        name="Benchmark"
+                        stroke="#10B981"
                         strokeWidth={2.5}
-                        fill="url(#aiQuizWave)"
+                        fill="url(#lockerWave2)"
                       />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -1016,9 +764,9 @@ function StudentDetailModal({ student, cohortSize, onClose }) {
               </div>
             </div>
 
-            {/* DYNAMIC AI-DECIDED SECTIONS */}
+            {/* Sections */}
             <div className="space-y-3">
-              {aiReport.dynamicSections.map((sec, idx) => {
+              {lockerConfig.sections.map((sec, idx) => {
                 const toneMap = {
                   cyan: "bg-[#0D1526] border-cyan-500/35 text-cyan-300",
                   rose: "bg-rose-950/30 border-rose-500/45 text-rose-300",
@@ -1039,29 +787,9 @@ function StudentDetailModal({ student, cohortSize, onClose }) {
                         {sec.badge}
                       </span>
                     </div>
-
                     <p className="text-xs text-slate-200 leading-relaxed">
                       {sec.body}
                     </p>
-
-                    {Array.isArray(sec.metricsRow) && sec.metricsRow.length > 0 && (
-                      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/10">
-                        {sec.metricsRow.map((m, mIdx) => (
-                          <div
-                            key={mIdx}
-                            className="bg-[#070913]/90 px-2.5 py-1.5 rounded-xl border border-white/5"
-                          >
-                            <span className="text-[10px] text-slate-400 block">
-                              {m.k}
-                            </span>
-                            <span className="text-xs font-extrabold text-white">
-                              {m.v}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
                     {Array.isArray(sec.steps) && sec.steps.length > 0 && (
                       <div className="space-y-1.5 pt-2 border-t border-white/10">
                         {sec.steps.map((st, sIdx) => (
@@ -1083,10 +811,9 @@ function StudentDetailModal({ student, cohortSize, onClose }) {
             </div>
           </div>
 
-          {/* RIGHT 5 COLS: RESTORED 3D ROBOT AVATAR + REMOVED 2D ROBOT-FACE ICONS + ELECTRIC CYAN-SAPPHIRE THEME */}
-          <div className="col-span-12 lg:col-span-5 flex flex-col justify-between bg-gradient-to-b from-[#0B1528] via-[#081020] to-[#050811] rounded-2xl p-5 border border-cyan-500/35 shadow-[0_0_45px_-10px_rgba(56,189,248,0.28)] min-h-[490px]">
+          {/* Right Column (Saarthi AI Assistant) */}
+          <div className="col-span-12 lg:col-span-5 flex flex-col justify-between bg-gradient-to-b from-[#0B1528] via-[#081020] to-[#050811] rounded-2xl p-5 border border-cyan-500/35 shadow-[0_0_45px_-10px_rgba(56,189,248,0.28)] min-h-[480px]">
             <div className="space-y-3.5">
-              {/* Top Co-Pilot Header: 3D Robot Avatar Restored, Secondary Robot Face Pill Removed! */}
               <div className="flex items-center gap-3.5 pb-3.5 border-b border-cyan-500/20">
                 <div className="relative w-16 h-16 shrink-0 flex items-center justify-center">
                   <div className="absolute inset-1 rounded-full bg-cyan-400/25 blur-md" />
@@ -1102,17 +829,16 @@ function StudentDetailModal({ student, cohortSize, onClose }) {
 
                 <div>
                   <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-400/35 inline-block">
-                    Personalized Candidate AI Co-Pilot
+                    Saarthi AI Locker Co-Pilot
                   </span>
                   <h3 className="text-base font-extrabold text-white mt-1">
-                    Chat About {student.name}
+                    AI Assistance & Strategy
                   </h3>
                 </div>
               </div>
 
-              {/* Quick-Prompt Cards */}
               <div className="space-y-2">
-                {(aiReport.quickPrompts || []).map((qp, idx) => (
+                {lockerConfig.quickPrompts.map((qp, idx) => (
                   <button
                     key={idx}
                     onClick={() => handleSendChat(qp)}
@@ -1127,8 +853,7 @@ function StudentDetailModal({ student, cohortSize, onClose }) {
               </div>
             </div>
 
-            {/* Chat Messages (Removed the small 2D Robot Face icon next to SAARTHI AI!) */}
-            <div className="my-3 flex-1 overflow-y-auto space-y-2.5 max-h-[260px] pr-1">
+            <div className="my-3 flex-1 overflow-y-auto space-y-2.5 max-h-[250px] pr-1">
               {chatHistory.map((msg, i) => (
                 <div
                   key={i}
@@ -1159,9 +884,13 @@ function StudentDetailModal({ student, cohortSize, onClose }) {
                   {msg.text}
                 </div>
               ))}
+              {chatLoading && (
+                <div className="p-3.5 rounded-2xl bg-[#060B16] border border-cyan-500/30 text-xs text-cyan-300 animate-pulse">
+                  ✦ Synthesizing response...
+                </div>
+              )}
             </div>
 
-            {/* Input Form & Electric Cyan-to-Indigo "Ask AI" Button */}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -1173,7 +902,7 @@ function StudentDetailModal({ student, cohortSize, onClose }) {
                 type="text"
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
-                placeholder={`Ask AI how to coach ${student.name}...`}
+                placeholder={`Ask Saarthi AI about ${lockerConfig.title}...`}
                 className="flex-1 bg-[#060A14] border border-cyan-500/35 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 outline-none transition"
               />
               <button
@@ -1191,207 +920,669 @@ function StudentDetailModal({ student, cohortSize, onClose }) {
 }
 
 // ============================================================================
-// 5. MAIN PAGE COMPONENT: CandidateAttrition.jsx
+// 4. CANDIDATE SURVEY ANSWERS DETAIL MODAL
 // ============================================================================
-export default function CandidateAttrition({ backendData = null }) {
-  const [data, setData] = useState(backendData);
-  const [loading, setLoading] = useState(!backendData);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+function SurveyAnswersModal({ response, onClose }) {
+  if (!response) return null;
+  const answers = Array.isArray(response.answers) ? response.answers : [];
+
+  return (
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-2xl bg-[#0E101E] border border-purple-500/30 rounded-2xl p-6 text-slate-100 max-h-[85vh] flex flex-col shadow-2xl"
+      >
+        <div className="flex items-center justify-between pb-4 border-b border-white/10">
+          <div>
+            <h3 className="text-lg font-extrabold text-white">
+              {response.employee_name || "Employee"} Survey Submission
+            </h3>
+            <p className="text-xs text-slate-400">
+              {response.employee_email} • {response.survey_title || "Survey"}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold transition"
+          >
+            ✕ Close
+          </button>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3 my-4">
+          <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+            <span className="text-[10px] text-slate-400 block">Risk Score</span>
+            <span className="text-base font-extrabold text-purple-400">
+              {response.risk_score !== null ? `${response.risk_score} / 10` : "—"}
+            </span>
+          </div>
+          <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+            <span className="text-[10px] text-slate-400 block">Risk Level</span>
+            <span
+              className={`text-xs font-extrabold px-2 py-0.5 rounded-full inline-block mt-1 ${
+                String(response.risk_level).toLowerCase() === "high"
+                  ? "bg-rose-500/20 text-rose-300 border border-rose-500/40"
+                  : String(response.risk_level).toLowerCase() === "medium"
+                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                  : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+              }`}
+            >
+              {response.risk_level || "Low"}
+            </span>
+          </div>
+          <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+            <span className="text-[10px] text-slate-400 block">Submitted</span>
+            <span className="text-xs font-semibold text-slate-300">
+              {response.submitted_at ? new Date(response.submitted_at).toLocaleDateString() : "—"}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+          <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+            Questions & Candidate Answers
+          </h4>
+          {answers.length === 0 ? (
+            <p className="text-xs text-slate-500 italic py-4">
+              No detailed answers recorded for this submission.
+            </p>
+          ) : (
+            answers.map((ans, idx) => (
+              <div
+                key={idx}
+                className="p-3 rounded-xl bg-black/30 border border-white/5 space-y-1"
+              >
+                <p className="text-xs font-semibold text-purple-300">
+                  {idx + 1}. {ans.question || "Question"}
+                </p>
+                <p className="text-xs text-slate-200 pl-4 border-l-2 border-purple-500/50">
+                  {ans.answer || "No response recorded"}
+                </p>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// 5. MAIN COMPONENT: CandidateAttrition (100% Original Survey Scoring Mechanics)
+// ============================================================================
+export default function CandidateAttrition() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(() => new Date().toLocaleString());
 
-  const [selectedKpiCategory, setSelectedKpiCategory] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedProgram, setSelectedProgram] = useState("all");
-  const [riskSortOrder, setRiskSortOrder] = useState("risk_desc");
-  const [showAllUsers, setShowAllUsers] = useState(false);
+  // Original 4 Filters
+  const [searchEmployee, setSearchEmployee] = useState("");
+  const [riskFilter, setRiskFilter] = useState("all");
+  const [surveyFilter, setSurveyFilter] = useState("all");
+  const [programFilter, setProgramFilter] = useState("all");
 
-  const [inspectedStudent, setInspectedStudent] = useState(null);
-  const hasLoadedRef = useRef(Boolean(backendData));
+  // Download states
+  const [downloadingCsv, setDownloadingCsv] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
-  // Live telemetry fetcher with cache-busting headers
-  const fetchData = useCallback(async (isBackground = false) => {
-    if (!isBackground) {
-      if (!hasLoadedRef.current) setLoading(true);
-      else setIsRefreshing(true);
-    }
+  // Active Locker Modal State & Selected Answer Detail Modal State
+  const [activeLockerId, setActiveLockerId] = useState(null);
+  const [selectedResponse, setSelectedResponse] = useState(null);
+
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const res = await axios.get(`${API_BASE_URL}/analytics/candidate-attrition`, {
-        params: { _t: Date.now() },
-        headers: {
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          Pragma: "no-cache",
-          Expires: "0",
-        },
-      });
-      setData(res.data);
-      setError(null);
-      hasLoadedRef.current = true;
+      const response = await axios.get(
+        `${API_BASE}/programs/survey-analytics/candidate-attrition`
+      );
+      setData(response.data);
+      setLastUpdated(new Date().toLocaleString());
     } catch (err) {
-      if (!isBackground && !hasLoadedRef.current) {
-        setError(
-          err?.response?.data?.detail ||
-            "Unable to reach FastAPI /analytics/candidate-attrition endpoint."
-        );
-      }
+      setError(
+        err?.response?.data?.detail ||
+          err.message ||
+          "Failed to fetch original survey candidate attrition analytics."
+      );
     } finally {
       setLoading(false);
-      setIsRefreshing(false);
     }
-  }, []);
-
-  // Auto-fetch on mount & whenever user returns to / focuses this tab
-  useEffect(() => {
-    fetchData();
-
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        fetchData(true);
-      }
-    };
-    const handleFocus = () => {
-      fetchData(true);
-    };
-
-    document.addEventListener("visibilitychange", handleVisibility);
-    window.addEventListener("focus", handleFocus);
-
-    // Live telemetry background polling every 30 seconds
-    const interval = setInterval(() => {
-      if (document.visibilityState === "visible") {
-        fetchData(true);
-      }
-    }, 30000);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibility);
-      window.removeEventListener("focus", handleFocus);
-      clearInterval(interval);
-    };
-  }, [fetchData]);
-
-  // Sync if parent updates backendData
-  useEffect(() => {
-    if (backendData) {
-      setData(backendData);
-      hasLoadedRef.current = true;
-      setLoading(false);
-    }
-  }, [backendData]);
-
-  // Strict Name Deduplication
-  const uniqueCandidates = useMemo(() => {
-    const raw = data?.candidates || [];
-    const map = new Map();
-    raw.forEach((c) => {
-      const normName = String(c.name || c.email || c.id || "")
-        .toLowerCase()
-        .replace(/\s+/g, " ")
-        .trim();
-      if (!normName) return;
-      if (!map.has(normName)) {
-        map.set(normName, { ...c });
-      } else {
-        const existing = map.get(normName);
-        if ((c.completion_pct || 0) >= (existing.completion_pct || 0)) {
-          existing.completion_pct = c.completion_pct;
-          existing.quiz_mastery_pct = Math.max(
-            existing.quiz_mastery_pct || 0,
-            c.quiz_mastery_pct || 0
-          );
-          existing.risk_score = c.risk_score;
-          existing.risk_level = c.risk_level;
-          existing.is_top_performer =
-            existing.is_top_performer || c.is_top_performer;
-        }
-        existing.curos = Math.max(existing.curos || 0, c.curos || 0);
-      }
-    });
-    return Array.from(map.values());
-  }, [data]);
-
-  const kpis = useMemo(() => {
-    if (!uniqueCandidates.length && data?.kpis) return data.kpis;
-    return {
-      total_responses: data?.kpis?.total_responses ?? 0,
-      total_tracked: uniqueCandidates.length,
-      high_risk_count: uniqueCandidates.filter((c) => c.risk_level === "high").length,
-      medium_risk_count: uniqueCandidates.filter((c) => c.risk_level === "medium").length,
-      low_risk_count: uniqueCandidates.filter((c) => c.risk_level === "low").length,
-      top_performers_count: uniqueCandidates.filter((c) => c.is_top_performer).length,
-    };
-  }, [uniqueCandidates, data]);
-
-  const surveyStats = data?.survey_effectiveness || {
-    overall_score: 0,
-    rating_label: "Active Telemetry Mode",
-    highest_rated_topic: "N/A",
-    highest_rated_pct: 0,
-    needs_improvement_topic: "N/A",
-    needs_improvement_pct: 0,
-    questions: [],
-    feedback_list: [],
-    risk_summary_insight: "",
   };
 
-  const programOptions = useMemo(() => {
-    const set = new Set(uniqueCandidates.map((c) => c.program_name).filter(Boolean));
-    return ["all", ...Array.from(set)];
-  }, [uniqueCandidates]);
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-  const filteredAndSortedCandidates = useMemo(() => {
-    const filtered = uniqueCandidates.filter((c) => {
-      if (selectedKpiCategory === "high" && c.risk_level !== "high") return false;
-      if (selectedKpiCategory === "medium" && c.risk_level !== "medium") return false;
-      if (selectedKpiCategory === "low" && c.risk_level !== "low") return false;
-      if (selectedKpiCategory === "top" && !c.is_top_performer) return false;
-
-      if (selectedProgram !== "all" && c.program_name !== selectedProgram) return false;
-
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchName = (c.name || "").toLowerCase().includes(q);
-        const matchEmail = (c.email || "").toLowerCase().includes(q);
-        if (!matchName && !matchEmail) return false;
+  // Download helper for original CSV / PDF endpoints
+  const downloadReport = async (url, fallbackFilename, setDownloadingState) => {
+    setDownloadingState(true);
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to download report. Status: ${response.status}`);
       }
-      return true;
+      const blob = await response.blob();
+      let filename = fallbackFilename;
+      const disposition = response.headers.get("content-disposition");
+      if (disposition && disposition.indexOf("attachment") !== -1) {
+        const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+        const matches = filenameRegex.exec(disposition);
+        if (matches != null && matches[1]) {
+          filename = matches[1].replace(/['"]/g, "");
+        }
+      }
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(objectUrl);
+    } catch (err) {
+      console.error(err.message || "Download failed.");
+    } finally {
+      setDownloadingState(false);
+    }
+  };
+
+  // 100% Original Responses List
+  const responsesList = useMemo(() => {
+    return Array.isArray(data?.responses) ? data.responses : [];
+  }, [data]);
+
+  const allResponses = responsesList;
+
+  // Unique Filter Options
+  const surveyOptions = useMemo(() => {
+    const set = new Set(responsesList.map((r) => r.survey_title).filter(Boolean));
+    return Array.from(set);
+  }, [responsesList]);
+
+  const programOptions = useMemo(() => {
+    const set = new Set(responsesList.map((r) => r.program_name).filter(Boolean));
+    return Array.from(set);
+  }, [responsesList]);
+
+  // Filter Responses
+  const filteredResponses = useMemo(() => {
+    return responsesList.filter((item) => {
+      const empName = item.employee_name || "";
+      const empEmail = item.employee_email || "";
+      const matchesSearch =
+        !searchEmployee.trim() ||
+        empName.toLowerCase().includes(searchEmployee.toLowerCase()) ||
+        empEmail.toLowerCase().includes(searchEmployee.toLowerCase());
+
+      const itemRisk = String(item.risk_level || "low").toLowerCase();
+      const matchesRisk =
+        riskFilter === "all" || itemRisk === riskFilter.toLowerCase();
+
+      const matchesSurvey =
+        surveyFilter === "all" || item.survey_title === surveyFilter;
+
+      const matchesProgram =
+        programFilter === "all" || item.program_name === programFilter;
+
+      return matchesSearch && matchesRisk && matchesSurvey && matchesProgram;
+    });
+  }, [responsesList, searchEmployee, riskFilter, surveyFilter, programFilter]);
+
+  // 100% Original KPI Counts directly from backend /programs/survey-analytics/candidate-attrition
+  const kpiCounts = useMemo(() => {
+    return {
+      total_responses: data?.total_responses ?? responsesList.length,
+      high_risk: data?.high_risk ?? responsesList.filter((r) => String(r.risk_level).toLowerCase() === "high").length,
+      medium_risk: data?.medium_risk ?? responsesList.filter((r) => String(r.risk_level).toLowerCase() === "medium").length,
+      low_risk: data?.low_risk ?? responsesList.filter((r) => String(r.risk_level).toLowerCase() === "low").length,
+    };
+  }, [data, responsesList]);
+
+  // 100% Original Survey Effectiveness directly from backend
+  const effectivenessData = useMemo(() => {
+    const se = data?.survey_effectiveness || {};
+    const rawQuestions = Array.isArray(se.questions)
+      ? se.questions
+      : Array.isArray(data?.question_analysis)
+      ? data.question_analysis
+      : [];
+
+    const questions = rawQuestions.map((q, i) => {
+      const avg = Number(q.average ?? 0);
+      return {
+        short: `Q${i + 1}`,
+        question: q.question || `Question ${i + 1}`,
+        score_pct: Math.round(avg <= 1.0 ? avg * 100 : avg),
+        average: avg,
+      };
     });
 
-    return [...filtered].sort((a, b) => {
-      if (riskSortOrder === "risk_desc") return (b.risk_score ?? 0) - (a.risk_score ?? 0);
-      if (riskSortOrder === "risk_asc") return (a.risk_score ?? 0) - (b.risk_score ?? 0);
-      if (riskSortOrder === "curos_desc") return (b.curos ?? 0) - (a.curos ?? 0);
-      return 0;
-    });
-  }, [uniqueCandidates, selectedKpiCategory, selectedProgram, searchQuery, riskSortOrder]);
+    const avgScore10 = Number(se.overall_score ?? 0);
+    const interp = se.interpretation || (avgScore10 >= 7.5 ? "Effective" : avgScore10 >= 4.5 ? "Moderate" : "Very Poor");
 
-  const visibleCandidates = showAllUsers
-    ? filteredAndSortedCandidates
-    : filteredAndSortedCandidates.slice(0, 5);
+    const ratingBadge =
+      avgScore10 >= 7.5
+        ? { label: interp, cls: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40" }
+        : avgScore10 >= 4.5
+        ? { label: interp, cls: "bg-amber-500/20 text-amber-300 border-amber-500/40" }
+        : { label: interp, cls: "bg-rose-500/20 text-rose-300 border-rose-500/40" };
+
+    const highestQ = se.highest_question;
+    const lowestQ = se.lowest_question;
+
+    let riskSummary = "All candidates currently show low attrition risk.";
+    if (kpiCounts.high_risk > 0) {
+      riskSummary = `${kpiCounts.high_risk} High-risk candidate(s) require immediate attention based on survey feedback.`;
+    } else if (kpiCounts.medium_risk > 0) {
+      riskSummary = `${kpiCounts.medium_risk} Medium-risk candidate(s) should be reviewed.`;
+    }
+
+    return {
+      overall_score: avgScore10,
+      interpretation: interp,
+      ratingBadge,
+      highest_rated_topic: highestQ?.question || questions[0]?.question || "Course Material",
+      highest_rated_pct: Math.round(highestQ?.average ? highestQ.average * 100 : questions[0]?.score_pct ?? 0),
+      needs_improvement_topic: lowestQ?.question || questions[questions.length - 1]?.question || "Assessment Velocity",
+      needs_improvement_pct: Math.round(lowestQ?.average ? lowestQ.average * 100 : questions[questions.length - 1]?.score_pct ?? 0),
+      questions,
+      risk_summary_insight: riskSummary,
+    };
+  }, [data, kpiCounts]);
+
+  const handleClearFilters = () => {
+    setSearchEmployee("");
+    setRiskFilter("all");
+    setSurveyFilter("all");
+    setProgramFilter("all");
+  };
+
+  // ==========================================================================
+  // 1. LIVE MULTI-SECTION EXECUTIVE CSV GENERATOR (EXCEL-READY UTF-8 BOM)
+  // ==========================================================================
+  const handleDownloadCSV = () => {
+    const escapeCSV = (val) => {
+      if (val === null || val === undefined) return '""';
+      const str = String(val).replace(/"/g, '""');
+      return `"${str}"`;
+    };
+
+    const total = Math.max(1, kpiCounts.total_responses);
+    const highPct = ((kpiCounts.high_risk / total) * 100).toFixed(1);
+    const medPct = ((kpiCounts.medium_risk / total) * 100).toFixed(1);
+    const lowPct = ((kpiCounts.low_risk / total) * 100).toFixed(1);
+
+    const csvLines = [
+      // SECTION 1: REPORT METADATA & ACTIVE FILTERS
+      ["SAARTHI CURIOUS — CANDIDATE ATTRITION & RETENTION INTELLIGENCE REPORT"].map(escapeCSV).join(","),
+      ["Generated Timestamp", lastUpdated, "Active Risk Filter", riskFilter.toUpperCase()].map(escapeCSV).join(","),
+      ["Active Program Filter", programFilter === "all" ? "All Programs" : programFilter, "Active Survey Filter", surveyFilter === "all" ? "All Surveys" : surveyFilter].map(escapeCSV).join(","),
+      ["Search Query", searchEmployee || "None", "Records Exported", `${filteredResponses.length} of ${allResponses.length}`].map(escapeCSV).join(","),
+      "",
+
+      // SECTION 2: EXECUTIVE KPI SUMMARY
+      ["1. EXECUTIVE COHORT KPI SUMMARY"].map(escapeCSV).join(","),
+      ["Metric", "Count", "Cohort Share (%)", "Status / Action Threshold"].map(escapeCSV).join(","),
+      ["Total Responses", kpiCounts.total_responses, "100.0%", "All Survey & Telemetry Submissions"].map(escapeCSV).join(","),
+      ["High Risk Candidates", kpiCounts.high_risk, `${highPct}%`, "Requires Immediate Attention (Score 8/10)"].map(escapeCSV).join(","),
+      ["Medium Risk Candidates", kpiCounts.medium_risk, `${medPct}%`, "Should Be Reviewed (Score 5/10)"].map(escapeCSV).join(","),
+      ["Low Risk Candidates", kpiCounts.low_risk, `${lowPct}%`, "Currently Stable (Score 2/10)"].map(escapeCSV).join(","),
+      ["Overall Survey Effectiveness", `${effectivenessData.overall_score}/10`, `${Math.round(effectivenessData.overall_score * 10)}%`, effectivenessData.ratingBadge.label].map(escapeCSV).join(","),
+      "",
+
+      // SECTION 3: SURVEY EFFECTIVENESS & QUESTION DIMENSION ANALYSIS
+      ["2. SURVEY EFFECTIVENESS & QUESTION DIMENSION ANALYSIS"].map(escapeCSV).join(","),
+      ["Highest Rated Dimension", effectivenessData.highest_rated_topic, `${effectivenessData.highest_rated_pct}%`, "Cohort Strength"].map(escapeCSV).join(","),
+      ["Needs Improvement Dimension", effectivenessData.needs_improvement_topic, `${effectivenessData.needs_improvement_pct}%`, "Primary Friction Bottleneck"].map(escapeCSV).join(","),
+      ["Question Code", "Evaluation Dimension", "Live Score (%)", "Enterprise Benchmark (%)", "Variance to Target"].map(escapeCSV).join(","),
+      ...effectivenessData.questions.map((q) =>
+        [
+          q.short,
+          q.question,
+          `${q.score_pct}%`,
+          "80.0%",
+          `${(q.score_pct - 80).toFixed(1)}%`,
+        ]
+          .map(escapeCSV)
+          .join(",")
+      ),
+      "",
+
+      // SECTION 4: SAARTHI AI EXECUTIVE INSIGHT
+      ["3. SAARTHI AI RISK SUMMARY INSIGHT"].map(escapeCSV).join(","),
+      ["AI Executive Synthesis", effectivenessData.risk_summary_insight].map(escapeCSV).join(","),
+      "",
+
+      // SECTION 5: GRANULAR CANDIDATE ROSTER & AI PRESCRIPTIONS
+      ["4. INDIVIDUAL CANDIDATE TELEMETRY, RISK & AI PRESCRIPTIONS"].map(escapeCSV).join(","),
+      [
+        "Candidate Name",
+        "Email",
+        "Program",
+        "Survey Track",
+        "Effectiveness Score (/10)",
+        "Flight Risk (/10)",
+        "Risk Level",
+        "Course Completion (%)",
+        "Quiz Mastery (%)",
+        "Telemetry Feedback / Summary",
+        "Personalized Saarthi AI Prescription",
+      ]
+        .map(escapeCSV)
+        .join(","),
+      ...filteredResponses.map((r) => {
+        const rName = r.name || r.employee_name || "Candidate";
+        const rEmail = r.email || r.employee_email || "N/A";
+        const rProg = r.program_name || "N/A";
+        const rSurvey = r.survey_name || r.survey_title || "Survey Track";
+        const rRisk = String(r.risk_level || "low").toLowerCase();
+        const rLabel = r.risk_label || (rRisk === "high" ? "High Risk" : rRisk === "medium" ? "Medium Risk" : "Low Risk");
+        const rScore = r.risk_score !== undefined && r.risk_score !== null ? r.risk_score : (rRisk === "high" ? 8 : rRisk === "medium" ? 5 : 2);
+        const rScore10 = r.score_out_of_10 !== undefined && r.score_out_of_10 !== null ? r.score_out_of_10 : (10 - rScore);
+        const rComp = r.completion_pct !== undefined ? `${r.completion_pct}%` : "100%";
+        const rQuiz = r.quiz_mastery_pct !== undefined ? `${r.quiz_mastery_pct}%` : "N/A";
+        const rComment = r.feedback_comment || (Array.isArray(r.answers) && r.answers.length ? r.answers.map((a) => `${a.question || 'Q'}: ${a.answer || '-'}`).join(" | ") : "Survey submitted");
+
+        const prescription =
+          rRisk === "high"
+            ? `Urgent: Review survey feedback for ${rProg} + schedule 1-on-1 check-in to resolve module friction.`
+            : rRisk === "medium"
+            ? `Momentum Nudge: Send mid-week checkpoint digest + follow up on survey feedback for ${rProg}.`
+            : `Champion Track: Recognize positive feedback in ${rProg} & invite peer mentorship.`;
+
+        return [
+          rName,
+          rEmail,
+          rProg,
+          rSurvey,
+          `${rScore10}/10`,
+          `${rScore}/10`,
+          rLabel,
+          rComp,
+          rQuiz,
+          rComment,
+          prescription,
+        ]
+          .map(escapeCSV)
+          .join(",");
+      }),
+    ];
+
+    // Prepend UTF-8 BOM (\uFEFF) so Excel opens symbols and formatting cleanly
+    const csvContent = "\uFEFF" + csvLines.join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const dateStamp = new Date().toISOString().slice(0, 10);
+    link.href = url;
+    link.download = `Saarthi_Candidate_Attrition_Report_${dateStamp}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // ==========================================================================
+  // 2. LIVE EXECUTIVE PDF DOSSIER GENERATOR (VECTOR CHARTS, KPIS & ROSTER)
+  // ==========================================================================
+  const handleDownloadPDF = () => {
+    const total = Math.max(1, kpiCounts.total_responses);
+    const highPct = Math.round((kpiCounts.high_risk / total) * 100);
+    const medPct = Math.round((kpiCounts.medium_risk / total) * 100);
+    const lowPct = Math.round((kpiCounts.low_risk / total) * 100);
+    const effPct = Math.min(100, Math.max(0, Math.round(effectivenessData.overall_score * 10)));
+
+    // SVG Radial Gauge math for PDF
+    const rGauge = 42;
+    const cGauge = (2 * Math.PI * rGauge).toFixed(2);
+    const offGauge = (cGauge - (effPct / 100) * cGauge).toFixed(2);
+
+    const questionRowsHtml =
+      effectivenessData.questions.length > 0
+        ? effectivenessData.questions
+            .map(
+              (q) => `
+              <div style="margin-bottom: 10px;">
+                <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; color:#1E293B; margin-bottom:4px;">
+                  <span>${q.short} — ${q.question}</span>
+                  <span style="color:#6D28D9;">${q.score_pct}% <span style="color:#94A3B8; font-weight:500;">(Target: 80%)</span></span>
+                </div>
+                <div style="width:100%; height:8px; background:#E2E8F0; border-radius:99px; overflow:hidden;">
+                  <div style="width:${Math.min(100, Math.max(4, q.score_pct))}%; height:100%; background:linear-gradient(90deg, #7C3AED, #06B6D4); border-radius:99px;"></div>
+                </div>
+              </div>`
+            )
+            .join("")
+        : `<div style="font-size:11px; color:#64748B; font-style:italic;">No question telemetry records found yet.</div>`;
+
+    const candidateRowsHtml =
+      filteredResponses.length > 0
+        ? filteredResponses
+            .map((r) => {
+              const rName = r.name || r.employee_name || "Candidate";
+              const rEmail = r.email || r.employee_email || "";
+              const rProg = r.program_name || "Program";
+              const rRisk = String(r.risk_level || "low").toLowerCase();
+              const rLabel = r.risk_label || (rRisk === "high" ? "High Risk" : rRisk === "medium" ? "Medium Risk" : "Low Risk");
+              const rScore = r.risk_score !== undefined && r.risk_score !== null ? r.risk_score : (rRisk === "high" ? 8 : rRisk === "medium" ? 5 : 2);
+              const rScore10 = r.score_out_of_10 !== undefined && r.score_out_of_10 !== null ? r.score_out_of_10 : (10 - rScore);
+              const rComp = r.completion_pct !== undefined ? `${r.completion_pct}%` : "100%";
+              const rQuiz = r.quiz_mastery_pct !== undefined ? `${r.quiz_mastery_pct}%` : "N/A";
+
+              const badgeBg =
+                rRisk === "high"
+                  ? "#FFE4E6"
+                  : rRisk === "medium"
+                  ? "#FEF3C7"
+                  : "#D1FAE5";
+              const badgeCol =
+                rRisk === "high"
+                  ? "#BE123C"
+                  : rRisk === "medium"
+                  ? "#B45309"
+                  : "#047857";
+              const aiAction =
+                rRisk === "high"
+                  ? `Assign 3-min micro-video recap in ${rProg} + conduct 1-on-1 check-in.`
+                  : rRisk === "medium"
+                  ? `Send mid-course progress digest + follow up on survey feedback.`
+                  : `Recognize positive survey rating & invite peer mentorship.`;
+
+              return `
+              <tr>
+                <td style="padding:8px 10px; border-bottom:1px solid #E2E8F0; font-weight:700; color:#0F172A;">
+                  ${rName}
+                  <div style="font-size:9.5px; color:#64748B; font-weight:500;">${rEmail || rProg}</div>
+                </td>
+                <td style="padding:8px 10px; border-bottom:1px solid #E2E8F0; color:#334155;">${rProg}</td>
+                <td style="padding:8px 10px; border-bottom:1px solid #E2E8F0; font-weight:800; color:#6D28D9;">${rScore10}/10</td>
+                <td style="padding:8px 10px; border-bottom:1px solid #E2E8F0; color:#0F172A; font-weight:700;">${rComp}</td>
+                <td style="padding:8px 10px; border-bottom:1px solid #E2E8F0; color:#059669; font-weight:700;">${rQuiz}</td>
+                <td style="padding:8px 10px; border-bottom:1px solid #E2E8F0;">
+                  <span style="background:${badgeBg}; color:${badgeCol}; font-weight:800; font-size:9.5px; padding:3px 8px; border-radius:99px; display:inline-block;">
+                    ${rLabel} (${rScore}/10)
+                  </span>
+                </td>
+                <td style="padding:8px 10px; border-bottom:1px solid #E2E8F0; font-size:10px; color:#334155; line-height:1.35;">
+                  ${aiAction}
+                </td>
+              </tr>`;
+            })
+            .join("")
+        : `<tr><td colspan="7" style="padding:18px; text-align:center; color:#64748B;">No candidate survey responses match the active filter criteria.</td></tr>`;
+
+    const printWindow = window.open("", "_blank", "width=1120,height=850");
+    if (!printWindow) {
+      window.print();
+      return;
+    }
+
+    const htmlDocument = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Saarthi Curious — Candidate Attrition Report (${lastUpdated})</title>
+        <style>
+          @page { size: A4 landscape; margin: 12mm; }
+          * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: #0F172A; background: #FFFFFF; margin: 0; padding: 0; }
+          .header-banner { background: linear-gradient(135deg, #12101E 0%, #1E1B4B 60%, #0F172A 100%); color: #FFFFFF; padding: 20px 24px; border-radius: 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+          .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+          .kpi-card { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 14px 16px; }
+          .mid-grid { display: grid; grid-template-columns: 5fr 7fr; gap: 14px; margin-bottom: 16px; }
+          .panel { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; }
+          .ai-box { background: linear-gradient(90deg, #F5F3FF, #ECFEFF); border: 1px solid #C4B5FD; border-radius: 12px; padding: 14px 18px; margin-bottom: 16px; }
+          table { width: 100%; border-collapse: collapse; font-size: 11px; }
+          th { background: #1E1B4B; color: #FFFFFF; text-align: left; padding: 9px 10px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+        </style>
+      </head>
+      <body>
+        <!-- 1. EXECUTIVE HEADER -->
+        <div class="header-banner">
+          <div>
+            <div style="font-size:10px; font-weight:800; letter-spacing:0.12em; color:#38BDF8; text-transform:uppercase;">
+              Saarthi Curious • Enterprise L&D Telemetry Dossier
+            </div>
+            <h1 style="margin:4px 0 2px; font-size:22px; font-weight:800;">Candidate Attrition & Training Effectiveness Report</h1>
+            <div style="font-size:11px; color:#CBD5E1;">
+              Generated: ${lastUpdated} &nbsp;|&nbsp; Program Filter: ${programFilter === "all" ? "All Programs" : programFilter} &nbsp;|&nbsp; Risk Filter: ${riskFilter.toUpperCase()}
+            </div>
+          </div>
+          <div style="text-align:right; background:rgba(255,255,255,0.08); padding:10px 16px; border-radius:10px; border:1px solid rgba(255,255,255,0.15);">
+            <div style="font-size:10px; color:#E2E8F0; text-transform:uppercase; font-weight:700;">Overall Effectiveness</div>
+            <div style="font-size:24px; font-weight:900; color:#C084FC;">${effectivenessData.overall_score}/10</div>
+          </div>
+        </div>
+
+        <!-- 2. 4 KPI CARDS -->
+        <div class="kpi-grid">
+          <div class="kpi-card" style="border-left: 4px solid #7C3AED;">
+            <div style="font-size:10px; font-weight:800; color:#64748B; text-transform:uppercase;">Total Responses</div>
+            <div style="font-size:26px; font-weight:900; color:#6D28D9; margin:4px 0;">${kpiCounts.total_responses}</div>
+            <div style="font-size:10px; color:#64748B;">Original Survey Submissions</div>
+          </div>
+          <div class="kpi-card" style="border-left: 4px solid #E11D48;">
+            <div style="font-size:10px; font-weight:800; color:#64748B; text-transform:uppercase;">High Risk (${highPct}%)</div>
+            <div style="font-size:26px; font-weight:900; color:#E11D48; margin:4px 0;">${kpiCounts.high_risk}</div>
+            <div style="font-size:10px; color:#64748B;">Requires immediate attention</div>
+          </div>
+          <div class="kpi-card" style="border-left: 4px solid #D97706;">
+            <div style="font-size:10px; font-weight:800; color:#64748B; text-transform:uppercase;">Medium Risk (${medPct}%)</div>
+            <div style="font-size:26px; font-weight:900; color:#D97706; margin:4px 0;">${kpiCounts.medium_risk}</div>
+            <div style="font-size:10px; color:#64748B;">Should be reviewed</div>
+          </div>
+          <div class="kpi-card" style="border-left: 4px solid #059669;">
+            <div style="font-size:10px; font-weight:800; color:#64748B; text-transform:uppercase;">Low Risk (${lowPct}%)</div>
+            <div style="font-size:26px; font-weight:900; color:#059669; margin:4px 0;">${kpiCounts.low_risk}</div>
+            <div style="font-size:10px; color:#64748B;">Currently stable</div>
+          </div>
+        </div>
+
+        <!-- 3. SURVEY EFFECTIVENESS & QUESTION DIMENSION GRAPH -->
+        <div class="mid-grid">
+          <div class="panel" style="display:flex; align-items:center; justify-content:space-between; gap:16px;">
+            <div>
+              <div style="font-size:11px; font-weight:800; color:#475569; text-transform:uppercase;">Survey Effectiveness</div>
+              <div style="font-size:32px; font-weight:900; color:#6D28D9; margin:4px 0;">${effectivenessData.overall_score}/10</div>
+              <div style="font-size:10px; font-weight:800; color:#047857; background:#D1FAE5; padding:3px 10px; border-radius:99px; display:inline-block; margin-bottom:10px;">
+                ${effectivenessData.ratingBadge.label}
+              </div>
+              <div style="font-size:10.5px; color:#334155; margin-top:4px;">
+                <strong>🏆 Highest Rated:</strong> ${effectivenessData.highest_rated_topic} (${effectivenessData.highest_rated_pct}%)
+              </div>
+              <div style="font-size:10.5px; color:#334155; margin-top:4px;">
+                <strong>⚠️ Needs Improvement:</strong> ${effectivenessData.needs_improvement_topic} (${effectivenessData.needs_improvement_pct}%)
+              </div>
+            </div>
+            <svg width="104" height="104" viewBox="0 0 104 104" style="transform:rotate(-90deg); flex-shrink:0;">
+              <circle cx="52" cy="52" r="${rGauge}" fill="none" stroke="#E2E8F0" stroke-width="10" />
+              <circle cx="52" cy="52" r="${rGauge}" fill="none" stroke="#7C3AED" stroke-width="10" stroke-dasharray="${cGauge}" stroke-dashoffset="${offGauge}" stroke-linecap="round" />
+            </svg>
+          </div>
+
+          <div class="panel">
+            <div style="font-size:11px; font-weight:800; color:#475569; text-transform:uppercase; margin-bottom:10px;">
+              Question & Competency Dimension Analysis
+            </div>
+            ${questionRowsHtml}
+          </div>
+        </div>
+
+        <!-- 4. SAARTHI AI EXECUTIVE RISK INSIGHT & PRESCRIPTION -->
+        <div class="ai-box">
+          <div style="font-size:10px; font-weight:800; color:#5B21B6; text-transform:uppercase; margin-bottom:4px;">
+            ✦ Saarthi AI Executive Risk Summary & Retention Prescription
+          </div>
+          <div style="font-size:11.5px; color:#1E293B; line-height:1.45;">
+            ${effectivenessData.risk_summary_insight}
+            <strong> Recommended Action:</strong> Focus immediate instructional updates on <em>${effectivenessData.needs_improvement_topic}</em> (${effectivenessData.needs_improvement_pct}%) to resolve survey-identified friction points.
+          </div>
+        </div>
+
+        <!-- 5. CANDIDATE TELEMETRY & AI PRESCRIPTION TABLE -->
+        <div>
+          <div style="font-size:11px; font-weight:800; color:#1E1B4B; text-transform:uppercase; margin-bottom:8px;">
+            Candidate Retention Roster & Individual AI Prescriptions (Showing ${filteredResponses.length} Records)
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Candidate</th>
+                <th>Program</th>
+                <th>Score</th>
+                <th>Completion</th>
+                <th>Quiz Mastery</th>
+                <th>Risk Status</th>
+                <th>Personalized Saarthi AI Prescription</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${candidateRowsHtml}
+            </tbody>
+          </table>
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(htmlDocument);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 350);
+  };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-[#080711] text-slate-100 flex flex-col items-center justify-center p-6">
-        <div className="w-14 h-14 rounded-full border-4 border-cyan-500/30 border-t-cyan-400 animate-spin mb-3" />
-        <h2 className="text-base font-bold text-cyan-200">
-          Synchronizing Candidate Attrition Telemetry...
+        <div className="w-12 h-12 rounded-full border-4 border-purple-500/30 border-t-purple-400 animate-spin mb-3" />
+        <h2 className="text-sm font-bold text-purple-200">
+          Loading Candidate Attrition Report...
         </h2>
       </div>
     );
   }
 
-  if (error || !data) {
+  if (error) {
     return (
       <div className="min-h-screen bg-[#080711] text-slate-100 flex flex-col items-center justify-center p-6 text-center">
         <div className="max-w-md bg-[#12101E] border border-rose-500/40 rounded-2xl p-6">
           <h2 className="text-base font-extrabold text-rose-300">
-            Attrition Stream Disconnected
+            Failed to Load Data
           </h2>
           <p className="text-xs text-slate-300 mt-2">{error}</p>
           <button
-            onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 rounded-xl bg-cyan-500 text-slate-950 text-xs font-extrabold"
+            onClick={fetchData}
+            className="mt-4 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-extrabold transition"
           >
-            ↻ Reconnect
+            ↻ Retry Connection
           </button>
         </div>
       </div>
@@ -1399,7 +1590,7 @@ export default function CandidateAttrition({ backendData = null }) {
   }
 
   return (
-    <div className="h-screen w-full bg-[#080711] text-slate-100 font-sans selection:bg-cyan-400 selection:text-black overflow-y-auto overflow-x-hidden scroll-smooth candidate-attrition-scroll-container">
+    <div className="min-h-screen bg-[#080711] text-slate-100 font-sans p-5 md:p-6 space-y-5 selection:bg-purple-500 selection:text-white overflow-x-hidden">
       <style>{`
         @keyframes robotFloat {
           0%, 100% { transform: translateY(0px) rotate(0deg); }
@@ -1408,586 +1599,483 @@ export default function CandidateAttrition({ backendData = null }) {
         .animate-robot-float {
           animation: robotFloat 3.6s ease-in-out infinite;
         }
-
-        /* Custom smooth scrollbar matching the electric cyan theme */
-        .candidate-attrition-scroll-container {
-          scrollbar-width: thin;
-          scrollbar-color: rgba(6, 182, 212, 0.45) #080711;
-        }
-        .candidate-attrition-scroll-container::-webkit-scrollbar {
-          width: 8px;
-        }
-        .candidate-attrition-scroll-container::-webkit-scrollbar-track {
-          background: #080711;
-        }
-        .candidate-attrition-scroll-container::-webkit-scrollbar-thumb {
-          background: rgba(6, 182, 212, 0.35);
-          border-radius: 9999px;
-        }
-        .candidate-attrition-scroll-container::-webkit-scrollbar-thumb:hover {
-          background: rgba(6, 182, 212, 0.7);
-        }
       `}</style>
 
-      <div className="w-full p-5 pb-28 space-y-5">
-        {/* HEADER */}
-      <header className="flex flex-wrap items-center justify-between gap-4 bg-[#12101E]/95 backdrop-blur-xl px-6 py-4 rounded-2xl border border-amber-500/25 shadow-[0_0_25px_-5px_rgba(245,158,11,0.15)]">
-        <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-rose-500 via-amber-500 to-cyan-500 p-[1.5px] shadow-[0_0_20px_rgba(244,63,94,0.35)]">
-            <div className="w-full h-full bg-[#0B0914] rounded-[14px] flex items-center justify-center">
-              <svg
-                className="w-6 h-6 text-amber-300"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.2"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"
-                />
-                <circle cx="9" cy="7" r="4" />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  stroke="#38BDF8"
-                  d="M19 8l-2 3h4l-2 3"
-                />
-              </svg>
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-amber-200 via-white to-cyan-200 bg-clip-text text-transparent">
-                Candidate Attrition & Retention Intelligence
-              </h1>
-              <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                Supabase Live
-              </span>
-            </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Volumetric horizon telemetry, Curos incentive tracking, and personalized candidate coaching
-            </p>
-          </div>
+      {/* ===================================================================
+          1. FIXED HEADER BAR
+      =================================================================== */}
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight text-white">
+            Candidate Attrition Report
+          </h1>
+          <p className="text-xs text-slate-400 mt-0.5">
+            Analysis of candidate retention and training effectiveness
+          </p>
+          <p className="text-[11px] text-slate-500 mt-0.5">
+            Last updated: {lastUpdated}
+          </p>
         </div>
 
         <div className="flex items-center gap-2.5">
           <button
-            onClick={() => fetchData(false)}
-            title="Fetch latest candidate telemetry from Supabase"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cyan-950/40 hover:bg-cyan-900/60 border border-cyan-500/35 text-cyan-200 text-xs font-bold transition shadow-[0_0_12px_rgba(6,182,212,0.15)]"
+            onClick={handleDownloadCSV}
+            className="px-4 py-2 rounded-xl bg-[#12101E] hover:bg-[#1A162B] border border-white/15 text-xs font-bold text-slate-200 transition flex items-center gap-2 shadow-sm"
           >
-            <span className={`text-sm ${isRefreshing ? "animate-spin" : ""}`}>↻</span>
-            <span className="hidden sm:inline">Refresh</span>
+            <span>📄 Download CSV</span>
           </button>
-
-          <select
-            value={selectedProgram}
-            onChange={(e) => setSelectedProgram(e.target.value)}
-            className="bg-[#080711] border border-cyan-500/35 text-cyan-100 text-xs font-bold rounded-xl px-3.5 py-2 outline-none focus:border-cyan-400"
+          <button
+            onClick={handleDownloadPDF}
+            className="px-4 py-2 rounded-xl bg-[#6D28D9] hover:bg-[#5B21B6] text-xs font-extrabold text-white shadow-[0_0_20px_rgba(109,40,217,0.45)] transition flex items-center gap-2"
           >
-            <option value="all">All Programs ({uniqueCandidates.length})</option>
-            {programOptions
-              .filter((p) => p !== "all")
-              .map((prog) => (
+            <span>📊 Download PDF</span>
+          </button>
+        </div>
+      </header>
+
+      {/* ===================================================================
+          2. ROW 1: 4 KPI CARDS (Each acts as an Interactive Locker)
+      =================================================================== */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Responses */}
+        <div
+          onClick={() => setActiveLockerId("total_responses")}
+          className="group cursor-pointer bg-[#12101E] rounded-2xl p-5 border border-white/10 hover:border-purple-400/70 hover:-translate-y-0.5 shadow-[0_4px_25px_rgba(0,0,0,0.4)] transition-all"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-sm">📋</span>
+              <span className="text-xs font-bold text-slate-200">
+                Total Responses
+              </span>
+            </div>
+            <span className="text-[10px] font-bold text-purple-300 opacity-0 group-hover:opacity-100 transition">
+              Open Report ➔
+            </span>
+          </div>
+          <div className="text-3xl font-extrabold text-purple-400 my-2">
+            {kpiCounts.total_responses}
+          </div>
+          <p className="text-[11px] text-slate-400">All survey submissions</p>
+        </div>
+
+        {/* High Risk (Score 8) */}
+        <div
+          onClick={() => setActiveLockerId("high_risk")}
+          className="group cursor-pointer bg-[#12101E] rounded-2xl p-5 border border-l-4 border-l-rose-500 border-white/10 hover:border-rose-400/70 hover:-translate-y-0.5 shadow-[0_4px_25px_rgba(0,0,0,0.4)] transition-all"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-3.5 h-3.5 rounded-full bg-rose-500 shadow-[0_0_10px_#F43F5E]" />
+              <span className="text-xs font-bold text-slate-200">High Risk</span>
+            </div>
+            <span className="text-[10px] font-bold text-rose-300 opacity-0 group-hover:opacity-100 transition">
+              Open Report ➔
+            </span>
+          </div>
+          <div className="text-3xl font-extrabold text-rose-500 my-2">
+            {kpiCounts.high_risk}
+          </div>
+          <p className="text-[11px] text-slate-400">
+            Requires immediate attention
+          </p>
+        </div>
+
+        {/* Medium Risk (Score 5) */}
+        <div
+          onClick={() => setActiveLockerId("medium_risk")}
+          className="group cursor-pointer bg-[#12101E] rounded-2xl p-5 border border-l-4 border-l-amber-400 border-white/10 hover:border-amber-400/70 hover:-translate-y-0.5 shadow-[0_4px_25px_rgba(0,0,0,0.4)] transition-all"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-3.5 h-3.5 rounded-full bg-amber-400 shadow-[0_0_10px_#F59E0B]" />
+              <span className="text-xs font-bold text-slate-200">
+                Medium Risk
+              </span>
+            </div>
+            <span className="text-[10px] font-bold text-amber-300 opacity-0 group-hover:opacity-100 transition">
+              Open Report ➔
+            </span>
+          </div>
+          <div className="text-3xl font-extrabold text-amber-400 my-2">
+            {kpiCounts.medium_risk}
+          </div>
+          <p className="text-[11px] text-slate-400">Should be reviewed</p>
+        </div>
+
+        {/* Low Risk (Score 2) */}
+        <div
+          onClick={() => setActiveLockerId("low_risk")}
+          className="group cursor-pointer bg-[#12101E] rounded-2xl p-5 border border-l-4 border-l-emerald-500 border-white/10 hover:border-emerald-400/70 hover:-translate-y-0.5 shadow-[0_4px_25px_rgba(0,0,0,0.4)] transition-all"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-3.5 h-3.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#10B981]" />
+              <span className="text-xs font-bold text-slate-200">Low Risk</span>
+            </div>
+            <span className="text-[10px] font-bold text-emerald-300 opacity-0 group-hover:opacity-100 transition">
+              Open Report ➔
+            </span>
+          </div>
+          <div className="text-3xl font-extrabold text-emerald-400 my-2">
+            {kpiCounts.low_risk}
+          </div>
+          <p className="text-[11px] text-slate-400">Currently stable</p>
+        </div>
+      </section>
+
+      {/* ===================================================================
+          3. ROW 2: FILTERS CONTAINER
+      =================================================================== */}
+      <section className="bg-[#12101E] rounded-2xl p-5 border border-white/10 shadow-[0_4px_25px_rgba(0,0,0,0.4)]">
+        <div className="flex items-center justify-between mb-3.5">
+          <h2 className="text-sm font-extrabold text-white">Filters</h2>
+          <button
+            onClick={handleClearFilters}
+            className="text-xs font-bold text-purple-300 hover:text-purple-200 transition"
+          >
+            Clear Filters
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-[11px] font-bold text-slate-400 mb-1.5">
+              Search Employee
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-2.5 text-xs text-slate-400">
+                🔍
+              </span>
+              <input
+                type="text"
+                value={searchEmployee}
+                onChange={(e) => setSearchEmployee(e.target.value)}
+                placeholder="Name or email..."
+                className="w-full bg-[#080711] border border-white/10 focus:border-purple-500 rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder-slate-500 outline-none transition"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-bold text-slate-400 mb-1.5">
+              Risk Level
+            </label>
+            <select
+              value={riskFilter}
+              onChange={(e) => setRiskFilter(e.target.value)}
+              className="w-full bg-[#080711] border border-white/10 focus:border-purple-500 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none"
+            >
+              <option value="all">All Risk Levels</option>
+              <option value="high">High Risk</option>
+              <option value="medium">Medium Risk</option>
+              <option value="low">Low Risk</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-bold text-slate-400 mb-1.5">
+              Survey
+            </label>
+            <select
+              value={surveyFilter}
+              onChange={(e) => setSurveyFilter(e.target.value)}
+              className="w-full bg-[#080711] border border-white/10 focus:border-purple-500 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none"
+            >
+              <option value="all">All Surveys</option>
+              {surveyOptions.map((surv) => (
+                <option key={surv} value={surv}>
+                  {surv}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-bold text-slate-400 mb-1.5">
+              Program
+            </label>
+            <select
+              value={programFilter}
+              onChange={(e) => setProgramFilter(e.target.value)}
+              className="w-full bg-[#080711] border border-white/10 focus:border-purple-500 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none"
+            >
+              <option value="all">All Programs</option>
+              {programOptions.map((prog) => (
                 <option key={prog} value={prog}>
                   {prog}
                 </option>
               ))}
-          </select>
+            </select>
+          </div>
         </div>
-      </header>
-
-      {/* ROW 1: 4 CLICKABLE KPI CARDS */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          {
-            id: "high",
-            label: "High Flight Risk",
-            count: kpis.high_risk_count ?? 0,
-            subtitle: "Immediate attention required (≥65% Risk)",
-            dotColor: "bg-rose-500 shadow-[0_0_10px_#F43F5E]",
-            borderClass: "border-rose-500/30 hover:border-rose-400/80",
-            activeClass: "ring-2 ring-rose-500 bg-rose-950/25",
-            textClass: "text-rose-400",
-          },
-          {
-            id: "medium",
-            label: "Medium Risk",
-            count: kpis.medium_risk_count ?? 0,
-            subtitle: "Mid-funnel review recommended (35%–64%)",
-            dotColor: "bg-amber-400 shadow-[0_0_10px_#F59E0B]",
-            borderClass: "border-amber-500/30 hover:border-amber-400/80",
-            activeClass: "ring-2 ring-amber-400 bg-amber-950/25",
-            textClass: "text-amber-300",
-          },
-          {
-            id: "low",
-            label: "Low Risk (Stable)",
-            count: kpis.low_risk_count ?? 0,
-            subtitle: "Consistent progression (<35% Risk)",
-            dotColor: "bg-emerald-400 shadow-[0_0_10px_#10B981]",
-            borderClass: "border-emerald-500/30 hover:border-emerald-400/80",
-            activeClass: "ring-2 ring-emerald-400 bg-emerald-950/25",
-            textClass: "text-emerald-400",
-          },
-          {
-            id: "top",
-            label: "Top Performers",
-            count: kpis.top_performers_count ?? 0,
-            subtitle: "High mastery & completion champions (≥80%)",
-            dotColor: "bg-cyan-400 shadow-[0_0_10px_#38BDF8]",
-            borderClass: "border-cyan-500/30 hover:border-cyan-400/80",
-            activeClass: "ring-2 ring-cyan-400 bg-cyan-950/25",
-            textClass: "text-cyan-300",
-          },
-        ].map((card) => {
-          const isSelected = selectedKpiCategory === card.id;
-          return (
-            <div
-              key={card.id}
-              onClick={() =>
-                setSelectedKpiCategory(isSelected ? "all" : card.id)
-              }
-              className={`cursor-pointer bg-[#12101E] rounded-2xl p-5 border ${
-                card.borderClass
-              } ${
-                isSelected ? card.activeClass : "hover:-translate-y-1"
-              } shadow-[0_0_25px_-5px_rgba(0,0,0,0.5)] transition-all flex flex-col justify-between`}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className={`w-2.5 h-2.5 rounded-full ${card.dotColor}`} />
-                  <span className="text-xs font-extrabold uppercase tracking-wider text-slate-200">
-                    {card.label}
-                  </span>
-                </div>
-                <span className="text-[10px] font-bold text-slate-400">
-                  {isSelected ? "✓ Filtered" : "Click to filter"}
-                </span>
-              </div>
-
-              <div className={`text-3xl font-extrabold my-2 ${card.textClass}`}>
-                {card.count}
-              </div>
-
-              <p className="text-[11px] text-slate-400">{card.subtitle}</p>
-            </div>
-          );
-        })}
       </section>
 
-      {/* ROW 2: TOTAL RESPONSES TAB + REALISTIC VOLUMETRIC HORIZON & WAVE STREAM GRAPH */}
-      <section className="grid grid-cols-12 gap-5">
-        <div className="col-span-12 lg:col-span-4 bg-[#12101E]/95 rounded-2xl p-5 border border-purple-500/25 shadow-[0_0_30px_-5px_rgba(139,92,246,0.15)] flex flex-col justify-between">
-          <div>
+      {/* ===================================================================
+          4. ROW 3: SURVEY EFFECTIVENESS
+      =================================================================== */}
+      <section className="bg-[#12101E] rounded-2xl p-5 border border-purple-500/20 shadow-[0_4px_25px_rgba(0,0,0,0.4)] space-y-4">
+        <div
+          onClick={() => setActiveLockerId("survey_effectiveness")}
+          className="flex items-center justify-between cursor-pointer group"
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-base">📊</span>
+            <h2 className="text-base font-extrabold text-white group-hover:text-purple-300 transition">
+              Survey Effectiveness
+            </h2>
+          </div>
+          <span className="text-[11px] font-bold text-purple-300 opacity-80 group-hover:opacity-100 transition">
+            Click section for AI Report & Graphs ➔
+          </span>
+        </div>
+
+        {/* 2 Side-by-Side Cards: Overall Score | Highest & Lowest Rated */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Overall Score */}
+          <div
+            onClick={() => setActiveLockerId("survey_effectiveness")}
+            className="group cursor-pointer p-5 rounded-2xl bg-[#080711] border border-white/10 hover:border-purple-400/60 transition flex flex-col justify-between min-h-[148px]"
+          >
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-200 border border-purple-500/35">
-                📋 Total Responses & Telemetry
+              <span className="text-xs font-semibold text-slate-400">
+                Overall Score
               </span>
-              {selectedKpiCategory !== "all" && (
-                <button
-                  onClick={() => setSelectedKpiCategory("all")}
-                  className="text-xs font-bold text-cyan-300 hover:underline"
-                >
-                  Reset Filter ✕
-                </button>
-              )}
+              <span className="text-[10px] font-bold text-purple-300 opacity-0 group-hover:opacity-100 transition">
+                View Graph & AI ➔
+              </span>
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <div className="p-4 rounded-2xl bg-[#080711] border border-white/10">
-                <span className="text-[11px] font-bold text-slate-400 uppercase block">
-                  Survey Submissions
-                </span>
-                <span className="text-3xl font-extrabold text-white mt-1.5 block">
-                  {kpis.total_responses ?? 0}
-                </span>
-                <span className="text-[10px] text-slate-500 mt-0.5 block">
-                  Direct form responses
-                </span>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-[#080711] border border-amber-500/30">
-                <span className="text-[11px] font-bold text-amber-200/90 uppercase block">
-                  Unique Tracked Users
-                </span>
-                <span className="text-3xl font-extrabold text-amber-300 mt-1.5 block">
-                  {uniqueCandidates.length}
-                </span>
-                <span className="text-[10px] text-emerald-400 font-bold mt-0.5 block">
-                  ● 100% Supabase Synced
-                </span>
-              </div>
+            <div className="text-4xl font-extrabold text-purple-400 my-2">
+              {effectivenessData.overall_score}/10
             </div>
 
-            <div className="mt-4 p-4 rounded-2xl bg-[#080711] border border-white/10 space-y-2.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-slate-300">
-                  Cohort Risk Distribution
-                </span>
-                <span className="font-extrabold text-amber-300">
-                  {filteredAndSortedCandidates.length} Active
-                </span>
-              </div>
-
-              <div className="w-full h-2.5 rounded-full bg-white/10 overflow-hidden flex">
-                <div
-                  className="bg-rose-500 h-full"
-                  style={{
-                    width: `${
-                      ((kpis.high_risk_count || 0) /
-                        Math.max(1, uniqueCandidates.length)) *
-                      100
-                    }%`,
-                  }}
-                />
-                <div
-                  className="bg-amber-400 h-full"
-                  style={{
-                    width: `${
-                      ((kpis.medium_risk_count || 0) /
-                        Math.max(1, uniqueCandidates.length)) *
-                      100
-                    }%`,
-                  }}
-                />
-                <div
-                  className="bg-emerald-400 h-full"
-                  style={{
-                    width: `${
-                      ((kpis.low_risk_count || 0) /
-                        Math.max(1, uniqueCandidates.length)) *
-                      100
-                    }%`,
-                  }}
-                />
-              </div>
-
-              <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold">
-                <span className="text-rose-400">🔴 High: {kpis.high_risk_count || 0}</span>
-                <span className="text-amber-300">🟡 Med: {kpis.medium_risk_count || 0}</span>
-                <span className="text-emerald-400">🟢 Low: {kpis.low_risk_count || 0}</span>
-                <span className="text-cyan-300">🏆 Top: {kpis.top_performers_count || 0}</span>
-              </div>
-            </div>
-          </div>
-
-          <p className="text-[11px] text-slate-400 mt-3 pt-2.5 border-t border-white/10">
-            Combines survey sentiment with live Supabase course, video, and Curos telemetry.
-          </p>
-        </div>
-
-        {/* Right 8 Cols: REALISTIC VOLUMETRIC HORIZON, PARTICLE-RIDGE & WAVE STREAM GRAPH */}
-        <div className="col-span-12 lg:col-span-8 bg-[#12101E]/95 rounded-2xl p-5 border border-cyan-500/30 shadow-[0_0_30px_-5px_rgba(6,182,212,0.16)] flex flex-col justify-between">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
             <div>
-              <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
-                ⚡ Volumetric Attrition Horizon & Harmonic Wave Stream
-              </span>
-              <h2 className="text-base font-extrabold text-white mt-1">
-                Particle-Cloud Risk Ridges, Equalizer Filaments & Topographic Wave
-              </h2>
-            </div>
-
-            <div className="flex items-center gap-3 text-[11px] font-bold">
-              <span className="flex items-center gap-1.5 text-rose-400">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_#F43F5E]" />
-                High Risk Star
-              </span>
-              <span className="flex items-center gap-1.5 text-amber-300">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_#F59E0B]" />
-                Golden Filaments
-              </span>
-              <span className="flex items-center gap-1.5 text-cyan-300">
-                <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#38BDF8]" />
-                Harmonic Wave
+              <span
+                className={`inline-block text-xs font-extrabold px-3 py-1 rounded-full border ${effectivenessData.ratingBadge.cls}`}
+              >
+                {effectivenessData.interpretation}
               </span>
             </div>
           </div>
 
-          <RealisticNeuralHorizonGraph
-            candidates={filteredAndSortedCandidates}
-            onSelectCandidate={(cand) => setInspectedStudent(cand)}
-          />
-        </div>
-      </section>
-
-      {/* ROW 3: 50% / 50% VERTICAL SPLIT */}
-      <section className="grid grid-cols-12 gap-5">
-        {/* LEFT 50%: CANDIDATE DIRECTORY */}
-        <div className="col-span-12 lg:col-span-6 bg-[#12101E]/95 rounded-2xl p-5 border border-purple-500/25 shadow-[0_0_30px_-5px_rgba(139,92,246,0.15)] flex flex-col justify-between">
-          <div>
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-3.5">
-              <div>
-                <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/35">
-                  👥 Candidate Roster & AI Inspector
+          {/* Highest Rated & Needs Improvement */}
+          <div
+            onClick={() => setActiveLockerId("survey_effectiveness")}
+            className="group cursor-pointer p-5 rounded-2xl bg-[#080711] border border-white/10 hover:border-purple-400/60 transition flex flex-col justify-between min-h-[148px] space-y-3"
+          >
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
+                  <span>🏆</span> Highest Rated
                 </span>
-                <h3 className="text-base font-extrabold text-white mt-1">
-                  Enrolled Candidates ({filteredAndSortedCandidates.length})
-                </h3>
+                <span className="text-[10px] font-bold text-purple-300 opacity-0 group-hover:opacity-100 transition">
+                  View Graph & AI ➔
+                </span>
               </div>
-
-              {filteredAndSortedCandidates.length > 5 && (
-                <button
-                  onClick={() => setShowAllUsers(!showAllUsers)}
-                  className="px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 text-xs font-extrabold border border-purple-400/35 transition"
-                >
-                  {showAllUsers
-                    ? "Show Top 5"
-                    : `View All (${filteredAndSortedCandidates.length})`}
-                </button>
-              )}
+              <p className="text-xs font-bold text-white mt-1">
+                {effectivenessData.highest_rated_topic}
+              </p>
+              <span className="text-xs font-extrabold text-emerald-400 block mt-0.5">
+                {effectivenessData.highest_rated_pct}%
+              </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 mb-3.5">
-              <div className="sm:col-span-7 relative">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="🔍 Search candidate by name or email..."
-                  className="w-full bg-[#080711] border border-purple-500/30 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 outline-none transition"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-3 top-2.5 text-xs font-bold text-slate-400 hover:text-white"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-
-              <div className="sm:col-span-5">
-                <select
-                  value={riskSortOrder}
-                  onChange={(e) => setRiskSortOrder(e.target.value)}
-                  className="w-full bg-[#080711] border border-cyan-500/35 text-cyan-200 text-xs font-extrabold rounded-xl px-3 py-2.5 outline-none focus:border-cyan-400"
-                >
-                  <option value="risk_desc">🔥 Sort: Highest Risk First</option>
-                  <option value="risk_asc">🛡️ Sort: Lowest Risk First</option>
-                  <option value="curos_desc">🪙 Sort: Highest Curos First</option>
-                </select>
-              </div>
+            <div className="pt-2 border-t border-white/5">
+              <span className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
+                <span>⚠️</span> Needs Improvement
+              </span>
+              <p className="text-xs font-bold text-white mt-1">
+                {effectivenessData.needs_improvement_topic}
+              </p>
+              <span className="text-xs font-extrabold text-amber-400 block mt-0.5">
+                {effectivenessData.needs_improvement_pct}%
+              </span>
             </div>
-
-            <div className="space-y-2.5 max-h-[420px] overflow-y-auto pr-1">
-              {visibleCandidates.map((user, idx) => {
-                const statusDot =
-                  user.risk_level === "high"
-                    ? "bg-rose-500 shadow-[0_0_8px_#F43F5E]"
-                    : user.risk_level === "medium"
-                    ? "bg-amber-400 shadow-[0_0_8px_#F59E0B]"
-                    : "bg-emerald-400 shadow-[0_0_8px_#10B981]";
-
-                return (
-                  <div
-                    key={user.id || `${user.name}-${idx}`}
-                    className="p-3.5 rounded-2xl bg-[#080711] hover:bg-[#13192E] border border-white/10 hover:border-cyan-400/50 transition flex items-center justify-between gap-3"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-600 to-indigo-700 text-white font-extrabold text-xs flex items-center justify-center shrink-0">
-                        {(user.name || "U").slice(0, 2).toUpperCase()}
-                        <span
-                          title={`${user.risk_score ?? 0}% Risk`}
-                          className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-[#080711] ${statusDot}`}
-                        />
-                      </div>
-
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-sm font-extrabold text-white truncate">
-                            {user.name}
-                          </h4>
-                          {user.is_top_performer && (
-                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                              🏆 Top
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[11px] text-slate-400 truncate">
-                          {user.program_name || "Client Relationships"} • Completion:{" "}
-                          <strong className="text-cyan-300">
-                            {user.completion_pct ?? 0}%
-                          </strong>{" "}
-                          • Quiz:{" "}
-                          <strong className="text-emerald-400">
-                            {user.quiz_mastery_pct ?? 0}%
-                          </strong>
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2.5 shrink-0">
-                      <span className="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-amber-500/15 text-amber-300 border border-amber-500/35">
-                        🪙 {user.curos ?? 0} Curos
-                      </span>
-
-                      <button
-                        onClick={() => setInspectedStudent(user)}
-                        className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-cyan-400 via-sky-500 to-indigo-600 hover:from-cyan-300 hover:to-indigo-500 text-white text-xs font-extrabold shadow-[0_0_15px_rgba(56,189,248,0.4)] transition"
-                      >
-                        View
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-400">
-            <span>
-              Showing {visibleCandidates.length} of {filteredAndSortedCandidates.length} unique candidates
-            </span>
-            <span className="font-bold text-cyan-300">
-              Click "View" for candidate telemetry diagnostic & coaching →
-            </span>
           </div>
         </div>
 
-        {/* RIGHT 50%: SURVEY & TRAINING EFFECTIVENESS SUITE */}
-        <div className="col-span-12 lg:col-span-6 bg-[#12101E]/95 rounded-2xl p-5 border border-emerald-500/25 shadow-[0_0_30px_-5px_rgba(16,185,129,0.15)] flex flex-col justify-between space-y-4">
-          <div>
-            <div className="flex items-center justify-between mb-3.5">
-              <div>
-                <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/35">
-                  📊 Survey & Training Effectiveness
-                </span>
-                <h3 className="text-base font-extrabold text-white mt-1">
-                  Survey Effectiveness & Competency Dimension Analysis
-                </h3>
-              </div>
-              <span className="text-xs font-bold text-cyan-300">
-                {kpis.total_responses > 0
-                  ? `${kpis.total_responses} Surveys`
-                  : "Live Telemetry Derived"}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="p-4 rounded-2xl bg-[#080711] border border-white/10 flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-semibold text-slate-400 block">
-                    Overall Effectiveness Score
-                  </span>
-                  <div className="text-3xl font-extrabold text-amber-300 my-1">
-                    {surveyStats.overall_score ?? 0}/10
-                  </div>
-                  <span className="inline-block text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    {surveyStats.rating_label || "Active Telemetry Mode"}
-                  </span>
-                </div>
-                <div className="w-14 h-14 rounded-2xl bg-cyan-500/20 border border-cyan-500/35 text-cyan-200 flex items-center justify-center font-extrabold text-base">
-                  {Math.round((surveyStats.overall_score ?? 0) * 10)}%
-                </div>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-[#080711] border border-white/10 space-y-2.5">
-                <div>
-                  <span className="text-[11px] font-bold text-slate-400 block">
-                    🏆 Highest Rated Dimension
-                  </span>
-                  <div className="flex items-center justify-between mt-0.5">
-                    <span className="text-xs font-extrabold text-white truncate">
-                      {surveyStats.highest_rated_topic}
-                    </span>
-                    <span className="text-xs font-extrabold text-emerald-400">
-                      {surveyStats.highest_rated_pct}%
-                    </span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-white/10">
-                  <span className="text-[11px] font-bold text-slate-400 block">
-                    ⚠️ Needs Improvement
-                  </span>
-                  <div className="flex items-center justify-between mt-0.5">
-                    <span className="text-xs font-extrabold text-white truncate">
-                      {surveyStats.needs_improvement_topic}
-                    </span>
-                    <span className="text-xs font-extrabold text-amber-400">
-                      {surveyStats.needs_improvement_pct}%
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+        {/* Question Analysis */}
+        <div
+          onClick={() => setActiveLockerId("question_analysis")}
+          className="group cursor-pointer p-5 rounded-2xl bg-[#080711] border border-white/10 hover:border-purple-400/60 transition space-y-4"
+        >
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-extrabold text-white group-hover:text-purple-300 transition">
+              Question Analysis
+            </h3>
+            <span className="text-[11px] font-bold text-purple-300 opacity-80 group-hover:opacity-100 transition">
+              Click to open Question Graphs & AI Analysis ➔
+            </span>
           </div>
 
-          <div className="p-4 rounded-2xl bg-[#080711] border border-white/10 space-y-2.5">
-            <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-300">
-              Question & Competency Dimension Analysis
-            </h4>
-            {Array.isArray(surveyStats.questions) &&
-              surveyStats.questions.map((q, idx) => (
+          {effectivenessData.questions.length === 0 ? (
+            <p className="text-xs text-slate-500 italic">
+              No question analysis data available yet.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {effectivenessData.questions.map((q, idx) => (
                 <div key={idx} className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-300">{q.question}</span>
-                    <span className="font-extrabold text-cyan-300">{q.score_pct}%</span>
+                  <div className="flex justify-between text-xs">
+                    <span className="font-medium text-slate-300">{q.question}</span>
+                    <span className="font-extrabold text-purple-300">{q.score_pct}%</span>
                   </div>
-                  <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+                  <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-cyan-400 to-emerald-400"
-                      style={{ width: `${Math.min(100, Math.max(6, q.score_pct))}%` }}
+                      className="bg-gradient-to-r from-purple-500 to-cyan-400 h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${Math.min(100, Math.max(0, q.score_pct))}%` }}
                     />
                   </div>
                 </div>
               ))}
-          </div>
-
-          <div className="space-y-2.5">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-300">
-                Survey Feedback & Risk Summary Insights
-              </h4>
-              <span className="text-[11px] text-slate-400 font-semibold">
-                Showing {surveyStats.feedback_list?.length || 0} items
-              </span>
             </div>
-
-            {Array.isArray(surveyStats.feedback_list) &&
-              surveyStats.feedback_list.length > 0 && (
-                <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
-                  {surveyStats.feedback_list.map((fb, idx) => (
-                    <div
-                      key={idx}
-                      className="p-3 rounded-xl bg-[#080711] border border-white/10 text-xs flex items-start justify-between gap-3"
-                    >
-                      <div>
-                        <span className="font-extrabold text-cyan-200">
-                          {fb.user_name}:{" "}
-                        </span>
-                        <span className="text-slate-300">{fb.comment}</span>
-                      </div>
-                      <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-200 border border-emerald-500/30 font-extrabold text-[10px] shrink-0">
-                        {fb.rating}/10
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-            <div className="p-3.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-xs text-cyan-100 flex items-center gap-2.5">
-              <span className="text-base">✦</span>
-              <span className="font-medium leading-relaxed">
-                {surveyStats.risk_summary_insight}
-              </span>
-            </div>
-          </div>
+          )}
         </div>
       </section>
-      </div>
 
-      {/* CENTERED STUDENT DETAIL MODAL */}
-      <StudentDetailModal
-        student={inspectedStudent}
-        cohortSize={uniqueCandidates.length}
-        onClose={() => setInspectedStudent(null)}
+      {/* ===================================================================
+          5. ROW 4: SURVEY FEEDBACK RESPONSES TABLE
+      =================================================================== */}
+      <section className="bg-[#12101E] rounded-2xl p-5 border border-white/10 shadow-[0_4px_25px_rgba(0,0,0,0.4)] space-y-4">
+        <div className="flex items-center justify-between">
+          <div
+            onClick={() => setActiveLockerId("feedback_responses")}
+            className="cursor-pointer group flex items-center gap-2"
+          >
+            <h2 className="text-base font-extrabold text-white group-hover:text-purple-300 transition">
+              Survey Feedback Responses
+            </h2>
+            <span className="text-[10px] font-bold text-purple-300 opacity-0 group-hover:opacity-100 transition">
+              Open Responses Locker ➔
+            </span>
+          </div>
+          <span className="text-xs font-semibold text-slate-400">
+            Showing {filteredResponses.length} of {responsesList.length} responses
+          </span>
+        </div>
+
+        {filteredResponses.length === 0 ? (
+          <div className="py-10 text-center space-y-2">
+            <div className="text-4xl">🔍</div>
+            <p className="text-sm font-bold text-slate-200">
+              No survey responses found
+            </p>
+            <p className="text-xs text-slate-500">
+              Try adjusting your search or filters
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[850px]">
+              <thead>
+                <tr className="border-b border-white/10 text-slate-400 text-xs">
+                  <th className="py-2.5 pr-3 font-bold">Employee</th>
+                  <th className="py-2.5 pr-3 font-bold">Email</th>
+                  <th className="py-2.5 pr-3 font-bold">Program</th>
+                  <th className="py-2.5 pr-3 font-bold">Module</th>
+                  <th className="py-2.5 pr-3 font-bold">Survey</th>
+                  <th className="py-2.5 pr-3 font-bold">Risk Score</th>
+                  <th className="py-2.5 pr-3 font-bold">Risk Level</th>
+                  <th className="py-2.5 text-right font-bold">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5 text-xs text-slate-200">
+                {filteredResponses.map((res) => {
+                  const empName = res.employee_name || res.employee_email || "Employee";
+                  const riskLvl = String(res.risk_level || "Low");
+                  const rScore = res.risk_score !== null && res.risk_score !== undefined ? res.risk_score : 2;
+
+                  return (
+                    <tr key={res.response_id || res.id} className="hover:bg-white/[0.03] transition">
+                      <td className="py-3 pr-3 font-bold text-white">{empName}</td>
+                      <td className="py-3 pr-3 text-slate-400">{res.employee_email || "—"}</td>
+                      <td className="py-3 pr-3 text-cyan-300">{res.program_name || "—"}</td>
+                      <td className="py-3 pr-3 text-slate-300">{res.module_title || "—"}</td>
+                      <td className="py-3 pr-3 text-purple-300">{res.survey_title || "—"}</td>
+                      <td className="py-3 pr-3 font-mono font-bold">
+                        <span
+                          className={
+                            rScore >= 7
+                              ? "text-rose-400"
+                              : rScore >= 4
+                              ? "text-amber-400"
+                              : "text-emerald-400"
+                          }
+                        >
+                          {rScore} / 10
+                        </span>
+                      </td>
+                      <td className="py-3 pr-3">
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] border ${
+                            riskLvl.toLowerCase() === "high"
+                              ? "bg-rose-500/20 text-rose-300 border-rose-500/40"
+                              : riskLvl.toLowerCase() === "medium"
+                              ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                              : "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                          }`}
+                        >
+                          {riskLvl}
+                        </span>
+                      </td>
+                      <td className="py-3 text-right">
+                        <button
+                          onClick={() => setSelectedResponse(res)}
+                          className="px-3 py-1 rounded-xl bg-purple-500/20 hover:bg-purple-500/35 border border-purple-500/40 text-purple-200 font-bold transition text-[11px]"
+                        >
+                          View Answers
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {/* ===================================================================
+          6. ROW 5: RISK SUMMARY INSIGHTS
+      =================================================================== */}
+      <section
+        onClick={() => setActiveLockerId("risk_insights")}
+        className="group cursor-pointer bg-[#12101E] rounded-2xl p-5 border border-white/10 hover:border-cyan-400/60 shadow-[0_4px_25px_rgba(0,0,0,0.4)] transition space-y-3"
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-extrabold text-white group-hover:text-cyan-300 transition">
+            Risk Summary Insights
+          </h2>
+          <span className="text-[11px] font-bold text-cyan-300 opacity-80 group-hover:opacity-100 transition">
+            Click to open Saarthi AI Risk Forecast & Co-Pilot ➔
+          </span>
+        </div>
+
+        <div className="p-4 rounded-xl bg-[#080711] border border-white/10 flex items-center gap-3 text-xs text-slate-300">
+          <span className="text-base">🎯</span>
+          <span>{effectivenessData.risk_summary_insight}</span>
+        </div>
+      </section>
+
+      {/* ===================================================================
+          CENTERED LOCKER MODAL (Graphs & AI Co-Pilot)
+      =================================================================== */}
+      <LockerDetailModal
+        activeLockerId={activeLockerId}
+        onClose={() => setActiveLockerId(null)}
+        onSwitchLocker={(id) => setActiveLockerId(id)}
+        kpiCounts={kpiCounts}
+        effectiveness={effectivenessData}
+        responses={filteredResponses}
+      />
+
+      {/* ===================================================================
+          INDIVIDUAL SURVEY ANSWERS MODAL (View Questions & Answers)
+      =================================================================== */}
+      <SurveyAnswersModal
+        response={selectedResponse}
+        onClose={() => setSelectedResponse(null)}
       />
     </div>
   );
