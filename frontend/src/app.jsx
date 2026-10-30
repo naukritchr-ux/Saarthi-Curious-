@@ -23,7 +23,7 @@ import CuroManagement from "./pages/gamification/curoManagement";
 import ProtectedRoute from "./routes/protectedRoutes";
 import RoleRoute from "./routes/roleRoute";
 import NotificationScriptsPage from "./pages/communication/notificationScriptsPage";
-import BadgeManagement from "./pages/gamification/badgeManagement";
+import Rewards from "./pages/gamification/Rewards";
 import Profile from "./pages/profile/profile";
 import Settings from "./pages/settings/settings";
 import PrivacyPolicy from "./pages/privacyPolicy/privacyPolicy";
@@ -271,7 +271,7 @@ function App() {
           path="/rewards"
           element={
             <ProtectedRoute>
-              <BadgeManagement />
+              <Rewards />
             </ProtectedRoute>
           }
         />
