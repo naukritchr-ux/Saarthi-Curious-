@@ -1590,7 +1590,7 @@ export default function CandidateAttrition() {
   }
 
   return (
-    <div className="min-h-screen bg-[#080711] text-slate-100 font-sans p-5 md:p-6 space-y-5 selection:bg-purple-500 selection:text-white overflow-x-hidden">
+    <div className="h-screen w-full bg-[#080711] text-slate-100 font-sans selection:bg-purple-500 selection:text-white overflow-y-auto overflow-x-hidden scroll-smooth candidate-attrition-scroll-container">
       <style>{`
         @keyframes robotFloat {
           0%, 100% { transform: translateY(0px) rotate(0deg); }
@@ -1599,7 +1599,26 @@ export default function CandidateAttrition() {
         .animate-robot-float {
           animation: robotFloat 3.6s ease-in-out infinite;
         }
+
+        .candidate-attrition-scroll-container {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(168, 85, 247, 0.45) #080711;
+        }
+        .candidate-attrition-scroll-container::-webkit-scrollbar {
+          width: 8px;
+        }
+        .candidate-attrition-scroll-container::-webkit-scrollbar-track {
+          background: #080711;
+        }
+        .candidate-attrition-scroll-container::-webkit-scrollbar-thumb {
+          background: rgba(168, 85, 247, 0.35);
+          border-radius: 9999px;
+        }
+        .candidate-attrition-scroll-container::-webkit-scrollbar-thumb:hover {
+          background: rgba(168, 85, 247, 0.7);
+        }
       `}</style>
+      <div className="w-full p-5 md:p-6 pb-28 space-y-5">
 
       {/* ===================================================================
           1. FIXED HEADER BAR
@@ -2057,6 +2076,7 @@ export default function CandidateAttrition() {
           <span>{effectivenessData.risk_summary_insight}</span>
         </div>
       </section>
+      </div>
 
       {/* ===================================================================
           CENTERED LOCKER MODAL (Graphs & AI Co-Pilot)

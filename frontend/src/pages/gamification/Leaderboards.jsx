@@ -437,8 +437,28 @@ export default function Leaderboards({ backendData = null }) {
 
   return (
     <div
-      className={`min-h-screen ${tabTheme.pageBg} text-slate-100 font-sans p-5 md:p-6 space-y-6 transition-colors duration-500 overflow-x-hidden`}
+      className={`h-screen w-full ${tabTheme.pageBg} text-slate-100 font-sans overflow-y-auto overflow-x-hidden scroll-smooth transition-colors duration-500 leaderboards-scroll-container`}
     >
+      <style>{`
+        .leaderboards-scroll-container {
+          scrollbar-width: thin;
+          scrollbar-color: ${tabTheme.accentHex}66 #080711;
+        }
+        .leaderboards-scroll-container::-webkit-scrollbar {
+          width: 8px;
+        }
+        .leaderboards-scroll-container::-webkit-scrollbar-track {
+          background: rgba(0, 0, 0, 0.4);
+        }
+        .leaderboards-scroll-container::-webkit-scrollbar-thumb {
+          background: ${tabTheme.accentHex}55;
+          border-radius: 9999px;
+        }
+        .leaderboards-scroll-container::-webkit-scrollbar-thumb:hover {
+          background: ${tabTheme.accentHex}aa;
+        }
+      `}</style>
+      <div className="w-full p-5 md:p-6 pb-28 space-y-6">
       {/* ===================================================================
           1. DYNAMIC CHAMELEON HERO BANNER HEADER
       =================================================================== */}
@@ -575,28 +595,30 @@ export default function Leaderboards({ backendData = null }) {
           3. 5 CATEGORY TABS (EACH WITH ITS OWN SIGNATURE COLOR) + SEARCH
       =================================================================== */}
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div
-          className={`inline-flex flex-wrap items-center gap-1.5 ${tabTheme.cardBg} p-1.5 rounded-2xl border border-white/10 shadow-md`}
-        >
-          {[
-            { id: "curos", label: "🪙 Curos" },
-            { id: "completion", label: "🏆 Completion" },
-            { id: "retention", label: "📈 Retention" },
-            { id: "application", label: "🎖️ Application" },
-            { id: "streaks", label: "🔥 Streaks" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all duration-300 cursor-pointer ${
-                activeTab === tab.id
-                  ? tabTheme.pillActive
-                  : "text-slate-400 hover:text-white hover:bg-white/5"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <div className="overflow-x-auto max-w-full pb-1">
+          <div
+            className={`inline-flex items-center gap-1.5 ${tabTheme.cardBg} p-1.5 rounded-2xl border border-white/10 shadow-md whitespace-nowrap`}
+          >
+            {[
+              { id: "curos", label: "🪙 Curos" },
+              { id: "completion", label: "🏆 Completion" },
+              { id: "retention", label: "📈 Retention" },
+              { id: "application", label: "🎖️ Application" },
+              { id: "streaks", label: "🔥 Streaks" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all duration-300 cursor-pointer ${
+                  activeTab === tab.id
+                    ? tabTheme.pillActive
+                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="relative w-full sm:w-72">
@@ -1204,6 +1226,7 @@ export default function Leaderboards({ backendData = null }) {
           </table>
         </div>
       </section>
+      </div>
     </div>
   );
 }

@@ -417,7 +417,27 @@ export default function StreakManagement({ backendData = null }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#040711] text-slate-100 font-sans p-5 md:p-6 space-y-6 selection:bg-cyan-400 selection:text-slate-950 overflow-x-hidden">
+    <div className="h-screen w-full bg-[#040711] text-slate-100 font-sans selection:bg-cyan-400 selection:text-slate-950 overflow-y-auto overflow-x-hidden scroll-smooth streak-mgmt-scroll-container">
+      <style>{`
+        .streak-mgmt-scroll-container {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(6, 182, 212, 0.45) #040711;
+        }
+        .streak-mgmt-scroll-container::-webkit-scrollbar {
+          width: 8px;
+        }
+        .streak-mgmt-scroll-container::-webkit-scrollbar-track {
+          background: #040711;
+        }
+        .streak-mgmt-scroll-container::-webkit-scrollbar-thumb {
+          background: rgba(6, 182, 212, 0.35);
+          border-radius: 9999px;
+        }
+        .streak-mgmt-scroll-container::-webkit-scrollbar-thumb:hover {
+          background: rgba(6, 182, 212, 0.7);
+        }
+      `}</style>
+      <div className="w-full p-5 md:p-6 pb-28 space-y-6">
       {/* ===================================================================
           1. CYBER-SAPPHIRE & CRYO-FLAME COMMAND HEADER
       =================================================================== */}
@@ -832,6 +852,7 @@ export default function StreakManagement({ backendData = null }) {
           </table>
         </div>
       </section>
+      </div>
 
       <AdminManageStreakModal
         user={managedUser}
