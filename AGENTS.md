@@ -130,3 +130,10 @@ Examples:
 - Keep role checks centralized whenever possible.
 - Do not hardcode permissions in frontend components.
 - Follow the existing RBAC model before introducing new roles or permissions.
+
+---
+
+# Git & Deployment Rules
+
+- **NEVER push to `main` (or any remote branch) automatically.**
+- Always ask for and receive explicit user confirmation before running any `git push` command.
