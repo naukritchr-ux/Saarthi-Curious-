@@ -59,24 +59,31 @@ def create_notification_script(script: NotificationScriptCreate):
     db = SessionLocal()
 
     try:
-        if script.schedule_type != "once":
+        normalized_type = (script.schedule_type or "once").lower()
+        if normalized_type not in {"once", "daily"}:
             raise HTTPException(
                 status_code=400,
-                detail="Only one-time scheduled notifications are allowed"
+                detail="schedule_type must be either 'once' or 'daily'"
             )
 
-        if not script.schedule_date or not script.schedule_time:
+        if normalized_type == "once" and (not script.schedule_date or not script.schedule_time):
             raise HTTPException(
                 status_code=400,
-                detail="Schedule date and time are required"
+                detail="Schedule date and time are required for one-time notifications"
             )
-        # Create notification script
+
+        if normalized_type == "daily" and not script.schedule_time:
+            raise HTTPException(
+                status_code=400,
+                detail="Schedule time is required for daily notifications"
+            )
+
         new_script = NotificationScript(
             title=script.title,
             message=script.message,
             notification_type=script.notification_type,
             audience=script.audience,
-            schedule_type=script.schedule_type,
+            schedule_type=normalized_type,
             trigger_type=script.trigger_type,
             schedule_time=script.schedule_time,
             schedule_date=script.schedule_date,
@@ -87,18 +94,12 @@ def create_notification_script(script: NotificationScriptCreate):
         db.commit()
         db.refresh(new_script)
 
-        # ==========================================
-        # SAVE RECIPIENTS
-        # ==========================================
-
         for recipient in script.recipients:
-
             new_recipient = NotificationScriptRecipient(
                 script_id=new_script.id,
                 recipient_type=recipient.type,
                 recipient_value=str(recipient.value)
             )
-
             db.add(new_recipient)
 
         db.commit()
@@ -122,7 +123,7 @@ def delete_notification_script(script_id: int):
     db = SessionLocal()
     try:
         script = db.query(NotificationScript).filter(NotificationScript.id == script_id).first()
-        
+
         if not script:
             raise HTTPException(status_code=404, detail="Script not found")
 
@@ -140,7 +141,7 @@ def toggle_notification_script_status(script_id: int):
     db = SessionLocal()
     try:
         script = db.query(NotificationScript).filter(NotificationScript.id == script_id).first()
-        
+
         if not script:
             raise HTTPException(status_code=404, detail="Script not found")
 
@@ -165,18 +166,25 @@ def update_notification_script(
     db = SessionLocal()
 
     try:
-
-        if script.schedule_type != "once":
+        normalized_type = (script.schedule_type or "once").lower()
+        if normalized_type not in {"once", "daily"}:
             raise HTTPException(
                 status_code=400,
-                detail="Only one-time scheduled notifications are allowed"
+                detail="schedule_type must be either 'once' or 'daily'"
             )
 
-        if not script.schedule_date or not script.schedule_time:
+        if normalized_type == "once" and (not script.schedule_date or not script.schedule_time):
             raise HTTPException(
                 status_code=400,
-                detail="Schedule date and time are required"
+                detail="Schedule date and time are required for one-time notifications"
             )
+
+        if normalized_type == "daily" and not script.schedule_time:
+            raise HTTPException(
+                status_code=400,
+                detail="Schedule time is required for daily notifications"
+            )
+
         existing_script = (
             db.query(NotificationScript)
             .filter(NotificationScript.id == script_id)
@@ -189,29 +197,25 @@ def update_notification_script(
                 detail="Script not found"
             )
 
-        # Update script details
         existing_script.title = script.title
         existing_script.message = script.message
         existing_script.notification_type = script.notification_type
         existing_script.audience = script.audience
-        existing_script.schedule_type = script.schedule_type
+        existing_script.schedule_type = normalized_type
         existing_script.schedule_time = script.schedule_time
-        existing_script.schedule_date = script.schedule_date
+        existing_script.schedule_date = script.schedule_date if normalized_type == "once" else None
         existing_script.trigger_type = script.trigger_type
 
-        # Remove old recipients
         db.query(NotificationScriptRecipient).filter(
             NotificationScriptRecipient.script_id == script_id
         ).delete(synchronize_session=False)
 
-        # Add the newly selected recipients
         for recipient in script.recipients:
             new_recipient = NotificationScriptRecipient(
                 script_id=script_id,
                 recipient_type=recipient.type,
                 recipient_value=str(recipient.value)
             )
-
             db.add(new_recipient)
 
         db.commit()

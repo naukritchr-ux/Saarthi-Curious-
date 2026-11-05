@@ -14,6 +14,11 @@ import {
   Clock,
   X,
   AlertCircle,
+  Sparkles,
+  Zap,
+  Target,
+  TrendingUp,
+  ShieldCheck,
 } from "lucide-react";
 
 // ============ CONSTANTS ============
@@ -24,6 +29,27 @@ const groupOptions = [
   { label: "Franchise Employees", type: "role", roleId: 5 },
   { label: "Franchise Developers", type: "role", roleId: 6 },
   { label: "Head Office Staff", type: "role", roleId: 7 },
+];
+
+const defaultRules = [
+  {
+    id: "attrition",
+    label: "At-risk learner nudges",
+    description: "Send a recovery message when flight risk crosses 65%.",
+    enabled: true,
+  },
+  {
+    id: "streak",
+    label: "Streak recovery alerts",
+    description: "Engage learners whose streak is slipping below 3 days.",
+    enabled: true,
+  },
+  {
+    id: "completion",
+    label: "Completion boosters",
+    description: "Push milestone nudges to learners with 70%+ engagement.",
+    enabled: false,
+  },
 ];
 
 // ============ UTILITY FUNCTIONS ============
@@ -229,6 +255,25 @@ const NotificationScriptsPage = () => {
   ]);
   const [deleteModal, setDeleteModal] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [rules, setRules] = useState(defaultRules);
+  const [aiConfig, setAiConfig] = useState({
+    objective: "reduce_attrition",
+    audience: "all",
+    tone: "encouraging",
+    slot: "morning",
+    reward: "25",
+  });
+  const [telemetry, setTelemetry] = useState({
+    highRiskCount: 0,
+    mediumRiskCount: 0,
+    lowRiskCount: 0,
+    topPerformersCount: 0,
+    leader: "--",
+    streak: "--",
+  });
+  const [generatedNudge, setGeneratedNudge] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isDispatching, setIsDispatching] = useState(false);
   const audienceDropdownRef = useRef(null);
 
   const [newScript, setNewScript] = useState({
@@ -256,66 +301,88 @@ const NotificationScriptsPage = () => {
   }, []);
 
   const fetchUsers = useCallback(async () => {
-  try {
-    const token = localStorage.getItem("token");
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API_BASE}/users`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-    console.log("Token available:", !!token);
-
-    const response = await axios.get(`${API_BASE}/users`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    console.log("Users API response:", response.data);
-
-    if (Array.isArray(response.data)) {
-      setUsers(response.data);
-    } else {
+      if (Array.isArray(response.data)) {
+        setUsers(response.data);
+      } else {
+        setUsers([]);
+      }
+    } catch (error) {
+      console.error(
+        "Error fetching users:",
+        error.response?.data || error.message
+      );
       setUsers([]);
-      console.error("Unexpected users response:", response.data);
     }
-  } catch (error) {
-    console.error(
-      "Error fetching users:",
-      error.response?.data || error.message
-    );
-    setUsers([]);
-  }
-}, []);
+  }, []);
 
-const fetchRoles = useCallback(async () => {
-  try {
-    const token = localStorage.getItem("token");
+  const fetchRoles = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API_BASE}/roles`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-    const response = await axios.get(`${API_BASE}/roles`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    console.log("Roles API response:", response.data);
-
-    if (Array.isArray(response.data)) {
-      setRoles(response.data);
-    } else {
+      if (Array.isArray(response.data)) {
+        setRoles(response.data);
+      } else {
+        setRoles([]);
+      }
+    } catch (error) {
+      console.error(
+        "Error fetching roles:",
+        error.response?.data || error.message
+      );
       setRoles([]);
     }
-  } catch (error) {
-    console.error(
-      "Error fetching roles:",
-      error.response?.data || error.message
-    );
-    setRoles([]);
-  }
-}, []);
+  }, []);
+
+  const fetchTelemetry = useCallback(async () => {
+    try {
+      const [attritionRes, streaksRes, leaderboardRes] = await Promise.all([
+        axios.get(`${API_BASE}/analytics/candidate-attrition`).catch(() => ({ data: {} })),
+        axios.get(`${API_BASE}/analytics/streaks`).catch(() => ({ data: { users: [] } })),
+        axios.get(`${API_BASE}/analytics/leaderboards`).catch(() => ({ data: { competitors: [] } })),
+      ]);
+
+      const attrition = attritionRes.data || {};
+      const streaks = streaksRes.data || { users: [] };
+      const leaderboard = leaderboardRes.data || { competitors: [] };
+
+      const competitors = leaderboard.competitors || [];
+      const topLeader = competitors.length > 0 ? competitors[0] : null;
+      const activeStreaks = streaks.users || [];
+      const topStreak = activeStreaks.length > 0 ? activeStreaks[0] : null;
+
+      setTelemetry({
+        highRiskCount: attrition.high_risk_count || 0,
+        mediumRiskCount: attrition.medium_risk_count || 0,
+        lowRiskCount: attrition.low_risk_count || 0,
+        topPerformersCount: attrition.top_performers_count || 0,
+        leader: topLeader ? topLeader.name : "--",
+        streak: topStreak ? `${topStreak.current_streak || 0} day streak` : "--",
+      });
+    } catch (error) {
+      console.error("Error fetching notification telemetry:", error);
+    }
+  }, []);
 
   // ============ EFFECTS ============
   useEffect(() => {
     fetchScripts();
     fetchUsers();
     fetchRoles();
-  }, [fetchScripts, fetchUsers]);
+    fetchTelemetry();
+  }, [fetchScripts, fetchUsers, fetchRoles, fetchTelemetry]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -333,37 +400,33 @@ const fetchRoles = useCallback(async () => {
     };
   }, []);
 
+  const isAllUsersSelected = selectedRecipients.some(
+    (recipient) => recipient.type === "all"
+  );
 
-const isAllUsersSelected = selectedRecipients.some(
-  (recipient) => recipient.type === "all"
-);
+  const selectedRoleIds = selectedRecipients
+    .filter((recipient) => recipient.type === "role")
+    .map((recipient) => recipient.roleId);
 
-const selectedRoleIds = selectedRecipients
-  .filter((recipient) => recipient.type === "role")
-  .map((recipient) => recipient.roleId);
+  const filteredUsers = users.filter((user) => {
+    if (isAllUsersSelected) {
+      return true;
+    }
 
-const filteredUsers = users.filter((user) => {
-  // All Users → show everyone
-  if (isAllUsersSelected) {
-    return true;
-  }
+    if (selectedRoleIds.length === 0) {
+      return true;
+    }
 
-  // No role selected → show everyone
-  if (selectedRoleIds.length === 0) {
-    return true;
-  }
-
-  // Role selected → show only users with that role
-  return selectedRoleIds.includes(user.role_id);
-});
+    return selectedRoleIds.includes(user.role_id);
+  });
 
   // ============ DERIVED STATE ============
   const morningScripts = scripts.filter(
-    (script) => script.notification_type === "Morning",
+    (script) => script.notification_type === "Morning"
   );
 
   const eveningScripts = scripts.filter(
-    (script) => script.notification_type === "Evening",
+    (script) => script.notification_type === "Evening"
   );
 
   const morningCount = morningScripts.length;
@@ -376,7 +439,7 @@ const filteredUsers = users.filter((user) => {
     if (recipient.type === "role") return recipient.value;
     if (recipient.type === "user") {
       const found = users.find(
-        (user) => (user.user_id || user.id) === recipient.value,
+        (user) => (user.user_id || user.id) === recipient.value
       );
       return found ? getUserLabel(found) : `User ${recipient.value}`;
     }
@@ -395,80 +458,59 @@ const filteredUsers = users.filter((user) => {
     selectedRecipients.some(
       (recipient) =>
         recipient.type === target.type &&
-        String(recipient.value) === String(target.value),
+        String(recipient.value) === String(target.value)
     );
 
-const handleToggleRecipient = (recipient) => {
-  setSelectedRecipients((prev) => {
-    // =========================
-    // ALL USERS
-    // =========================
-    if (recipient.type === "all") {
-      const alreadySelected = prev.some(
-        (item) => item.type === "all"
-      );
+  const handleToggleRecipient = (recipient) => {
+    setSelectedRecipients((prev) => {
+      if (recipient.type === "all") {
+        const alreadySelected = prev.some((item) => item.type === "all");
 
-      if (alreadySelected) {
+        if (alreadySelected) {
+          setNewScript((prevState) => ({
+            ...prevState,
+            audience: "",
+          }));
+          return [];
+        }
+
+        const finalSelection = [{ type: "all", value: "All Users" }];
+
         setNewScript((prevState) => ({
           ...prevState,
-          audience: "",
+          audience: "All Users",
         }));
 
-        return [];
+        return finalSelection;
       }
 
-      const finalSelection = [
-        {
-          type: "all",
-          value: "All Users",
-        },
-      ];
+      const withoutAll = prev.filter((item) => item.type !== "all");
+      const alreadySelected = withoutAll.some(
+        (item) =>
+          item.type === recipient.type &&
+          String(item.value) === String(recipient.value)
+      );
+
+      const next = alreadySelected
+        ? withoutAll.filter(
+            (item) =>
+              !(
+                item.type === recipient.type &&
+                String(item.value) === String(recipient.value)
+              )
+          )
+        : [...withoutAll, recipient];
 
       setNewScript((prevState) => ({
         ...prevState,
-        audience: "All Users",
+        audience:
+          next.length === 0 ? "" : getAudienceText(next),
       }));
 
-      return finalSelection;
-    }
+      return next;
+    });
+  };
 
-    // =========================
-    // ROLE / INDIVIDUAL USER
-    // =========================
-
-    // If "All Users" is currently selected and user tries to select something else,
-    // first deselect "All Users"
-    const withoutAll = prev.filter(
-      (item) => item.type !== "all"
-    );
-
-    const alreadySelected = withoutAll.some(
-      (item) =>
-        item.type === recipient.type &&
-        String(item.value) === String(recipient.value)
-    );
-
-    const next = alreadySelected
-      ? withoutAll.filter(
-          (item) =>
-            !(
-              item.type === recipient.type &&
-              String(item.value) === String(recipient.value)
-            )
-        )
-      : [...withoutAll, recipient];
-
-    setNewScript((prevState) => ({
-      ...prevState,
-      audience:
-        next.length === 0
-          ? ""
-          : getAudienceText(next),
-    }));
-
-    return next;
-  });
-};
   const resetAudienceSelection = () => {
     setSelectedRecipients([{ type: "all", value: "All Users" }]);
     setNewScript((prev) => ({
@@ -494,7 +536,6 @@ const handleToggleRecipient = (recipient) => {
       schedule_date: script.schedule_date || "",
     });
 
-    // Load previously saved recipients
     const savedRecipients = (script.recipients || []).map((recipient) => ({
       type: recipient.type,
       value: recipient.value,
@@ -503,7 +544,7 @@ const handleToggleRecipient = (recipient) => {
     setSelectedRecipients(
       savedRecipients.length > 0
         ? savedRecipients
-        : [{ type: "all", value: "All Users" }],
+        : [{ type: "all", value: "All Users" }]
     );
 
     setShowModal(true);
@@ -530,7 +571,6 @@ const handleToggleRecipient = (recipient) => {
 
   // ============ CRUD OPERATIONS ============
   const addScript = async () => {
-    // Validation
     if (!newScript.title.trim()) {
       alert("Please enter a title");
       return;
@@ -559,7 +599,6 @@ const handleToggleRecipient = (recipient) => {
 
     try {
       if (editingScript) {
-        // Optimistic update for existing script
         const updatedScript = {
           ...editingScript,
           ...scriptData,
@@ -567,16 +606,15 @@ const handleToggleRecipient = (recipient) => {
 
         setScripts((prev) =>
           prev.map((script) =>
-            script.id === editingScript.id ? updatedScript : script,
-          ),
+            script.id === editingScript.id ? updatedScript : script
+          )
         );
 
         await axios.put(
           `${API_BASE}/notification-scripts/${editingScript.id}`,
-          scriptData,
+          scriptData
         );
       } else {
-        // Optimistic update for new script
         const tempId = Date.now();
         const newScriptWithId = {
           ...scriptData,
@@ -589,18 +627,16 @@ const handleToggleRecipient = (recipient) => {
 
         const response = await axios.post(
           `${API_BASE}/notification-scripts`,
-          scriptData,
+          scriptData
         );
 
-        // Replace temp script with real one from backend
         setScripts((prev) =>
-          prev.map((script) => (script.id === tempId ? response.data : script)),
+          prev.map((script) => (script.id === tempId ? response.data : script))
         );
       }
     } catch (error) {
       console.error("Error saving script:", error);
       alert("Failed to save script. Please try again.");
-      // Revert on error by fetching fresh data
       fetchScripts();
     }
   };
@@ -623,8 +659,8 @@ const handleToggleRecipient = (recipient) => {
         prev.map((script) =>
           script.id === id
             ? { ...script, is_active: !script.is_active }
-            : script,
-        ),
+            : script
+        )
       );
 
       await axios.put(`${API_BASE}/notification-scripts/${id}/status`);
@@ -632,6 +668,54 @@ const handleToggleRecipient = (recipient) => {
       console.error("Error toggling status:", error);
       alert("Failed to update script status. Please try again.");
       fetchScripts();
+    }
+  };
+
+  const generateNudge = async () => {
+    try {
+      setIsGenerating(true);
+      const response = await axios.post(
+        `${API_BASE}/notifications/ai-generate-nudge`,
+        {
+          objective: aiConfig.objective,
+          audience: aiConfig.audience,
+          tone: aiConfig.tone,
+          preferred_slot: aiConfig.slot,
+          reward: aiConfig.reward,
+        }
+      );
+
+      setGeneratedNudge(response.data);
+    } catch (error) {
+      console.error("Error generating nudge:", error);
+      setGeneratedNudge({
+        title: "Engagement Recovery Nudge",
+        message:
+          "Your learners are active, but a few at-risk cohorts need a quick motivation boost. Send a short, encouraging reminder with a small Curos reward to keep momentum high.",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const dispatchNudge = async () => {
+    if (!generatedNudge) return;
+
+    try {
+      setIsDispatching(true);
+      await axios.post(`${API_BASE}/notifications/dispatch`, {
+        title: generatedNudge.title,
+        message: generatedNudge.message,
+        audience: aiConfig.audience,
+        channel: "email",
+        recipients: [],
+      });
+      alert("Nudge dispatched successfully.");
+    } catch (error) {
+      console.error("Error dispatching nudge:", error);
+      alert("Failed to dispatch nudge. Please try again.");
+    } finally {
+      setIsDispatching(false);
     }
   };
 
@@ -657,7 +741,7 @@ const handleToggleRecipient = (recipient) => {
             Notification Scripts
           </h1>
           <p className="text-[#4F4679] mt-2">
-            Manage Morning and Evening notifications
+            Manual automation, AI nudges, and live learner telemetry
           </p>
         </div>
 
@@ -670,63 +754,210 @@ const handleToggleRecipient = (recipient) => {
         </button>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-[#ECE5F2] rounded-2xl p-5 border-l-4 border-amber-400 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <Sun size={20} className="text-amber-600" />
-            <p className="text-[#4F4679] text-sm font-medium">
-              Morning Scripts
-            </p>
+            <p className="text-[#4F4679] text-sm font-medium">Morning</p>
           </div>
           <h2 className="text-3xl font-bold text-[#1E1B4B]">{morningCount}</h2>
-          <p className="text-xs text-[#4F4679] mt-1">
-            {morningCount > 0 && totalCount > 0
-              ? `${Math.round((morningCount / totalCount) * 100)}% of total`
-              : "No morning scripts"}
-          </p>
+          <p className="text-xs text-[#4F4679] mt-1">Active morning templates</p>
         </div>
 
         <div className="bg-[#ECE5F2] rounded-2xl p-5 border-l-4 border-indigo-400 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <Moon size={20} className="text-indigo-600" />
-            <p className="text-[#4F4679] text-sm font-medium">
-              Evening Scripts
-            </p>
+            <p className="text-[#4F4679] text-sm font-medium">Evening</p>
           </div>
           <h2 className="text-3xl font-bold text-[#1E1B4B]">{eveningCount}</h2>
-          <p className="text-xs text-[#4F4679] mt-1">
-            {eveningCount > 0 && totalCount > 0
-              ? `${Math.round((eveningCount / totalCount) * 100)}% of total`
-              : "No evening scripts"}
-          </p>
+          <p className="text-xs text-[#4F4679] mt-1">Evening reminders ready</p>
         </div>
 
         <div className="bg-[#ECE5F2] rounded-2xl p-5 border-l-4 border-[#693C83] shadow-sm">
           <div className="flex items-center gap-2 mb-2">
-            <Bell size={20} className="text-[#693C83]" />
-            <p className="text-[#4F4679] text-sm font-medium">Total Scripts</p>
+            <TrendingUp size={20} className="text-[#693C83]" />
+            <p className="text-[#4F4679] text-sm font-medium">High Risk</p>
           </div>
-          <h2 className="text-3xl font-bold text-[#693C83]">{totalCount}</h2>
-          <p className="text-xs text-[#4F4679] mt-1">
-            {totalCount > 0
-              ? `${morningCount} morning · ${eveningCount} evening`
-              : "No scripts created yet"}
-          </p>
+          <h2 className="text-3xl font-bold text-[#1E1B4B]">{telemetry.highRiskCount}</h2>
+          <p className="text-xs text-[#4F4679] mt-1">Learners needing attention</p>
+        </div>
+
+        <div className="bg-[#ECE5F2] rounded-2xl p-5 border-l-4 border-emerald-400 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <ShieldCheck size={20} className="text-emerald-600" />
+            <p className="text-[#4F4679] text-sm font-medium">Top Performer</p>
+          </div>
+          <h2 className="text-3xl font-bold text-[#1E1B4B]">{telemetry.topPerformersCount}</h2>
+          <p className="text-xs text-[#4F4679] mt-1">Strong momentum cohort</p>
         </div>
       </div>
 
-      {/* Scripts Sections */}
+      <div className="grid grid-cols-1 xl:grid-cols-[1.35fr_0.65fr] gap-6 mb-6">
+        <div className="bg-white border border-[#E5DDF0] rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="bg-[#F3E7FF] p-2.5 rounded-xl">
+              <Sparkles size={20} className="text-[#693C83]" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-[#1E1B4B]">AI Nudge Studio</h2>
+              <p className="text-sm text-[#4F4679]">Generate personalized nudges from live engagement telemetry</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-semibold text-[#1E1B4B] mb-1.5">Goal</label>
+              <select
+                value={aiConfig.objective}
+                onChange={(e) => setAiConfig({ ...aiConfig, objective: e.target.value })}
+                className="w-full border border-[#D9CFE8] rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#693C83]"
+              >
+                <option value="reduce_attrition">Reduce attrition</option>
+                <option value="improve_streaks">Improve streaks</option>
+                <option value="boost_completion">Boost completion</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-[#1E1B4B] mb-1.5">Audience</label>
+              <select
+                value={aiConfig.audience}
+                onChange={(e) => setAiConfig({ ...aiConfig, audience: e.target.value })}
+                className="w-full border border-[#D9CFE8] rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#693C83]"
+              >
+                <option value="all">All learners</option>
+                <option value="at_risk">At-risk learners</option>
+                <option value="leaders">Top performers</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-[#1E1B4B] mb-1.5">Tone</label>
+              <select
+                value={aiConfig.tone}
+                onChange={(e) => setAiConfig({ ...aiConfig, tone: e.target.value })}
+                className="w-full border border-[#D9CFE8] rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#693C83]"
+              >
+                <option value="encouraging">Encouraging</option>
+                <option value="urgent">Urgent</option>
+                <option value="motivational">Motivational</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-[#1E1B4B] mb-1.5">Preferred slot</label>
+              <select
+                value={aiConfig.slot}
+                onChange={(e) => setAiConfig({ ...aiConfig, slot: e.target.value })}
+                className="w-full border border-[#D9CFE8] rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#693C83]"
+              >
+                <option value="morning">Morning</option>
+                <option value="evening">Evening</option>
+                <option value="immediate">Immediate</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-2 text-sm text-[#4F4679]">
+              <Target size={16} className="text-[#693C83]" />
+              <span>Suggested reward</span>
+            </div>
+            <select
+              value={aiConfig.reward}
+              onChange={(e) => setAiConfig({ ...aiConfig, reward: e.target.value })}
+              className="border border-[#D9CFE8] rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#693C83]"
+            >
+              <option value="10">10 Curos</option>
+              <option value="25">25 Curos</option>
+              <option value="50">50 Curos</option>
+            </select>
+          </div>
+
+          <button
+            onClick={generateNudge}
+            className="w-full flex justify-center items-center gap-2 bg-[#693C83] text-white px-5 py-3 rounded-xl hover:bg-[#563069] transition-all duration-200 disabled:opacity-70"
+            disabled={isGenerating}
+          >
+            <Sparkles size={18} />
+            {isGenerating ? "Generating nudge..." : "Generate AI Nudge"}
+          </button>
+
+          {generatedNudge && (
+            <div className="mt-5 rounded-2xl border border-[#E5DDF0] bg-[#F9F5FF] p-4">
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <p className="text-sm font-semibold text-[#1E1B4B]">Generated suggestion</p>
+                <span className="px-2 py-1 rounded-full bg-[#F3E7FF] text-[#693C83] text-xs font-medium">
+                  {aiConfig.slot}
+                </span>
+              </div>
+              <h3 className="text-lg font-bold text-[#1E1B4B] mb-2">{generatedNudge.title}</h3>
+              <p className="text-sm text-[#4F4679] leading-6">{generatedNudge.message}</p>
+              <div className="flex justify-end mt-4">
+                <button
+                  onClick={dispatchNudge}
+                  className="flex items-center gap-2 bg-[#10B981] text-white px-4 py-2 rounded-xl hover:bg-[#059669] transition-colors disabled:opacity-70"
+                  disabled={isDispatching}
+                >
+                  <Zap size={16} />
+                  {isDispatching ? "Dispatching..." : "Dispatch now"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white border border-[#E5DDF0] rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="bg-[#ECFDF5] p-2.5 rounded-xl">
+              <Bell size={20} className="text-emerald-600" />
+            </div>
+            <h2 className="text-xl font-semibold text-[#1E1B4B]">Autopilot Rules</h2>
+          </div>
+
+          <div className="space-y-3">
+            {rules.map((rule) => (
+              <div key={rule.id} className="rounded-2xl border border-[#E5DDF0] bg-[#F9F5FF] p-3">
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <div>
+                    <p className="text-sm font-semibold text-[#1E1B4B]">{rule.label}</p>
+                    <p className="text-xs text-[#4F4679] mt-1">{rule.description}</p>
+                  </div>
+                  <button
+                    onClick={() =>
+                      setRules((prev) =>
+                        prev.map((item) =>
+                          item.id === rule.id
+                            ? { ...item, enabled: !item.enabled }
+                            : item
+                        )
+                      )
+                    }
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      rule.enabled ? "bg-[#10B981]" : "bg-[#D9CFE8]"
+                    }`}
+                    aria-label={`Toggle ${rule.label}`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        rule.enabled ? "translate-x-6" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <div className="bg-white border border-[#E5DDF0] rounded-2xl shadow-sm overflow-hidden">
-        {/* Morning Section */}
         <div className="p-6">
           <div className="flex items-center gap-3 mb-4 pb-3 border-b border-[#E5DDF0]">
             <div className="bg-amber-100 p-2 rounded-xl">
               <Sun size={20} className="text-amber-700" />
             </div>
-            <h2 className="text-xl font-semibold text-[#1E1B4B]">
-              Morning Scripts
-            </h2>
+            <h2 className="text-xl font-semibold text-[#1E1B4B]">Morning Scripts</h2>
             <span className="bg-amber-100 text-amber-700 px-3 py-0.5 rounded-full text-sm font-medium">
               {morningScripts.length}
             </span>
@@ -735,9 +966,7 @@ const handleToggleRecipient = (recipient) => {
           {morningScripts.length === 0 ? (
             <div className="border-2 border-dashed border-gray-200 rounded-xl p-10 text-center">
               <Bell size={40} className="mx-auto text-gray-400 mb-3" />
-              <p className="text-gray-500 font-medium">
-                No Morning Scripts Yet
-              </p>
+              <p className="text-gray-500 font-medium">No Morning Scripts Yet</p>
               <p className="text-gray-400 text-sm mt-1">
                 Create a script to start sending morning notifications
               </p>
@@ -749,7 +978,7 @@ const handleToggleRecipient = (recipient) => {
                   key={script.id}
                   script={script}
                   onEdit={openEditModal}
-                  onDelete={setDeleteModal}
+                  onDelete={(item) => setDeleteModal({ script: item })}
                   onToggleStatus={toggleStatus}
                 />
               ))}
@@ -757,20 +986,16 @@ const handleToggleRecipient = (recipient) => {
           )}
         </div>
 
-        {/* Divider */}
         {morningScripts.length > 0 && eveningScripts.length > 0 && (
           <div className="border-t border-[#E5DDF0] mx-6"></div>
         )}
 
-        {/* Evening Section */}
         <div className="p-6 pt-0">
           <div className="flex items-center gap-3 mb-4 pb-3 border-b border-[#E5DDF0]">
             <div className="bg-indigo-100 p-2 rounded-xl">
               <Moon size={20} className="text-indigo-700" />
             </div>
-            <h2 className="text-xl font-semibold text-[#1E1B4B]">
-              Evening Scripts
-            </h2>
+            <h2 className="text-xl font-semibold text-[#1E1B4B]">Evening Scripts</h2>
             <span className="bg-indigo-100 text-indigo-700 px-3 py-0.5 rounded-full text-sm font-medium">
               {eveningScripts.length}
             </span>
@@ -779,9 +1004,7 @@ const handleToggleRecipient = (recipient) => {
           {eveningScripts.length === 0 ? (
             <div className="border-2 border-dashed border-gray-200 rounded-xl p-10 text-center">
               <Bell size={40} className="mx-auto text-gray-400 mb-3" />
-              <p className="text-gray-500 font-medium">
-                No Evening Scripts Yet
-              </p>
+              <p className="text-gray-500 font-medium">No Evening Scripts Yet</p>
               <p className="text-gray-400 text-sm mt-1">
                 Create a script to start sending evening notifications
               </p>
@@ -793,7 +1016,7 @@ const handleToggleRecipient = (recipient) => {
                   key={script.id}
                   script={script}
                   onEdit={openEditModal}
-                  onDelete={setDeleteModal}
+                  onDelete={(item) => setDeleteModal({ script: item })}
                   onToggleStatus={toggleStatus}
                 />
               ))}
@@ -866,22 +1089,6 @@ const handleToggleRecipient = (recipient) => {
               </div>
 
               <div className="space-y-4">
-                {newScript.trigger_type === "scheduled" && (
-                  <select
-                    value={newScript.type}
-                    onChange={(e) =>
-                      setNewScript({
-                        ...newScript,
-                        type: e.target.value,
-                      })
-                    }
-                    className="w-full border border-[#D9CFE8] rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#693C83] focus:border-transparent transition-shadow"
-                  >
-                    <option>Morning</option>
-                    <option>Evening</option>
-                  </select>
-                )}
-
                 <div>
                   <label className="block text-sm font-semibold text-[#1E1B4B] mb-1.5">
                     Title
@@ -889,18 +1096,13 @@ const handleToggleRecipient = (recipient) => {
                   <input
                     type="text"
                     placeholder="Enter script title..."
-                    value={
-                      newScript.trigger_type === "program_published"
-                        ? "New Program Available 🎓"
-                        : newScript.title
-                    }
+                    value={newScript.title}
                     onChange={(e) =>
                       setNewScript({
                         ...newScript,
                         title: e.target.value,
                       })
                     }
-                    disabled={newScript.trigger_type === "program_published"}
                     className="w-full border border-[#D9CFE8] rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#693C83] focus:border-transparent transition-shadow disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
                 </div>
@@ -919,11 +1121,7 @@ const handleToggleRecipient = (recipient) => {
                   <textarea
                     rows={4}
                     placeholder="Enter notification message..."
-                    value={
-                      newScript.trigger_type === "program_published"
-                        ? 'A new program "{programName}" has been published. Go and explore it and keep learning! 🚀'
-                        : newScript.message
-                    }
+                    value={newScript.message}
                     onChange={(e) => {
                       const message = e.target.value.slice(0, 500);
                       setNewScript({
@@ -931,11 +1129,11 @@ const handleToggleRecipient = (recipient) => {
                         message,
                       });
                     }}
-                    disabled={newScript.trigger_type === "program_published"}
                     className="w-full border border-[#D9CFE8] rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#693C83] focus:border-transparent transition-shadow resize-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
                 </div>
               </div>
+
               <div className="relative" ref={audienceDropdownRef}>
                 <label className="block text-sm font-semibold text-[#1E1B4B] mb-1.5">
                   Audience
@@ -987,16 +1185,16 @@ const handleToggleRecipient = (recipient) => {
 
                       <div className="space-y-2">
                         {groupOptions.map((option) => {
-  const recipient = {
-    type: option.type,
-    value: option.label,
-    ...(option.roleId && { roleId: option.roleId }),
-  };
+                          const recipient = {
+                            type: option.type,
+                            value: option.label,
+                            ...(option.roleId && { roleId: option.roleId }),
+                          };
 
-  const isSelected = isRecipientSelected(recipient);
+                          const isSelected = isRecipientSelected(recipient);
                           return (
                             <label
-                              key={option}
+                              key={option.label}
                               className={`flex items-center gap-3 rounded-2xl px-3 py-2 text-sm transition ${
                                 option.label === "All Users"
                                   ? "hover:bg-[#F3F0FF]"
@@ -1008,9 +1206,7 @@ const handleToggleRecipient = (recipient) => {
                               <input
                                 type="checkbox"
                                 checked={isSelected}
-                                onChange={() =>
-                                  handleToggleRecipient(recipient)
-                                }
+                                onChange={() => handleToggleRecipient(recipient)}
                                 className="h-4 w-4 rounded border-[#D9CFE8] text-[#693C83] focus:ring-[#693C83]"
                               />
                               <span>{option.label}</span>
@@ -1024,8 +1220,23 @@ const handleToggleRecipient = (recipient) => {
                           Users
                         </p>
                         <div className="max-h-56 space-y-2 overflow-y-auto pr-2">
+                          {filteredUsers.filter((user) => {
+                            const searchTerm = recipientSearch.toLowerCase();
+                            const label = getUserLabel(user).toLowerCase();
+                            const email = (user.email || "").toLowerCase();
+                            return (
+                              !searchTerm ||
+                              label.includes(searchTerm) ||
+                              email.includes(searchTerm)
+                            );
+                          }).length === 0 && (
+                            <div className="rounded-2xl border border-dashed border-[#D9CFE8] bg-[#FAF8FF] p-4 text-sm text-[#6B6280]">
+                              No users found
+                            </div>
+                          )}
+
                           {filteredUsers
-  .filter((user) => {
+                            .filter((user) => {
                               const searchTerm = recipientSearch.toLowerCase();
                               const label = getUserLabel(user).toLowerCase();
                               const email = (user.email || "").toLowerCase();
@@ -1055,9 +1266,7 @@ const handleToggleRecipient = (recipient) => {
                                   <input
                                     type="checkbox"
                                     checked={isSelected}
-                                    onChange={() =>
-                                      handleToggleRecipient(recipient)
-                                    }
+                                    onChange={() => handleToggleRecipient(recipient)}
                                     className="h-4 w-4 rounded border-[#D9CFE8] text-[#693C83] focus:ring-[#693C83]"
                                   />
                                   <div>
@@ -1073,20 +1282,6 @@ const handleToggleRecipient = (recipient) => {
                                 </label>
                               );
                             })}
-                          {filteredUsers.filter((user) => {
-                            const searchTerm = recipientSearch.toLowerCase();
-                            const label = getUserLabel(user).toLowerCase();
-                            const email = (user.email || "").toLowerCase();
-                            return (
-                              !searchTerm ||
-                              label.includes(searchTerm) ||
-                              email.includes(searchTerm)
-                            );
-                          }).length === 0 && (
-                            <div className="rounded-2xl border border-dashed border-[#D9CFE8] bg-[#FAF8FF] p-4 text-sm text-[#6B6280]">
-                              No users found
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -1202,9 +1397,7 @@ const handleToggleRecipient = (recipient) => {
                 <Trash2 size={24} className="text-red-600" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-[#1E1B4B]">
-                  Delete Script
-                </h3>
+                <h3 className="text-xl font-bold text-[#1E1B4B]">Delete Script</h3>
                 <p className="text-[#4F4679] text-sm mt-1">
                   Are you sure you want to delete this notification script?
                 </p>
@@ -1212,24 +1405,20 @@ const handleToggleRecipient = (recipient) => {
             </div>
 
             <div className="bg-[#ECE5F2] rounded-xl p-4 mb-4">
-              <p className="font-medium text-[#1E1B4B]">
-                {deleteModal.script.title}
-              </p>
+              <p className="font-medium text-[#1E1B4B]">{deleteModal.script.title}</p>
               <p className="text-sm text-[#4F4679] mt-0.5 flex items-center gap-1.5">
                 {deleteModal.script.notification_type === "Morning" ? (
                   <Sun size={14} className="text-amber-600" />
                 ) : (
                   <Moon size={14} className="text-indigo-600" />
                 )}
-                {deleteModal.script.notification_type} ·{" "}
-                {deleteModal.script.audience}
+                {deleteModal.script.notification_type} · {deleteModal.script.audience}
               </p>
             </div>
 
             <p className="text-sm text-red-600 mb-6 flex items-start gap-2">
               <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
-              This action cannot be undone. The script will be permanently
-              removed.
+              This action cannot be undone. The script will be permanently removed.
             </p>
 
             <div className="flex gap-3 justify-end">
