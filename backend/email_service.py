@@ -1,6 +1,7 @@
 import os
 import logging
 import base64
+import smtplib
 from dotenv import load_dotenv
 from email.message import EmailMessage
 from google.auth.transport.requests import Request
@@ -13,6 +14,55 @@ logger = logging.getLogger(__name__)
 
 GMAIL_SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
 GMAIL_TOKEN_URI = "https://oauth2.googleapis.com/token"
+
+
+def _send_via_smtp(to_email: str, subject: str, html: str) -> bool:
+    """Send HTML email via SMTP if GMAIL_APP_PASSWORD is set."""
+    load_dotenv(override=True)
+    sender = (
+        os.getenv("GMAIL_SENDER_EMAIL")
+        or os.getenv("GMAIL_USER")
+        or os.getenv("SMTP_USERNAME")
+        or os.getenv("SMTP_USER")
+        or ""
+    ).strip()
+    app_password = (
+        os.getenv("GMAIL_APP_PASSWORD")
+        or os.getenv("SMTP_PASSWORD")
+        or os.getenv("MAIL_PASSWORD")
+        or ""
+    ).replace(" ", "").strip()
+    host = os.getenv("SMTP_HOST") or "smtp.gmail.com"
+    try:
+        port = int(os.getenv("SMTP_PORT") or "587")
+    except ValueError:
+        port = 587
+
+    if not sender or not app_password:
+        return False
+
+    try:
+        msg = EmailMessage()
+        msg["From"] = f"Saarthi Curious <{sender}>"
+        msg["To"] = to_email
+        msg["Subject"] = subject
+        msg.set_content("This email requires an HTML-capable email client.")
+        msg.add_alternative(html, subtype="html")
+
+        if port == 465:
+            with smtplib.SMTP_SSL(host, port, timeout=15) as server:
+                server.login(sender, app_password)
+                server.send_message(msg)
+        else:
+            with smtplib.SMTP(host, port, timeout=15) as server:
+                server.starttls()
+                server.login(sender, app_password)
+                server.send_message(msg)
+        logger.info("Email sent successfully via SMTP to %s", to_email)
+        return True
+    except Exception as e:
+        logger.warning("SMTP sending failed for %s: %s", to_email, e)
+        return False
 
 
 def _gmail_credentials():
@@ -44,7 +94,12 @@ def _gmail_credentials():
 
 
 def send_email(to_email, subject, html):
-    """Send an HTML email through the Gmail API over HTTPS."""
+    """Send an HTML email through SMTP or Gmail API with automatic failover."""
+    # 1. Try SMTP first if credentials are configured
+    if _send_via_smtp(to_email, subject, html):
+        return True
+
+    # 2. Try Gmail OAuth API
     try:
         credentials = _gmail_credentials()
 
@@ -67,9 +122,8 @@ def send_email(to_email, subject, html):
         logger.info("Email sent successfully to %s", to_email)
         return True
     except Exception as e:
-        logger.exception(
-            f"Failed to send email to {to_email} "
-            f"({type(e).__name__}): {e}"
+        logger.warning(
+            f"Failed to send email to {to_email} via Gmail API ({type(e).__name__}): {e}"
         )
         return False
     

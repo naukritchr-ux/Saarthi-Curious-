@@ -59,23 +59,16 @@ def create_notification_script(script: NotificationScriptCreate):
     db = SessionLocal()
 
     try:
-        normalized_type = (script.schedule_type or "once").lower()
-        if normalized_type not in {"once", "daily"}:
+        if not script.schedule_time:
             raise HTTPException(
                 status_code=400,
-                detail="schedule_type must be either 'once' or 'daily'"
+                detail="Schedule time is required"
             )
 
-        if normalized_type == "once" and (not script.schedule_date or not script.schedule_time):
+        if script.schedule_type == "once" and not script.schedule_date:
             raise HTTPException(
                 status_code=400,
-                detail="Schedule date and time are required for one-time notifications"
-            )
-
-        if normalized_type == "daily" and not script.schedule_time:
-            raise HTTPException(
-                status_code=400,
-                detail="Schedule time is required for daily notifications"
+                detail="Schedule date is required for one-time notifications"
             )
 
         new_script = NotificationScript(
@@ -83,7 +76,7 @@ def create_notification_script(script: NotificationScriptCreate):
             message=script.message,
             notification_type=script.notification_type,
             audience=script.audience,
-            schedule_type=normalized_type,
+            schedule_type=script.schedule_type,
             trigger_type=script.trigger_type,
             schedule_time=script.schedule_time,
             schedule_date=script.schedule_date,
@@ -166,23 +159,16 @@ def update_notification_script(
     db = SessionLocal()
 
     try:
-        normalized_type = (script.schedule_type or "once").lower()
-        if normalized_type not in {"once", "daily"}:
+        if not script.schedule_time:
             raise HTTPException(
                 status_code=400,
-                detail="schedule_type must be either 'once' or 'daily'"
+                detail="Schedule time is required"
             )
 
-        if normalized_type == "once" and (not script.schedule_date or not script.schedule_time):
+        if script.schedule_type == "once" and not script.schedule_date:
             raise HTTPException(
                 status_code=400,
-                detail="Schedule date and time are required for one-time notifications"
-            )
-
-        if normalized_type == "daily" and not script.schedule_time:
-            raise HTTPException(
-                status_code=400,
-                detail="Schedule time is required for daily notifications"
+                detail="Schedule date is required for one-time notifications"
             )
 
         existing_script = (
@@ -201,9 +187,9 @@ def update_notification_script(
         existing_script.message = script.message
         existing_script.notification_type = script.notification_type
         existing_script.audience = script.audience
-        existing_script.schedule_type = normalized_type
+        existing_script.schedule_type = script.schedule_type
         existing_script.schedule_time = script.schedule_time
-        existing_script.schedule_date = script.schedule_date if normalized_type == "once" else None
+        existing_script.schedule_date = script.schedule_date
         existing_script.trigger_type = script.trigger_type
 
         db.query(NotificationScriptRecipient).filter(

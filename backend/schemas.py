@@ -126,14 +126,16 @@ class NotificationScriptCreate(BaseModel):
         schedule_time = values.get("schedule_time")
         schedule_date = values.get("schedule_date")
 
-        if schedule_type == "daily":
-            if schedule_time is None:
-                raise ValueError("schedule_time is required when schedule_type is 'daily'")
-            return values
+        if schedule_time is None:
+            raise ValueError("schedule_time is required")
 
         if schedule_type == "once":
-            if schedule_date is None or schedule_time is None:
-                raise ValueError("schedule_date and schedule_time are required when schedule_type is 'once'")
+            if schedule_date is None:
+                raise ValueError("schedule_date is required when schedule_type is 'once'")
+            return values
+
+        if schedule_type == "daily":
+            return values
 
         return values
 
@@ -154,22 +156,6 @@ class NotificationScriptResponse(BaseModel):
 
     class Config:
         from_attributes = True
-
-
-class NotificationNudgeGenerateRequest(BaseModel):
-    objective: str = "reduce_attrition"
-    audience: str = "all"
-    tone: str = "encouraging"
-    preferred_slot: str = "morning"
-    reward: str | int = 25
-
-
-class NotificationDispatchRequest(BaseModel):
-    title: str
-    message: str
-    audience: str = "all"
-    channel: str = "email"
-    recipients: Optional[List[int]] = []
 
 
 # =========================
