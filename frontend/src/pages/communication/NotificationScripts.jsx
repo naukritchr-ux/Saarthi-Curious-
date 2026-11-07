@@ -1175,10 +1175,10 @@ export default function NotificationScripts() {
 
   // SMTP Configuration State
   const [smtpStatus, setSmtpStatus] = useState({
-    configured: false,
-    sender_email: "anujjadhv3551@gmail.com",
-    has_password: false,
-    masked_password: "",
+    configured: true,
+    sender_email: "anujjadhv3558@gmail.com",
+    has_password: true,
+    masked_password: "dp••••••••my",
   });
   const [showSmtpModal, setShowSmtpModal] = useState(false);
 
@@ -1394,16 +1394,6 @@ export default function NotificationScripts() {
       ]);
       setSendingMail(false);
       showToast(`❌ Mail failed: ${errorDetail}`);
-
-      // If credentials missing or invalid, open config modal
-      if (
-        errorDetail.toLowerCase().includes("password") ||
-        errorDetail.toLowerCase().includes("smtp") ||
-        errorDetail.toLowerCase().includes("configured") ||
-        !smtpStatus.configured
-      ) {
-        setShowSmtpModal(true);
-      }
     }
   };
 

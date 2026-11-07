@@ -27,22 +27,26 @@ router = APIRouter(tags=["Notifications"])
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 
+# Hardcoded default sender and 16-character Google App Password
+DEFAULT_GMAIL_SENDER = "anujjadhv3558@gmail.com"
+DEFAULT_GMAIL_APP_PASSWORD = "dpuhvnwmbzgjegmy"
+
 
 def _get_active_smtp_config():
-    """Reload environment and return sanitized SMTP credentials."""
+    """Reload environment and return sanitized SMTP credentials with hardcoded default fallback."""
     load_dotenv(override=True)
     sender_email = (
         os.getenv("GMAIL_SENDER_EMAIL")
         or os.getenv("GMAIL_USER")
         or os.getenv("SMTP_USERNAME")
         or os.getenv("SMTP_USER")
-        or "anujjadhv3551@gmail.com"
+        or DEFAULT_GMAIL_SENDER
     ).strip()
     app_password = (
         os.getenv("GMAIL_APP_PASSWORD")
         or os.getenv("SMTP_PASSWORD")
         or os.getenv("MAIL_PASSWORD")
-        or ""
+        or DEFAULT_GMAIL_APP_PASSWORD
     ).replace(" ", "").strip()
     host = os.getenv("SMTP_HOST") or "smtp.gmail.com"
     try:
@@ -308,7 +312,7 @@ def get_smtp_status():
     )
     return {
         "configured": is_configured,
-        "sender_email": sender or "anujjadhv3551@gmail.com",
+        "sender_email": sender or DEFAULT_GMAIL_SENDER,
         "has_password": bool(password),
         "masked_password": masked_pass,
         "host": host,
@@ -437,14 +441,16 @@ def send_notification_mail(payload: SendMailRequest, db: Session = Depends(get_d
         except Exception:
             db.rollback()
 
-    if not app_password:
+    effective_sender = sender_email or DEFAULT_GMAIL_SENDER
+    effective_password = app_password or DEFAULT_GMAIL_APP_PASSWORD
+
+    if not effective_password:
         raise HTTPException(
             status_code=400,
-            detail="Gmail App Password is not configured in backend/.env. Please enter your 16-character Google App Password in the setup dialog.",
+            detail="Gmail App Password is not configured in backend/.env.",
         )
 
     sent_recipients = []
-    effective_sender = sender_email or "anujjadhv3551@gmail.com"
 
     try:
         if port == 465:
@@ -454,7 +460,7 @@ def send_notification_mail(payload: SendMailRequest, db: Session = Depends(get_d
             server.starttls()
 
         with server:
-            server.login(effective_sender, app_password)
+            server.login(effective_sender, effective_password)
 
             for email_addr in payload.recipient_emails:
                 if not email_addr or "@" not in email_addr:

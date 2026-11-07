@@ -15,6 +15,9 @@ logger = logging.getLogger(__name__)
 GMAIL_SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
 GMAIL_TOKEN_URI = "https://oauth2.googleapis.com/token"
 
+DEFAULT_GMAIL_SENDER = "anujjadhv3558@gmail.com"
+DEFAULT_GMAIL_APP_PASSWORD = "dpuhvnwmbzgjegmy"
+
 
 def _send_via_smtp(to_email: str, subject: str, html: str) -> bool:
     """Send HTML email via SMTP if GMAIL_APP_PASSWORD is set."""
@@ -24,13 +27,13 @@ def _send_via_smtp(to_email: str, subject: str, html: str) -> bool:
         or os.getenv("GMAIL_USER")
         or os.getenv("SMTP_USERNAME")
         or os.getenv("SMTP_USER")
-        or ""
+        or DEFAULT_GMAIL_SENDER
     ).strip()
     app_password = (
         os.getenv("GMAIL_APP_PASSWORD")
         or os.getenv("SMTP_PASSWORD")
         or os.getenv("MAIL_PASSWORD")
-        or ""
+        or DEFAULT_GMAIL_APP_PASSWORD
     ).replace(" ", "").strip()
     host = os.getenv("SMTP_HOST") or "smtp.gmail.com"
     try:
