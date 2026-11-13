@@ -5103,9 +5103,27 @@ export default function CandidateAttrition() {
           }
 
           /* ===================================================================
-             2. INDIVIDUAL USER TABS: NORMAL DARK BACKGROUND + 4-SIDED ACCENT BORDERS
-             No muddy green/brown/red fill — clean dark #0B0F1E interior with
-             permanent 4-sided multi-color premium borders!
+             1. SLOW, GRACEFUL ACCENT SHADE MOVEMENT (16s - 18s CYCLE)
+             Each user tab slowly breathes and shifts with its OWN accent color!
+          =================================================================== */
+          @keyframes slowAccentShadeDrift {
+            0% {
+              background-position: 0% 0%, 100% 100%, 50% 50%;
+            }
+            33% {
+              background-position: 100% 25%, 0% 75%, 50% 50%;
+            }
+            66% {
+              background-position: 35% 100%, 75% 15%, 50% 50%;
+            }
+            100% {
+              background-position: 0% 0%, 100% 100%, 50% 50%;
+            }
+          }
+
+          /* ===================================================================
+             2. USER TABS: PREMIUM 4-SIDED ACCENT BORDER + SLOW SHADE MOVEMENT
+             OF EACH TAB'S PARTICULAR ACCENT COLOR
           =================================================================== */
           .perm-user-tab-cyan,
           .perm-user-tab-amber,
@@ -5113,89 +5131,122 @@ export default function CandidateAttrition() {
           .perm-user-tab-emerald,
           .perm-user-tab-rose {
             position: relative;
-            background: linear-gradient(
-              155deg,
-              rgba(18, 23, 42, 0.92) 0%,
-              rgba(11, 15, 30, 0.96) 60%,
-              rgba(8, 11, 22, 0.98) 100%
-            ) !important;
-            transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
-              box-shadow 0.24s ease, border-color 0.24s ease !important;
+            background-size: 230% 230%, 230% 230%, 100% 100% !important;
+            animation: slowAccentShadeDrift 16s ease-in-out infinite !important;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.28s ease, border-color 0.28s ease !important;
           }
 
+          /* CYAN USER TAB: Premium Cyan Border + Slow Cyan Shade Movement */
           .perm-user-tab-cyan {
-            border: 1.8px solid rgba(34, 211, 238, 0.82) !important;
+            background-image:
+              radial-gradient(circle at 18% 22%, rgba(34, 211, 238, 0.24) 0%, transparent 55%),
+              radial-gradient(circle at 84% 80%, rgba(14, 165, 233, 0.2) 0%, transparent 58%),
+              linear-gradient(155deg, #0D1F33 0%, #091524 55%, #070E1A 100%) !important;
+            border: 1.8px solid rgba(56, 189, 248, 0.82) !important;
             box-shadow:
-              0 10px 26px rgba(0, 0, 0, 0.78),
-              0 0 18px -3px rgba(34, 211, 238, 0.28),
-              inset 0 1px 1.5px rgba(255, 255, 255, 0.25) !important;
+              0 10px 28px -6px rgba(0, 0, 0, 0.8),
+              0 0 22px -4px rgba(34, 211, 238, 0.28),
+              inset 0 0 24px rgba(34, 211, 238, 0.1),
+              inset 0 1px 1.5px rgba(255, 255, 255, 0.28) !important;
           }
           .perm-user-tab-cyan:hover {
             transform: translateY(-4px);
             border-color: #7DD3FC !important;
             box-shadow:
-              0 14px 30px rgba(0, 0, 0, 0.85),
-              0 0 24px 0px rgba(34, 211, 238, 0.42) !important;
+              0 14px 32px -6px rgba(0, 0, 0, 0.85),
+              0 0 28px 0px rgba(34, 211, 238, 0.42),
+              inset 0 0 28px rgba(34, 211, 238, 0.16) !important;
           }
 
+          /* AMBER USER TAB: Premium Gold-Amber Border + Slow Amber Shade Movement */
           .perm-user-tab-amber {
+            background-image:
+              radial-gradient(circle at 18% 22%, rgba(245, 158, 11, 0.24) 0%, transparent 55%),
+              radial-gradient(circle at 84% 80%, rgba(217, 119, 6, 0.2) 0%, transparent 58%),
+              linear-gradient(155deg, #271C12 0%, #19120C 55%, #110C09 100%) !important;
             border: 1.8px solid rgba(251, 191, 36, 0.82) !important;
             box-shadow:
-              0 10px 26px rgba(0, 0, 0, 0.78),
-              0 0 18px -3px rgba(245, 158, 11, 0.28),
-              inset 0 1px 1.5px rgba(255, 255, 255, 0.25) !important;
+              0 10px 28px -6px rgba(0, 0, 0, 0.8),
+              0 0 22px -4px rgba(245, 158, 11, 0.28),
+              inset 0 0 24px rgba(245, 158, 11, 0.1),
+              inset 0 1px 1.5px rgba(255, 255, 255, 0.28) !important;
           }
           .perm-user-tab-amber:hover {
             transform: translateY(-4px);
             border-color: #FDE047 !important;
             box-shadow:
-              0 14px 30px rgba(0, 0, 0, 0.85),
-              0 0 24px 0px rgba(245, 158, 11, 0.42) !important;
+              0 14px 32px -6px rgba(0, 0, 0, 0.85),
+              0 0 28px 0px rgba(245, 158, 11, 0.42),
+              inset 0 0 28px rgba(245, 158, 11, 0.16) !important;
           }
 
+          /* PURPLE USER TAB: Premium Violet Border + Slow Purple Shade Movement */
           .perm-user-tab-purple {
+            background-image:
+              radial-gradient(circle at 18% 22%, rgba(168, 85, 247, 0.26) 0%, transparent 55%),
+              radial-gradient(circle at 84% 80%, rgba(139, 92, 246, 0.22) 0%, transparent 58%),
+              linear-gradient(155deg, #211638 0%, #150E26 55%, #0D0919 100%) !important;
             border: 1.8px solid rgba(192, 132, 252, 0.84) !important;
             box-shadow:
-              0 10px 26px rgba(0, 0, 0, 0.78),
-              0 0 18px -3px rgba(168, 85, 247, 0.28),
-              inset 0 1px 1.5px rgba(255, 255, 255, 0.25) !important;
+              0 10px 28px -6px rgba(0, 0, 0, 0.8),
+              0 0 22px -4px rgba(168, 85, 247, 0.3),
+              inset 0 0 24px rgba(168, 85, 247, 0.12),
+              inset 0 1px 1.5px rgba(255, 255, 255, 0.28) !important;
           }
           .perm-user-tab-purple:hover {
             transform: translateY(-4px);
             border-color: #E9D5FF !important;
             box-shadow:
-              0 14px 30px rgba(0, 0, 0, 0.85),
-              0 0 24px 0px rgba(168, 85, 247, 0.42) !important;
+              0 14px 32px -6px rgba(0, 0, 0, 0.85),
+              0 0 28px 0px rgba(168, 85, 247, 0.44),
+              inset 0 0 28px rgba(168, 85, 247, 0.18) !important;
           }
 
+          /* EMERALD USER TAB: Premium Emerald Border + Slow Emerald Shade Movement */
           .perm-user-tab-emerald {
+            background-image:
+              radial-gradient(circle at 18% 22%, rgba(16, 185, 129, 0.24) 0%, transparent 55%),
+              radial-gradient(circle at 84% 80%, rgba(5, 150, 105, 0.2) 0%, transparent 58%),
+              linear-gradient(155deg, #0D2622 0%, #091917 55%, #06100F 100%) !important;
             border: 1.8px solid rgba(52, 211, 153, 0.82) !important;
             box-shadow:
-              0 10px 26px rgba(0, 0, 0, 0.78),
-              0 0 18px -3px rgba(16, 185, 129, 0.28),
-              inset 0 1px 1.5px rgba(255, 255, 255, 0.25) !important;
+              0 10px 28px -6px rgba(0, 0, 0, 0.8),
+              0 0 22px -4px rgba(16, 185, 129, 0.28),
+              inset 0 0 24px rgba(16, 185, 129, 0.1),
+              inset 0 1px 1.5px rgba(255, 255, 255, 0.28) !important;
           }
           .perm-user-tab-emerald:hover {
             transform: translateY(-4px);
             border-color: #6EE7B7 !important;
             box-shadow:
-              0 14px 30px rgba(0, 0, 0, 0.85),
-              0 0 24px 0px rgba(16, 185, 129, 0.42) !important;
+              0 14px 32px -6px rgba(0, 0, 0, 0.85),
+              0 0 28px 0px rgba(16, 185, 129, 0.42),
+              inset 0 0 28px rgba(16, 185, 129, 0.16) !important;
           }
 
+          /* ROSE USER TAB: Premium Rose Border + Slow Rose Shade Movement */
           .perm-user-tab-rose {
+            background-image:
+              radial-gradient(circle at 18% 22%, rgba(244, 63, 94, 0.24) 0%, transparent 55%),
+              radial-gradient(circle at 84% 80%, rgba(225, 29, 72, 0.2) 0%, transparent 58%),
+              linear-gradient(155deg, #2A1321 0%, #1B0C16 55%, #11080E 100%) !important;
             border: 1.8px solid rgba(251, 113, 133, 0.82) !important;
             box-shadow:
-              0 10px 26px rgba(0, 0, 0, 0.78),
-              0 0 18px -3px rgba(244, 63, 94, 0.28),
-              inset 0 1px 1.5px rgba(255, 255, 255, 0.25) !important;
+              0 10px 28px -6px rgba(0, 0, 0, 0.8),
+              0 0 22px -4px rgba(244, 63, 94, 0.28),
+              inset 0 0 24px rgba(244, 63, 94, 0.1),
+              inset 0 1px 1.5px rgba(255, 255, 255, 0.28) !important;
           }
           .perm-user-tab-rose:hover {
             transform: translateY(-4px);
             border-color: #FDA4AF !important;
             box-shadow:
-              0 14px 30px rgba(0, 0, 0, 0.85),
-              0 0 24px 0px rgba(244, 63, 94, 0.42) !important;
+              0 14px 32px -6px rgba(0, 0, 0, 0.85),
+              0 0 28px 0px rgba(244, 63, 94, 0.42),
+              inset 0 0 28px rgba(244, 63, 94, 0.16) !important;
           }
 
           /* ===================================================================
