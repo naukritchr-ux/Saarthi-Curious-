@@ -96,6 +96,8 @@ class RoleResponse(BaseModel):
 class NotificationRecipient(BaseModel):
     type: Literal["all", "role", "user"]
     value: str | int
+
+
 class NotificationScriptCreate(BaseModel):
     title: str
     message: str
@@ -122,9 +124,18 @@ class NotificationScriptCreate(BaseModel):
     def validate_schedule_fields(cls, values):
         schedule_type = values.get("schedule_type")
         schedule_time = values.get("schedule_time")
+        schedule_date = values.get("schedule_date")
 
-        if schedule_type == "daily" and schedule_time is None:
-            raise ValueError("schedule_time is required when schedule_type is 'daily'")
+        if schedule_time is None:
+            raise ValueError("schedule_time is required")
+
+        if schedule_type == "once":
+            if schedule_date is None:
+                raise ValueError("schedule_date is required when schedule_type is 'once'")
+            return values
+
+        if schedule_type == "daily":
+            return values
 
         return values
 
@@ -135,7 +146,9 @@ class NotificationScriptResponse(BaseModel):
     message: str
     notification_type: str
     audience: str
+    recipients: List[NotificationRecipient] = []
     schedule_type: str
+    trigger_type: str = "scheduled"
     schedule_time: Optional[time] = None
     schedule_date: Optional[date] = None
     is_active: bool

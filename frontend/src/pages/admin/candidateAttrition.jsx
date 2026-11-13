@@ -4172,11 +4172,7 @@ export default function CandidateAttrition() {
   return (
     <MainLayout>
       <div
-        className={`-m-4 sm:-m-6 p-5 sm:p-7 min-h-screen font-sans space-y-7 overflow-x-hidden transition-colors duration-300 ${
-          isLight
-            ? "bg-[#F5F0E6] text-slate-900 selection:bg-amber-400 selection:text-slate-950"
-            : "bg-[#090D1A] text-slate-100 selection:bg-amber-400 selection:text-slate-950"
-        }`}
+        className="-m-4 sm:-m-6 p-5 sm:p-7 min-h-screen font-sans space-y-7 overflow-x-hidden overflow-y-auto scroll-smooth candidate-attrition-scroll-container bg-[#090D1A] text-slate-100 selection:bg-amber-400 selection:text-slate-950"
       >
         {/* ===================================================================
             IMAGE 4 PRECISION CSS ARCHITECTURE:
@@ -4188,6 +4184,24 @@ export default function CandidateAttrition() {
                Satin Interior for Candidate Profile Cards / User Tabs!
         =================================================================== */}
         <style>{`
+          .candidate-attrition-scroll-container {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(168, 85, 247, 0.45) #080711;
+          }
+          .candidate-attrition-scroll-container::-webkit-scrollbar {
+            width: 8px;
+          }
+          .candidate-attrition-scroll-container::-webkit-scrollbar-track {
+            background: #080711;
+          }
+          .candidate-attrition-scroll-container::-webkit-scrollbar-thumb {
+            background: rgba(168, 85, 247, 0.35);
+            border-radius: 9999px;
+          }
+          .candidate-attrition-scroll-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(168, 85, 247, 0.7);
+          }
+
           /* ===================================================================
              HIGH-CONTRAST LUMINOUS SATIN & PLATINUM BUTTONS
              Designed to pop clearly against the dark graph cards and user tabs!

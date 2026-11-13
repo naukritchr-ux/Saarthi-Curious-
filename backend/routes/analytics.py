@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from groq import Groq
 from models import (
-    Module, ModuleCompletion, Program, QuizAttempt, Role,
+    LearningStreak, Module, ModuleCompletion, Program, QuizAttempt, Role,
     SurveyAnswer, SurveyQuestion, SurveyResponse, User,
     UserProgramProgress, UserVideoProgress, Video, VideoCompletion
 )
@@ -2339,3 +2339,360 @@ def export_candidate_attrition_pdf(db: Session = Depends(get_db)):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to export PDF: {str(e)}")
+
+
+# =====================================================================
+# REAL-TIME SUPABASE STREAKS & LEADERBOARDS ENDPOINTS
+# =====================================================================
+
+class StreakUpdatePayload(BaseModel):
+    current_streak: int
+    longest_streak: int
+    learning_days: int
+    freezes: int
+
+
+ROLE_NAMES_MAP = {
+    1: "Master Admin",
+    2: "Admin",
+    3: "Team Leader",
+    4: "Franchise Partner",
+    5: "Franchise Employee",
+    6: "Franchise Developer",
+    7: "Head Office Staff",
+}
+
+
+def _extract_user_activity_dates(uid, prog_map, quiz_rows, video_rows) -> list[date]:
+    """Collects all unique real activity dates for a user across Supabase tables."""
+    dates_set = set()
+
+    for p in prog_map.get(uid, []):
+        for attr in ("updated_at", "completed_at", "enrolled_at", "created_at"):
+            dt = getattr(p, attr, None)
+            if isinstance(dt, datetime):
+                dates_set.add(dt.date())
+            elif isinstance(dt, date):
+                dates_set.add(dt)
+
+    for q in quiz_rows.get(uid, []):
+        for attr in ("attempted_at", "created_at", "updated_at"):
+            dt = getattr(q, attr, None)
+            if isinstance(dt, datetime):
+                dates_set.add(dt.date())
+            elif isinstance(dt, date):
+                dates_set.add(dt)
+
+    for v in video_rows.get(uid, []):
+        for attr in ("completed_at", "watched_at", "updated_at", "created_at"):
+            dt = getattr(v, attr, None)
+            if isinstance(dt, datetime):
+                dates_set.add(dt.date())
+            elif isinstance(dt, date):
+                dates_set.add(dt)
+
+    return sorted(dates_set)
+
+
+def _compute_streak_stats(sorted_dates: list[date]) -> tuple[int, int]:
+    """Returns (current_streak, longest_streak) from sorted unique activity dates."""
+    if not sorted_dates:
+        return 0, 0
+
+    longest = 1
+    curr_run = 1
+    for i in range(1, len(sorted_dates)):
+        diff = (sorted_dates[i] - sorted_dates[i - 1]).days
+        if diff == 1:
+            curr_run += 1
+            longest = max(longest, curr_run)
+        elif diff > 1:
+            curr_run = 1
+
+    # Active streak counts if last activity was today or yesterday
+    today = date.today()
+    days_since_last = (today - sorted_dates[-1]).days
+    current_streak = curr_run if days_since_last <= 1 else 0
+    return current_streak, longest
+
+
+@router.get("/streaks")
+def get_realtime_streaks(db: Session = Depends(get_db)):
+    """
+    100% Real-Time Supabase Streak Management Endpoint.
+    Reads directly from User, UserProgramProgress, QuizAttempt, and UserVideoProgress.
+    """
+    users = db.query(User).all()
+
+    prog_map = {}
+    for p in db.query(UserProgramProgress).all():
+        prog_map.setdefault(getattr(p, "user_id", None), []).append(p)
+
+    quiz_map = {}
+    for q in db.query(QuizAttempt).all():
+        quiz_map.setdefault(getattr(q, "user_id", None), []).append(q)
+
+    video_map = {}
+    for v in db.query(UserVideoProgress).all():
+        video_map.setdefault(getattr(v, "user_id", None), []).append(v)
+
+    streak_map = {}
+    try:
+        for ls in db.query(LearningStreak).all():
+            streak_map[ls.user_id] = ls
+    except Exception:
+        pass
+
+    result_users = []
+    for u in users:
+        uid = getattr(u, "user_id", None) or getattr(u, "id", None)
+        name = (
+            getattr(u, "full_name", None)
+            or getattr(u, "name", None)
+            or getattr(u, "username", None)
+            or f"User #{uid}"
+        )
+        email = getattr(u, "email", "") or ""
+        role_id = getattr(u, "role_id", None)
+        role = getattr(u, "role", None) or ROLE_NAMES_MAP.get(role_id) or getattr(u, "role_type", "Franchise Partner")
+
+        activity_dates = _extract_user_activity_dates(uid, prog_map, quiz_map, video_map)
+        calc_curr, calc_long = _compute_streak_stats(activity_dates)
+
+        # Check User model attributes, then LearningStreak record, else timestamp-derived
+        ls = streak_map.get(uid)
+        db_curr = getattr(u, "current_streak", None)
+        if db_curr is None and ls:
+            db_curr = ls.current_streak
+
+        db_long = getattr(u, "longest_streak", None)
+        if db_long is None and ls:
+            db_long = ls.longest_streak
+
+        db_days = getattr(u, "learning_days", None)
+        if db_days is None and ls:
+            db_days = ls.total_learning_days
+
+        db_freezes = getattr(u, "freezes", None) or getattr(u, "streak_freezes", None)
+        if db_freezes is None and ls:
+            db_freezes = ls.freezes
+
+        current_streak = int(db_curr if db_curr is not None else calc_curr)
+        longest_streak = int(max(current_streak, db_long if db_long is not None else calc_long))
+        learning_days = int(db_days if db_days is not None else len(activity_dates))
+        freezes = int(db_freezes if db_freezes is not None else 0)
+
+        last_active_dt = getattr(u, "last_active", None)
+        if not last_active_dt and ls:
+            last_active_dt = ls.last_activity_date
+        if not last_active_dt and activity_dates:
+            last_active_dt = activity_dates[-1]
+
+        if isinstance(last_active_dt, (datetime, date)):
+            last_active_str = last_active_dt.strftime("%d %b %Y")
+        elif isinstance(last_active_dt, str) and last_active_dt.strip():
+            last_active_str = last_active_dt
+        else:
+            last_active_str = "Never"
+
+        result_users.append({
+            "id": uid,
+            "name": name,
+            "email": email,
+            "role": role,
+            "current_streak": current_streak,
+            "longest_streak": longest_streak,
+            "learning_days": learning_days,
+            "freezes": freezes,
+            "last_active": last_active_str,
+        })
+
+    return {
+        "synced_at": datetime.now().isoformat(),
+        "users": result_users,
+    }
+
+
+@router.put("/streaks/{user_id}")
+def update_user_streak(
+    user_id: int,
+    payload: StreakUpdatePayload,
+    db: Session = Depends(get_db),
+):
+    """Persists Admin Streak & Freeze edits directly to the Supabase User / LearningStreak table."""
+    user = None
+    if hasattr(User, "user_id"):
+        user = db.query(User).filter(User.user_id == user_id).first()
+    if not user and hasattr(User, "id"):
+        user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found in Supabase")
+
+    if hasattr(user, "current_streak"):
+        user.current_streak = payload.current_streak
+    if hasattr(user, "longest_streak"):
+        user.longest_streak = payload.longest_streak
+    if hasattr(user, "learning_days"):
+        user.learning_days = payload.learning_days
+    if hasattr(user, "freezes"):
+        user.freezes = payload.freezes
+    elif hasattr(user, "streak_freezes"):
+        user.streak_freezes = payload.freezes
+
+    # Also persist to LearningStreak table
+    try:
+        uid = getattr(user, "user_id", None) or getattr(user, "id", None) or user_id
+        ls = db.query(LearningStreak).filter(LearningStreak.user_id == uid).first()
+        if not ls:
+            ls = LearningStreak(
+                user_id=uid,
+                current_streak=payload.current_streak,
+                longest_streak=payload.longest_streak,
+                total_learning_days=payload.learning_days,
+                freezes=payload.freezes,
+                last_activity_date=date.today() if payload.current_streak > 0 else None,
+                updated_at=datetime.utcnow(),
+            )
+            db.add(ls)
+        else:
+            ls.current_streak = payload.current_streak
+            ls.longest_streak = payload.longest_streak
+            ls.total_learning_days = payload.learning_days
+            ls.freezes = payload.freezes
+            if payload.current_streak > 0 and not ls.last_activity_date:
+                ls.last_activity_date = date.today()
+            ls.updated_at = datetime.utcnow()
+    except Exception as e:
+        print(f"Notice: LearningStreak table update failed: {e}")
+
+    db.commit()
+    db.refresh(user)
+    return {"status": "updated", "user_id": user_id}
+
+
+@router.get("/leaderboards")
+def get_realtime_leaderboards(db: Session = Depends(get_db)):
+    """
+    100% Real-Time Supabase Leaderboards Endpoint.
+    Computes live Curos, Completion %, Retention %, Application %, and Streaks from Supabase.
+    """
+    users = db.query(User).all()
+    streaks_resp = get_realtime_streaks(db)
+    streaks_data = {
+        u["id"]: u for u in streaks_resp.get("users", [])
+    }
+
+    prog_rows = db.query(UserProgramProgress).all()
+    user_prog_map = {}
+    for pr in prog_rows:
+        u_id = getattr(pr, "user_id", None)
+        user_prog_map.setdefault(u_id, []).append(pr)
+
+    quiz_map = {}
+    try:
+        quiz_attempts = db.query(QuizAttempt).all()
+        user_quiz_scores = {}
+        for q in quiz_attempts:
+            u_id = getattr(q, "user_id", None)
+            pct = getattr(q, "percentage", None) or getattr(q, "score_pct", None)
+            if pct is None:
+                tot = getattr(q, "total_questions", None)
+                sc = getattr(q, "score", None)
+                if tot and sc is not None:
+                    pct = (float(sc) / float(tot)) * 100.0
+                elif sc is not None:
+                    pct = float(sc)
+            if pct is not None:
+                user_quiz_scores.setdefault(u_id, []).append(float(pct))
+        for u_id, scores in user_quiz_scores.items():
+            if scores:
+                quiz_map[u_id] = round(sum(scores) / len(scores), 1)
+    except Exception as e:
+        print(f"Error computing quiz map: {e}")
+
+    video_map = {}
+    try:
+        video_rows = (
+            db.query(
+                UserVideoProgress.user_id,
+                func.count(UserVideoProgress.id).label("videos_done"),
+            )
+            .filter(UserVideoProgress.completed == True)
+            .group_by(UserVideoProgress.user_id)
+            .all()
+        )
+        video_map = {r.user_id: int(r.videos_done or 0) for r in video_rows}
+    except Exception as e:
+        print(f"Error computing video map: {e}")
+
+    competitors = []
+    for u in users:
+        uid = getattr(u, "user_id", None) or getattr(u, "id", None)
+        name = (
+            getattr(u, "full_name", None)
+            or getattr(u, "name", None)
+            or getattr(u, "username", None)
+            or f"User #{uid}"
+        )
+        email = getattr(u, "email", "") or ""
+        role_id = getattr(u, "role_id", None)
+        role = getattr(u, "role", None) or ROLE_NAMES_MAP.get(role_id) or getattr(u, "role_type", "Learner")
+        curos = int(
+            getattr(u, "curos", None)
+            or getattr(u, "curos_balance", None)
+            or getattr(u, "points", None)
+            or 0
+        )
+
+        u_progs = user_prog_map.get(uid, [])
+        if u_progs:
+            pcts = [
+                float(
+                    getattr(p, "completed_percentage", None)
+                    or getattr(p, "progress_pct", None)
+                    or (100.0 if getattr(p, "completed", False) else 0.0)
+                )
+                for p in u_progs
+            ]
+            completion_pct = round(max(pcts), 1) if pcts else 0.0
+            programs_completed = sum(
+                1 for p in u_progs if getattr(p, "completed", False) or float(getattr(p, "completed_percentage", 0) or 0) >= 100.0
+            )
+            first_p = u_progs[0]
+            program_name = (
+                getattr(first_p, "program_name", None)
+                or (first_p.program.name if getattr(first_p, "program", None) and getattr(first_p.program, "name", None) else None)
+                or "Client Relationships"
+            )
+        else:
+            completion_pct = 0.0
+            programs_completed = 0
+            program_name = "Client Relationships"
+
+        application_pct = quiz_map.get(uid, 0.0)
+        videos_done = video_map.get(uid, 0)
+        retention_pct = round(min(100.0, (completion_pct * 0.6) + (application_pct * 0.4)), 1)
+
+        s_info = streaks_data.get(uid, {})
+        streak_days = int(s_info.get("current_streak") or s_info.get("longest_streak") or 0)
+
+        competitors.append({
+            "id": uid,
+            "name": name,
+            "email": email,
+            "role": role,
+            "program_name": program_name,
+            "curos": curos,
+            "completion_pct": completion_pct,
+            "retention_pct": retention_pct,
+            "application_pct": application_pct,
+            "videos_done": videos_done,
+            "streak_days": streak_days,
+            "programs_completed": programs_completed,
+        })
+
+    return {
+        "synced_at": datetime.now().isoformat(),
+        "competitors": competitors,
+    }
+

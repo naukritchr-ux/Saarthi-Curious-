@@ -59,18 +59,18 @@ def create_notification_script(script: NotificationScriptCreate):
     db = SessionLocal()
 
     try:
-        if script.schedule_type != "once":
+        if not script.schedule_time:
             raise HTTPException(
                 status_code=400,
-                detail="Only one-time scheduled notifications are allowed"
+                detail="Schedule time is required"
             )
 
-        if not script.schedule_date or not script.schedule_time:
+        if script.schedule_type == "once" and not script.schedule_date:
             raise HTTPException(
                 status_code=400,
-                detail="Schedule date and time are required"
+                detail="Schedule date is required for one-time notifications"
             )
-        # Create notification script
+
         new_script = NotificationScript(
             title=script.title,
             message=script.message,
@@ -87,18 +87,12 @@ def create_notification_script(script: NotificationScriptCreate):
         db.commit()
         db.refresh(new_script)
 
-        # ==========================================
-        # SAVE RECIPIENTS
-        # ==========================================
-
         for recipient in script.recipients:
-
             new_recipient = NotificationScriptRecipient(
                 script_id=new_script.id,
                 recipient_type=recipient.type,
                 recipient_value=str(recipient.value)
             )
-
             db.add(new_recipient)
 
         db.commit()
@@ -122,7 +116,7 @@ def delete_notification_script(script_id: int):
     db = SessionLocal()
     try:
         script = db.query(NotificationScript).filter(NotificationScript.id == script_id).first()
-        
+
         if not script:
             raise HTTPException(status_code=404, detail="Script not found")
 
@@ -140,7 +134,7 @@ def toggle_notification_script_status(script_id: int):
     db = SessionLocal()
     try:
         script = db.query(NotificationScript).filter(NotificationScript.id == script_id).first()
-        
+
         if not script:
             raise HTTPException(status_code=404, detail="Script not found")
 
@@ -165,18 +159,18 @@ def update_notification_script(
     db = SessionLocal()
 
     try:
-
-        if script.schedule_type != "once":
+        if not script.schedule_time:
             raise HTTPException(
                 status_code=400,
-                detail="Only one-time scheduled notifications are allowed"
+                detail="Schedule time is required"
             )
 
-        if not script.schedule_date or not script.schedule_time:
+        if script.schedule_type == "once" and not script.schedule_date:
             raise HTTPException(
                 status_code=400,
-                detail="Schedule date and time are required"
+                detail="Schedule date is required for one-time notifications"
             )
+
         existing_script = (
             db.query(NotificationScript)
             .filter(NotificationScript.id == script_id)
@@ -189,7 +183,6 @@ def update_notification_script(
                 detail="Script not found"
             )
 
-        # Update script details
         existing_script.title = script.title
         existing_script.message = script.message
         existing_script.notification_type = script.notification_type
@@ -199,19 +192,16 @@ def update_notification_script(
         existing_script.schedule_date = script.schedule_date
         existing_script.trigger_type = script.trigger_type
 
-        # Remove old recipients
         db.query(NotificationScriptRecipient).filter(
             NotificationScriptRecipient.script_id == script_id
         ).delete(synchronize_session=False)
 
-        # Add the newly selected recipients
         for recipient in script.recipients:
             new_recipient = NotificationScriptRecipient(
                 script_id=script_id,
                 recipient_type=recipient.type,
                 recipient_value=str(recipient.value)
             )
-
             db.add(new_recipient)
 
         db.commit()
