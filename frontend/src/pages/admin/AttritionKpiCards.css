@@ -1,0 +1,498 @@
+/* ==========================================================================
+   2x2 KPI METALLIC GRID
+   ========================================================================== */
+.metal-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  width: 100%;
+  height: 100%;
+}
+
+/* ==========================================================================
+   4 DISTINCT ANODIZED METAL BASE ALLOYS
+   ========================================================================== */
+
+/* 1. ALL - Anodized Amethyst / Violet Titanium */
+.metal-violet {
+  --plate-top: #52437a;
+  --plate-mid: #322652;
+  --plate-bot: #1f1736;
+  --luster-tint: rgba(233, 213, 255, 0.28);
+  --luster-core: rgba(255, 255, 255, 0.22);
+  --underglow: rgba(168, 85, 247, 0.34);
+  --rim-light: #e9d5ff;
+  --rim-warm: #d6bcfa;
+  --squircle-bg: linear-gradient(145deg, rgba(139, 92, 246, 0.45), rgba(46, 16, 101, 0.85));
+  --squircle-border: rgba(216, 180, 254, 0.55);
+  --num-color: #ffffff;
+  --bar-grad: linear-gradient(90deg, #9333ea 0%, #c084fc 72%, #f5d0fe 100%);
+  --bar-glow: rgba(192, 132, 252, 0.55);
+}
+
+/* 2. HIGH RISK - Brushed Crimson / Forged Ruby Steel */
+.metal-crimson {
+  --plate-top: #733244;
+  --plate-mid: #4a1c29;
+  --plate-bot: #2b0f18;
+  --luster-tint: rgba(254, 205, 211, 0.28);
+  --luster-core: rgba(255, 241, 242, 0.22);
+  --underglow: rgba(244, 63, 94, 0.34);
+  --rim-light: #fecdd3;
+  --rim-warm: #fda4af;
+  --squircle-bg: linear-gradient(145deg, rgba(190, 18, 60, 0.48), rgba(76, 5, 25, 0.88));
+  --squircle-border: rgba(253, 164, 175, 0.52);
+  --num-color: #fda4af;
+  --bar-grad: linear-gradient(90deg, #e11d48 0%, #fb7185 72%, #ffe4e6 100%);
+  --bar-glow: rgba(251, 113, 133, 0.55);
+}
+
+/* 3. MEDIUM RISK - Brushed Champagne Bronze / Satin Gold Alloy */
+.metal-bronze {
+  --plate-top: #6e5530;
+  --plate-mid: #47351b;
+  --plate-bot: #291e0e;
+  --luster-tint: rgba(254, 240, 138, 0.25);
+  --luster-core: rgba(255, 251, 235, 0.22);
+  --underglow: rgba(234, 179, 8, 0.3);
+  --rim-light: #fef08a;
+  --rim-warm: #fde047;
+  --squircle-bg: linear-gradient(145deg, rgba(180, 118, 22, 0.48), rgba(69, 39, 7, 0.88));
+  --squircle-border: rgba(253, 224, 71, 0.5);
+  --num-color: #facc15;
+  --bar-grad: linear-gradient(90deg, #d97706 0%, #facc15 72%, #fef9c3 100%);
+  --bar-glow: rgba(250, 204, 21, 0.52);
+}
+
+/* 4. LOW RISK - Brushed Cryo-Cobalt / Ice-Cyan Steel */
+.metal-cyan {
+  --plate-top: #315a78;
+  --plate-mid: #1d394f;
+  --plate-bot: #102230;
+  --luster-tint: rgba(186, 230, 253, 0.28);
+  --luster-core: rgba(240, 249, 255, 0.22);
+  --underglow: rgba(34, 211, 238, 0.32);
+  --rim-light: #bae6fd;
+  --rim-warm: #7dd3fc;
+  --squircle-bg: linear-gradient(145deg, rgba(14, 116, 144, 0.5), rgba(8, 47, 73, 0.88));
+  --squircle-border: rgba(125, 211, 252, 0.52);
+  --num-color: #67e8f9;
+  --bar-grad: linear-gradient(90deg, #0284c7 0%, #22d3ee 72%, #cffafe 100%);
+  --bar-glow: rgba(34, 211, 238, 0.55);
+}
+
+/* ==========================================================================
+   METALLIC CHASSIS CONTAINER
+   ========================================================================== */
+.metal-kpi-card {
+  position: relative;
+  border-radius: 16px;
+  padding: 16px 18px 14px;
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+  contain: paint; /* Locks layout/paint inside card for maximum FPS */
+
+  /* Colored Satin-Matte Anodized Metal Body */
+  background: linear-gradient(
+    162deg,
+    var(--plate-top) 0%,
+    var(--plate-mid) 46%,
+    var(--plate-bot) 100%
+  );
+
+  /* Realistic 3D Elevation & Inner Bevel */
+  box-shadow:
+    0 10px 24px -6px rgba(0, 0, 0, 0.72),
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.55),
+    inset 0 -1.5px 2px rgba(0, 0, 0, 0.55);
+
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.22s ease;
+}
+
+.metal-kpi-card:hover {
+  transform: translate3d(0, -2px, 0);
+  box-shadow:
+    0 14px 28px -6px rgba(0, 0, 0, 0.82),
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.72),
+    inset 0 -1.5px 2px rgba(0, 0, 0, 0.55);
+}
+
+.metal-kpi-card.is-selected {
+  box-shadow:
+    0 0 0 1.5px var(--rim-light),
+    0 12px 26px -4px rgba(0, 0, 0, 0.8),
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.8);
+}
+
+/* ==========================================================================
+   SURFACE TEXTURE & STUDIO LIGHTING (EXACT SCREENSHOT MATCH)
+   ========================================================================== */
+
+/* Ultra-fine horizontal brushed titanium grain (zero-cost CSS gradient) */
+.metal-brushed-surface {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.024) 0px,
+    rgba(255, 255, 255, 0.024) 1px,
+    rgba(0, 0, 0, 0.02) 1px,
+    rgba(0, 0, 0, 0.02) 2px
+  );
+}
+
+/* Top-Left Corner Specular Hotspot + Top-Right Diagonal Satin Cone */
+.metal-studio-bevel {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    /* Bright top-left corner metallic flare (from reference screenshot) */
+    radial-gradient(
+      ellipse 55% 50% at 6% 4%,
+      rgba(255, 255, 255, 0.34) 0%,
+      var(--luster-tint) 38%,
+      transparent 75%
+    ),
+    /* Top-right brushed diagonal metallic cone (from reference screenshot) */
+    linear-gradient(
+      128deg,
+      transparent 48%,
+      rgba(255, 255, 255, 0.03) 62%,
+      rgba(255, 255, 255, 0.19) 74%,
+      rgba(255, 255, 255, 0.04) 84%,
+      transparent 94%
+    );
+}
+
+/* ==========================================================================
+   120FPS LIVE REALISTIC METAL SHINE (GPU COMPOSITED ONLY)
+   ========================================================================== */
+
+/* Broad Anisotropic Specular Sheen Gliding Smoothly Across Metal Grain */
+.metal-live-luster {
+  position: absolute;
+  top: -35%;
+  bottom: -35%;
+  left: -60%;
+  width: 220%;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+    112deg,
+    transparent 24%,
+    var(--luster-tint) 41%,
+    var(--luster-core) 49.5%,
+    var(--luster-tint) 58%,
+    transparent 75%
+  );
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  animation: realisticMetalGlide 4.8s cubic-bezier(0.42, 0, 0.58, 1) infinite alternate;
+  animation-delay: var(--phase, 0s);
+}
+
+/* Subtle Base-Color Internal Metallic Underglow */
+.metal-live-underglow {
+  position: absolute;
+  inset: -15%;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 65% 55% at 55% 92%,
+    var(--underglow) 0%,
+    transparent 70%
+  );
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  animation: metalUnderglowPulse 3.8s ease-in-out infinite alternate;
+  animation-delay: var(--phase, 0s);
+}
+
+@keyframes realisticMetalGlide {
+  0% {
+    transform: translate3d(-18%, 0, 0) rotate(-1.5deg);
+    opacity: 0.72;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(18%, 0, 0) rotate(1.5deg);
+    opacity: 0.78;
+  }
+}
+
+@keyframes metalUnderglowPulse {
+  0% {
+    opacity: 0.55;
+    transform: translate3d(-4%, 2%, 0) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(4%, -2%, 0) scale(1.06);
+  }
+}
+
+/* Diamond-Cut Metallic Outer Rim (Silver-White Top + Warm Champagne Bottom) */
+.metal-chamfer-rim {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: 16px;
+  padding: 1.4px;
+  pointer-events: none;
+  background: linear-gradient(
+    140deg,
+    #ffffff 0%,
+    var(--rim-light) 24%,
+    rgba(255, 255, 255, 0.25) 50%,
+    var(--rim-warm) 82%,
+    #fde68a 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.88;
+}
+
+/* ==========================================================================
+   FOREGROUND CONTENT (ICON SQUIRCLE, METRICS, BAR, 3D SILVER FILTER PILL)
+   ========================================================================== */
+.metal-kpi-inner {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  height: 100%;
+}
+
+/* Top Section */
+.metal-top-section {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.metal-icon-squircle {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--squircle-bg);
+  border: 1px solid var(--squircle-border);
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.42),
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.38),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.metal-icon-squircle svg {
+  width: 30px;
+  height: 30px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
+}
+
+.metal-title-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.metal-kpi-title {
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #f8fafc;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65);
+}
+
+.metal-kpi-number {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  color: var(--num-color);
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.65);
+}
+
+/* Middle Recessed Progress Track & Glowing Filament */
+.metal-progress-track {
+  width: 100%;
+  height: 8px;
+  margin-top: 8px;
+  margin-bottom: 2px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow:
+    inset 0 1.5px 3px rgba(0, 0, 0, 0.55),
+    0 1px 0 rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+
+.metal-progress-bar {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--bar-grad);
+  box-shadow: 0 0 12px var(--bar-glow);
+  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Bottom Section */
+.metal-bottom-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.metal-kpi-sub {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: rgba(248, 250, 252, 0.92);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 3D Brushed Platinum/Champagne Metallic "Filter ->" Pill (Matches Reference) */
+.metal-filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 13px;
+  border-radius: 999px;
+  border: 1px solid #d6c79c;
+  background:
+    radial-gradient(circle at 50% 25%, #ffffff 0%, transparent 65%),
+    linear-gradient(
+      90deg,
+      #aeb6c4 0%,
+      #f1f5f9 28%,
+      #ffffff 50%,
+      #e2e8f0 74%,
+      #9ea7b8 100%
+    );
+  color: #0f172a;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.55),
+    inset 0 1px 1px #ffffff,
+    inset 0 -1px 1.5px rgba(71, 85, 105, 0.55);
+  transition: transform 0.16s ease, filter 0.16s ease;
+}
+
+.metal-filter-pill:hover {
+  transform: translate3d(0, -1px, 0) scale(1.03);
+  filter: brightness(1.06);
+}
+
+.metal-filter-arrow {
+  font-size: 11.5px;
+  font-weight: 900;
+  transition: transform 0.16s ease;
+}
+
+.metal-filter-pill:hover .metal-filter-arrow {
+  transform: translate3d(2px, 0, 0);
+}
+
+/* Mobile Fallback */
+@media (max-width: 640px) {
+  .metal-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
+   CREAM LUXE THEME INTEGRATION (WHEN isLight IS ACTIVE)
+   ========================================================================== */
+.metal-kpi-card.is-light {
+  background: #FFFDF9;
+  box-shadow: 0 4px 14px rgba(72, 58, 38, 0.08), inset 0 1px 0 #FFFFFF;
+}
+
+.metal-kpi-card.is-light.metal-violet {
+  border: 1.5px solid #DDD0F5;
+  background: linear-gradient(145deg, #FFFDFB 0%, #F7F3FF 100%);
+  --num-color: #1E1B4B;
+  --squircle-bg: #EDE9FE;
+  --squircle-border: #C4B5FD;
+  --bar-grad: linear-gradient(90deg, #8B5CF6, #6D28D9);
+}
+
+.metal-kpi-card.is-light.metal-crimson {
+  border: 1.5px solid #F5CBD1;
+  background: linear-gradient(145deg, #FFFDFB 0%, #FFF1F3 100%);
+  --num-color: #BE123C;
+  --squircle-bg: #FFE4E6;
+  --squircle-border: #FDA4AF;
+  --bar-grad: linear-gradient(90deg, #F43F5E, #BE123C);
+}
+
+.metal-kpi-card.is-light.metal-bronze {
+  border: 1.5px solid #F2DFB1;
+  background: linear-gradient(145deg, #FFFDFB 0%, #FEF8E8 100%);
+  --num-color: #B45309;
+  --squircle-bg: #FEF3C7;
+  --squircle-border: #FCD34D;
+  --bar-grad: linear-gradient(90deg, #F59E0B, #D97706);
+}
+
+.metal-kpi-card.is-light.metal-cyan {
+  border: 1.5px solid #C5E2F0;
+  background: linear-gradient(145deg, #FFFDFB 0%, #EFF8FC 100%);
+  --num-color: #0369A1;
+  --squircle-bg: #E0F2FE;
+  --squircle-border: #7DD3FC;
+  --bar-grad: linear-gradient(90deg, #0EA5E9, #0284C7);
+}
+
+.metal-kpi-card.is-light .metal-kpi-title {
+  color: #475569;
+  text-shadow: none;
+}
+
+.metal-kpi-card.is-light .metal-kpi-sub {
+  color: #64748B;
+  text-shadow: none;
+}
+
+.metal-kpi-card.is-light .metal-progress-track {
+  background: #E2E8F0;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.metal-kpi-card.is-light .metal-filter-pill {
+  background: #FFFFFF;
+  border-color: #CBD5E1;
+  color: #334155;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.metal-kpi-card.is-light .metal-chamfer-rim,
+.metal-kpi-card.is-light .metal-brushed-surface,
+.metal-kpi-card.is-light .metal-studio-bevel,
+.metal-kpi-card.is-light .metal-live-luster,
+.metal-kpi-card.is-light .metal-live-underglow {
+  display: none;
+}
