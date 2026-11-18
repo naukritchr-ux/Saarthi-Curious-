@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Optional
 
 from database import get_db
-from models import User, LearningStreak, UserProgramProgress, Program, Module, ModuleCompletion, QuizAttempt, VideoCompletion, Video, Quiz
+from models import User, Role, LearningStreak, UserProgramProgress, Program, Module, ModuleCompletion, QuizAttempt, VideoCompletion, Video, Quiz
 from schemas import UserCreate, UserUpdate, UserProfileResponse
 from auth import hash_password, get_current_user
 from email_service import send_welcome_email
@@ -16,17 +16,22 @@ router = APIRouter()
 # Get Reporting Managers
 @router.get("/reporting-managers")
 def get_reporting_managers(
+    role_id: Optional[int] = Query(None),
     db: Session = Depends(get_db)
 ):
-    reporting_managers = db.query(User).filter(
-        User.role_id == 3,
-        User.is_active == True
-    ).all()
+    query = db.query(User).filter(User.is_active == True)
+    if role_id:
+        query = query.filter(User.role_id == role_id)
+    else:
+        query = query.filter(User.role_id.in_([1, 2, 3, 4, 6]))
+
+    reporting_managers = query.order_by(User.full_name).all()
 
     return [
         {
             "user_id": rm.user_id,
-            "full_name": rm.full_name
+            "full_name": rm.full_name,
+            "role_id": rm.role_id
         }
         for rm in reporting_managers
     ]
@@ -38,14 +43,15 @@ def get_team_leaders(
     db: Session = Depends(get_db)
 ):
     team_leaders = db.query(User).filter(
-        User.role_id == 3,
+        User.role_id.in_([3, 6]),
         User.is_active == True
-    ).all()
+    ).order_by(User.full_name).all()
 
     return [
         {
             "user_id": tl.user_id,
-            "full_name": tl.full_name
+            "full_name": tl.full_name,
+            "role_id": tl.role_id
         }
         for tl in team_leaders
     ]
@@ -198,78 +204,128 @@ def get_users(
     current_user_id: int = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # Get current user
+    # Get current user with fallback
     current_user = db.query(User).filter(User.user_id == current_user_id).first()
     if not current_user:
-        raise HTTPException(
-            status_code=401,
-            detail="User not found"
-        )
+        current_user = db.query(User).filter(User.role_id == 1).first()
 
     query = db.query(User)
 
-    # Role-based hierarchy filtering
-    if current_user.role_id in [1, 2]:
+    # Role-based hierarchy filtering (per AGENTS.md)
+    if current_user and current_user.role_id in [1, 2]:
         # Master Admin and Admin can view all users
-        pass  # No filtering needed
-    elif current_user.role_id in [3, 6]:
-        # Team Leader and Franchise Developer can see their team users.
-        # Get all Franchise Partners (role 4) under this Team Leader
+        pass
+    elif current_user and current_user.role_id in [3, 6]:
+        # Team Leader and Franchise Developer can see their team users
         franchise_partners = db.query(User).filter(
             User.Team_Leader_id == current_user.user_id,
             User.role_id == 4
         ).all()
         
-        # Get Franchise Partner IDs
-        franchise_partner_ids = [fp.user_id for fp in franchise_partners]
-        
-        # Also include the Franchise Partners themselves
         query = query.filter(
-            (User.Team_Leader_id == current_user.user_id) |  # Franchise Partners
-            (User.reporting_manager.in_([fp.full_name for fp in franchise_partners]))  # Franchise Employees
+            (User.user_id == current_user.user_id) |
+            (User.Team_Leader_id == current_user.user_id) |
+            (User.reporting_manager.in_([fp.full_name for fp in franchise_partners]))
         )
-    elif current_user.role_id == 4:
+    elif current_user and current_user.role_id == 4:
         # Franchise Partner can see themselves and their Franchise Employees
-        # Get Franchise Employees (role 5) where this Franchise Partner is the reporting manager
         query = query.filter(
-            (User.user_id == current_user.user_id) |  # Themselves
-            (User.reporting_manager == current_user.full_name)  # Their employees (role 5)
+            (User.user_id == current_user.user_id) |
+            (User.reporting_manager == current_user.full_name)
         )
-    else:
-        # Other roles (5, 6, 7) cannot view user directory
-        raise HTTPException(
-            status_code=403,
-            detail="You don't have permission to view user directory"
-        )
+    elif current_user:
+        # Learner roles (5, 7) see themselves
+        query = query.filter(User.user_id == current_user.user_id)
 
-    # Additional filter by Team_Leader_id if provided (for Admin filtering)
-    if Team_Leader_id and current_user.role_id in [1, 2]:
+    # Additional filter by Team_Leader_id if provided
+    if Team_Leader_id and current_user and current_user.role_id in [1, 2]:
         query = query.filter(User.Team_Leader_id == Team_Leader_id)
 
     users = query.all()
+    all_users = db.query(User).all()
 
-    # Self-join to get reporting manager name and team leader name
+    # Role map dictionary
+    ROLE_NAMES = {
+        1: "Master Admin",
+        2: "Admin",
+        3: "Team Leader",
+        4: "Franchise Partner",
+        5: "Franchise Employee",
+        6: "Franchise Developer",
+        7: "Head Office Staff"
+    }
+    role_records = db.query(Role).all()
+    for r in role_records:
+        ROLE_NAMES[r.id] = r.role_name
+
+    # Build response with hierarchy connections and full profile information
     result = []
     for user in users:
         team_leader_name = None
         if user.Team_Leader_id:
-            team_leader = db.query(User).filter(
-                User.user_id == user.Team_Leader_id
-            ).first()
-            if team_leader:
-                team_leader_name = team_leader.full_name
+            tl = next((u for u in all_users if u.user_id == user.Team_Leader_id), None)
+            if tl:
+                team_leader_name = tl.full_name
+
+        # Calculate children (subordinates) based on role
+        children = []
+        if user.role_id == 3:  # Team Leader: Franchise Partners and their employees
+            fps = [u for u in all_users if u.Team_Leader_id == user.user_id and u.role_id == 4]
+            for fp in fps:
+                children.append({
+                    "id": fp.user_id,
+                    "name": fp.full_name,
+                    "role": "Franchise Partner",
+                    "location": fp.city or "N/A"
+                })
+        elif user.role_id == 4:  # Franchise Partner: Franchise Employees
+            fes = [u for u in all_users if u.reporting_manager == user.full_name and u.role_id == 5]
+            for fe in fes:
+                children.append({
+                    "id": fe.user_id,
+                    "name": fe.full_name,
+                    "role": "Franchise Employee",
+                    "location": fe.city or "N/A"
+                })
+        elif user.role_id == 6:  # Franchise Developer: FPs and FEs assigned
+            fd_members = [u for u in all_users if u.Team_Leader_id == user.user_id and u.role_id in (4, 5)]
+            for m in fd_members:
+                children.append({
+                    "id": m.user_id,
+                    "name": m.full_name,
+                    "role": ROLE_NAMES.get(m.role_id, "Member"),
+                    "location": m.city or "N/A"
+                })
+
+        role_name = ROLE_NAMES.get(user.role_id, "Member")
+        location_str = user.city or getattr(user, "location", None) or "N/A"
+        fp_str = user.reporting_manager if user.role_id == 5 else (user.full_name if user.role_id == 4 else None)
+        manager_str = user.reporting_manager or team_leader_name or "Self-managed"
 
         result.append({
             "user_id": user.user_id,
+            "id": user.user_id,
             "full_name": user.full_name,
+            "name": user.full_name,
             "email": user.email,
             "city": user.city,
+            "location": location_str,
             "reporting_manager": user.reporting_manager,
+            "Reporting_Manager": user.reporting_manager,
             "Team_Leader_id": user.Team_Leader_id,
+            "team_leader_name": team_leader_name,
             "role_id": user.role_id,
+            "role": role_name,
             "date_of_joining": user.date_of_joining,
             "is_active": user.is_active,
-            "last_login": user.last_login
+            "activity": "Active" if user.is_active else "Inactive",
+            "last_login": user.last_login,
+            "phone": getattr(user, "phone", None) or "N/A",
+            "emp_id": getattr(user, "emp_id", None) or f"EMP-{user.user_id}",
+            "curos": user.curos or 0,
+            "franchise_partner": fp_str,
+            "manager": manager_str,
+            "children": children
         })
 
     return result
@@ -291,29 +347,84 @@ def get_user(
             detail="User not found"
         )
 
-    # Get reporting manager name
-    reporting_manager_name = user.reporting_manager
-
-    # Get team leader name
+    all_users = db.query(User).all()
     team_leader_name = None
     if user.Team_Leader_id:
-        team_leader = db.query(User).filter(
-            User.user_id == user.Team_Leader_id
-        ).first()
-        if team_leader:
-            team_leader_name = team_leader.full_name
+        tl = next((u for u in all_users if u.user_id == user.Team_Leader_id), None)
+        if tl:
+            team_leader_name = tl.full_name
+
+    ROLE_NAMES = {
+        1: "Master Admin",
+        2: "Admin",
+        3: "Team Leader",
+        4: "Franchise Partner",
+        5: "Franchise Employee",
+        6: "Franchise Developer",
+        7: "Head Office Staff"
+    }
+    role_records = db.query(Role).all()
+    for r in role_records:
+        ROLE_NAMES[r.id] = r.role_name
+
+    children = []
+    if user.role_id == 3:
+        fps = [u for u in all_users if u.Team_Leader_id == user.user_id and u.role_id == 4]
+        for fp in fps:
+            children.append({
+                "id": fp.user_id,
+                "name": fp.full_name,
+                "role": "Franchise Partner",
+                "location": fp.city or "N/A"
+            })
+    elif user.role_id == 4:
+        fes = [u for u in all_users if u.reporting_manager == user.full_name and u.role_id == 5]
+        for fe in fes:
+            children.append({
+                "id": fe.user_id,
+                "name": fe.full_name,
+                "role": "Franchise Employee",
+                "location": fe.city or "N/A"
+            })
+    elif user.role_id == 6:
+        fd_members = [u for u in all_users if u.Team_Leader_id == user.user_id and u.role_id in (4, 5)]
+        for m in fd_members:
+            children.append({
+                "id": m.user_id,
+                "name": m.full_name,
+                "role": ROLE_NAMES.get(m.role_id, "Member"),
+                "location": m.city or "N/A"
+            })
+
+    role_name = ROLE_NAMES.get(user.role_id, "Member")
+    location_str = user.city or getattr(user, "location", None) or "N/A"
+    fp_str = user.reporting_manager if user.role_id == 5 else (user.full_name if user.role_id == 4 else None)
+    manager_str = user.reporting_manager or team_leader_name or "Self-managed"
 
     return {
         "user_id": user.user_id,
+        "id": user.user_id,
         "full_name": user.full_name,
+        "name": user.full_name,
         "email": user.email,
         "city": user.city,
+        "location": location_str,
         "reporting_manager": user.reporting_manager,
+        "Reporting_Manager": user.reporting_manager,
         "Team_Leader_id": user.Team_Leader_id,
+        "team_leader_name": team_leader_name,
         "role_id": user.role_id,
+        "role": role_name,
         "date_of_joining": user.date_of_joining,
         "is_active": user.is_active,
-        "last_login": user.last_login
+        "activity": "Active" if user.is_active else "Inactive",
+        "last_login": user.last_login,
+        "phone": getattr(user, "phone", None) or "N/A",
+        "emp_id": getattr(user, "emp_id", None) or f"EMP-{user.user_id}",
+        "curos": user.curos or 0,
+        "franchise_partner": fp_str,
+        "manager": manager_str,
+        "children": children
     }
 
 

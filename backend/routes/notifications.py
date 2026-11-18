@@ -87,8 +87,8 @@ SendGmailRequest = SendMailRequest
 # ============================================================================
 # IN-APP NOTIFICATIONS (For Header NotificationBell.jsx)
 # ============================================================================
-@router.get("", response_model=list[UserNotificationResponse])
 @router.get("/notifications", response_model=list[UserNotificationResponse])
+@router.get("/notifications/", response_model=list[UserNotificationResponse])
 def get_notifications(
     current_user: int = Depends(get_current_user),
     db: Session = Depends(get_db)

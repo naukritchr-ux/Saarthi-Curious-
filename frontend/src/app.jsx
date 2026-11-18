@@ -7,7 +7,7 @@ import EditPrograms from "./pages/programs/editPrograms";
 import ProgramDetails from "./pages/programs/programDetails";
 import ApplicationCheckSubmissions from "./pages/programs/ApplicationCheckSubmissions.jsx";
 import CandidateAttrition from "./pages/admin/candidateAttrition";
-import UserManagementPage from "./pages/admin/userManagement";
+import UserManagementPage from "./pages/admin/UserAccessControl";
 import RoleManagementPage from "./pages/admin/roleManagement";
 import InactiveUsersPage from "./pages/admin/inactiveUsers";
 import CertificateManagement from "./pages/admin/certificates";
@@ -232,6 +232,14 @@ function App() {
           }
         />
 
+        <Route
+          path="/leaderboard"
+          element={
+            <ProtectedRoute>
+              <Leaderboard />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/leaderboards"
           element={

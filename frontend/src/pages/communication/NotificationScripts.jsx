@@ -138,7 +138,7 @@ const Icon = ({ name, className = "w-4 h-4" }) => {
 };
 
 // ============================================================================
-// 3. LIVE RESONANCE RINGS HERO BANNER
+// 3. CONTINUOUS LIVE COLOR-CHANGING HERO BANNER WITH SMOOTH CURSIVE TYPOGRAPHY
 // ============================================================================
 function LiveHeroBanner({
   morningCount,
@@ -153,135 +153,106 @@ function LiveHeroBanner({
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     let animId;
-    let t = 0;
+    const startTime = performance.now();
 
-    const render = () => {
-      t += 0.018;
+    const updateSize = () => {
       const parent = canvas.parentElement;
-      const w = (canvas.width = parent?.clientWidth || 1100);
-      const h = (canvas.height = 225);
+      if (!parent) return;
+      const rect = parent.getBoundingClientRect();
+      canvas.width = Math.max(320, Math.floor(rect.width));
+      canvas.height = 205;
+    };
+    updateSize();
+    window.addEventListener("resize", updateSize);
 
-      const baseHue = (t * 25) % 360;
+    const render = (now) => {
+      const elapsed = (now - startTime) / 1000;
+      const w = canvas.width;
+      const h = canvas.height;
 
-      // Dynamic Color-Shifting Backdrop
+      // Smooth continuous hue rotation across full spectrum (Light Red -> Coral -> Amber -> Violet -> Emerald -> Royal Blue)
+      const baseHue = (elapsed * 26) % 360;
+
+      // 1. Dynamic Color-Shifting Gradient Base
       const bgGrad = ctx.createLinearGradient(0, 0, w, h);
-      bgGrad.addColorStop(0, `hsla(${(baseHue + 190) % 360}, 76%, 92%, 1)`);
-      bgGrad.addColorStop(0.5, `hsla(${(baseHue + 215) % 360}, 72%, 90%, 1)`);
-      bgGrad.addColorStop(1, `hsla(${(baseHue + 240) % 360}, 76%, 93%, 1)`);
+      bgGrad.addColorStop(0, `hsla(${baseHue}, 85%, 90%, 1)`);
+      bgGrad.addColorStop(0.5, `hsla(${(baseHue + 65) % 360}, 82%, 88%, 1)`);
+      bgGrad.addColorStop(1, `hsla(${(baseHue + 135) % 360}, 85%, 90%, 1)`);
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, w, h);
 
-      // PULSE RESONANCE RINGS
-      const centers = [
-        { x: w * 0.22, y: h * 0.5 },
-        { x: w * 0.52, y: h * 0.45 },
-        { x: w * 0.82, y: h * 0.52 },
-      ];
-      centers.forEach((pt, idx) => {
-        for (let k = 0; k < 4; k++) {
-          const radius = ((t * 36 + k * 40 + idx * 22) % 170) + 12;
-          const alpha = Math.max(0, 1 - radius / 180) * 0.44;
-          const hue = (baseHue + idx * 55 + k * 20) % 360;
+      // 2. Soft Ambient Color-Shifting Glow Clouds
+      for (let i = 0; i < 3; i++) {
+        const hue = (baseHue + i * 75) % 360;
+        const cx = w * (0.2 + i * 0.3 + Math.sin(elapsed * 0.6 + i) * 0.12);
+        const cy = h * (0.5 + Math.cos(elapsed * 0.5 + i) * 0.22);
 
-          ctx.strokeStyle = `hsla(${hue}, 86%, 54%, ${alpha})`;
-          ctx.lineWidth = 2.2;
-          ctx.beginPath();
-          ctx.arc(pt.x, pt.y, radius, 0, Math.PI * 2);
-          ctx.stroke();
-        }
-      });
+        const aura = ctx.createRadialGradient(cx, cy, 12, cx, cy, w * 0.38);
+        aura.addColorStop(0, `hsla(${hue}, 90%, 65%, 0.38)`);
+        aura.addColorStop(0.6, `hsla(${(hue + 25) % 360}, 85%, 68%, 0.18)`);
+        aura.addColorStop(1, `hsla(${hue}, 85%, 68%, 0)`);
+        ctx.fillStyle = aura;
+        ctx.fillRect(0, 0, w, h);
+      }
 
       animId = requestAnimationFrame(render);
     };
 
-    render();
-    return () => cancelAnimationFrame(animId);
+    animId = requestAnimationFrame(render);
+    return () => {
+      cancelAnimationFrame(animId);
+      window.removeEventListener("resize", updateSize);
+    };
   }, []);
 
   return (
-    <section className="relative rounded-3xl overflow-hidden border border-[#DFD3BC] shadow-[0_14px_36px_-12px_rgba(68,52,28,0.12)] bg-[#FFFDF9]">
+    <section
+      className="relative rounded-3xl overflow-hidden shadow-[0_12px_32px_-10px_rgba(68,52,28,0.12)] bg-white border border-[#DFD3BC]"
+      style={{ minHeight: 205 }}
+    >
+      {/* Oleo Script & Caveat fonts for the smooth cursive title */}
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Oleo+Script:wght@400;700&display=swap');`}</style>
+
       <canvas
         ref={canvasRef}
-        className="w-full h-[230px] sm:h-[215px] block pointer-events-none"
+        className="absolute inset-0 w-full h-full block pointer-events-none"
+        style={{ minHeight: 205 }}
       />
 
-      <div className="absolute inset-0 p-5 sm:p-6 flex flex-col justify-between">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3.5">
-            <GlowingSLogo size="lg" />
-            <div>
-              <h1 className="text-2xl sm:text-[26px] font-black text-[#1C1917] tracking-tight">
-                Notification Scripts
-              </h1>
-              <p className="text-xs text-[#575045] font-semibold">
-                Manage Morning, Evening, and Personalized Mail Nudges
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* 4 Frosted Glass KPI Pods */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="bg-white/75 backdrop-blur-md rounded-2xl px-4 py-3 border border-white/90 shadow-2xs flex items-center justify-between">
-            <div>
-              <span className="text-[11px] font-extrabold text-amber-800 flex items-center gap-1.5">
-                <Icon name="sun" className="w-3.5 h-3.5 text-amber-600" />
-                Morning Scripts
-              </span>
-              <span className="text-2xl font-black text-[#1C1917] block mt-0.5">
-                {morningCount}
-              </span>
-            </div>
-            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-lg bg-amber-500/15 text-amber-900">
-              {Math.round((morningCount / Math.max(1, totalScripts)) * 100)}%
-            </span>
-          </div>
-
-          <div className="bg-white/75 backdrop-blur-md rounded-2xl px-4 py-3 border border-white/90 shadow-2xs flex items-center justify-between">
-            <div>
-              <span className="text-[11px] font-extrabold text-rose-800 flex items-center gap-1.5">
-                <Icon name="moon" className="w-3.5 h-3.5 text-rose-600" />
-                Evening Scripts
-              </span>
-              <span className="text-2xl font-black text-[#1C1917] block mt-0.5">
-                {eveningCount}
-              </span>
-            </div>
-            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-lg bg-rose-500/15 text-rose-900">
-              {Math.round((eveningCount / Math.max(1, totalScripts)) * 100)}%
-            </span>
-          </div>
-
-          <div className="bg-white/75 backdrop-blur-md rounded-2xl px-4 py-3 border border-white/90 shadow-2xs flex items-center justify-between">
-            <div>
-              <span className="text-[11px] font-extrabold text-sky-900 flex items-center gap-1.5">
-                <span>🔔</span>
-                <span>Total Scripts</span>
-              </span>
-              <span className="text-2xl font-black text-[#1C1917] block mt-0.5">
-                {totalScripts}
-              </span>
-            </div>
-            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-lg bg-sky-500/15 text-sky-900">
-              {morningCount}M • {eveningCount}E
-            </span>
-          </div>
-
-          <div className="bg-white/75 backdrop-blur-md rounded-2xl px-4 py-3 border border-white/90 shadow-2xs flex items-center justify-between">
-            <div>
-              <span className="text-[11px] font-extrabold text-emerald-900 flex items-center gap-1.5">
-                <Icon name="mail" className="w-3.5 h-3.5 text-emerald-600" />
-                Mails Sent
-              </span>
-              <span className="text-2xl font-black text-[#1C1917] block mt-0.5">
-                {mailsSentCount}
-              </span>
-            </div>
-            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-lg bg-emerald-500/15 text-emerald-800">
-              Live Mail
-            </span>
-          </div>
-        </div>
+      {/* Full-banner text overlay with smooth cursive typography covering the banner */}
+      <div
+        className="relative z-10 flex flex-col items-center justify-center h-full text-center"
+        style={{ minHeight: 205, padding: "28px 32px" }}
+      >
+        <h1
+          style={{
+            fontFamily: "'Oleo Script', 'Caveat', cursive",
+            fontSize: "clamp(2.6rem, 6.5vw, 4.4rem)",
+            lineHeight: 1.08,
+            color: "#0f172a",
+            textShadow:
+              "0 2px 24px rgba(255,255,255,0.85), 0 1px 3px rgba(0,0,0,0.1)",
+            letterSpacing: "-0.01em",
+            textAlign: "center",
+            userSelect: "none",
+          }}
+        >
+          Notification Scripts
+        </h1>
+        <p
+          style={{
+            fontFamily: "system-ui, -apple-system, sans-serif",
+            fontSize: "0.85rem",
+            fontWeight: 600,
+            color: "#334155",
+            marginTop: 10,
+            letterSpacing: "0.04em",
+            textAlign: "center",
+            textShadow: "0 1px 10px rgba(255,255,255,0.7)",
+          }}
+        >
+          Morning, Evening &amp; Personalized Mail Nudge Studio
+        </p>
       </div>
     </section>
   );
@@ -399,7 +370,14 @@ function SimpleAiAssistancePanel({
       {/* STRICTLY: Logo + "AI Assistance" + Small Refresh Icon */}
       <div className="flex items-center justify-between border-b border-[#EDE6D6] pb-3">
         <div className="flex items-center gap-2.5">
-          <GlowingSLogo size="md" />
+          <img
+            src="/ai_avatar.png"
+            alt="AI Assistance"
+            className="w-9 h-9 object-contain drop-shadow-sm select-none"
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
+          />
           <h3 className="text-base font-black text-[#1C1917] tracking-tight">
             AI Assistance
           </h3>
