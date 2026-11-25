@@ -16,7 +16,11 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
-from fastapi import FastAPI
+from typing import Optional, Dict, Any, List
+from fastapi import FastAPI, Depends, Request
+from sqlalchemy.orm import Session
+from database import get_db
+from routes.badges import get_user_earned_badge_ids
 from fastapi.middleware.cors import CORSMiddleware
 from routes.bookings import router as bookings_router
 from routes.login import router as login_router
@@ -41,11 +45,30 @@ from routes.calendar_events import router as calendar_events_router
 from routes.tasks import router as tasks_router
 from routes.ai_assistant import router as ai_assistant_router
 from routes.analytics import router as analytics_router
+from routes.agent import router as agent_router
+from routes.module_ai import router as module_ai_router
+from routes.integrations import router as integrations_router
+from database import supabase as _supabase_client
+from scheduler import start_daily_scheduler
+
+
+@asynccontextmanager
+async def lifespan(app_instance: FastAPI):
+    sched = start_daily_scheduler(_supabase_client)
+    try:
+        yield
+    finally:
+        if sched is not None:
+            try:
+                sched.shutdown(wait=False)
+            except Exception:
+                pass
 
 
 app = FastAPI(
     title="Saarthi Curious API",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan,
 )
 
 # ============================
@@ -56,6 +79,10 @@ allowed_origins = [
     "http://127.0.0.1:5173",
     "http://localhost:5174",
     "http://127.0.0.1:5174",
+    "http://localhost",
+    "https://localhost",
+    "capacitor://localhost",
+    "ionic://localhost",
     "https://saarthi-curious.vercel.app",
 ]
 
@@ -69,7 +96,7 @@ if extra_origins:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_origin_regex=r"https://.*\.vercel\.app$|http://localhost:\d+$|http://127\.0\.0\.1:\d+$",
+    allow_origin_regex=r"^(https?://(localhost|127\.0\.0\.1|10\.0\.2\.2)(:\d+)?|capacitor://localhost|ionic://localhost|https://.*\.vercel\.app|https?://192\.168\.\d+\.\d+(:\d+)?)$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -102,6 +129,9 @@ app.include_router(tasks_router)
 app.include_router(ai_assistant_router)
 app.include_router(analytics_router)
 app.include_router(analytics_router, prefix="/api")
+app.include_router(agent_router)
+app.include_router(module_ai_router)
+app.include_router(integrations_router)
 
 # ============================
 # DEBUG - Print all routes (fixed)
@@ -122,8 +152,123 @@ for route in app.routes:
 print("="*60 + "\n")
 
 # ============================
-# ROOT
+# ROOT & ALIASES
 # ============================
+@app.get("/rewards")
+@app.get("/api/rewards")
+def get_rewards_alias(user_id: int = None, db: Session = Depends(get_db)):
+    return get_user_earned_badge_ids(user_id=user_id, db=db)
+
+@app.get("/leaderboards")
+@app.get("/api/leaderboards")
+def get_leaderboards_alias():
+    from routes.analytics import get_analytics_leaderboards
+    return get_analytics_leaderboards()
+
+@app.get("/streaks")
+@app.get("/api/streaks")
+@app.get("/admin/streak-management")
+def get_streaks_alias(db: Session = Depends(get_db)):
+    from routes.analytics import get_analytics_streaks
+    return get_analytics_streaks(db=db)
+
+@app.get("/admin/certificates")
+@app.get("/api/admin/certificates")
+def get_admin_certificates_alias(db: Session = Depends(get_db)):
+    from routes.certificates import get_admin_certificates
+    return get_admin_certificates(db=db)
+
+@app.post("/admin/certificates/issue")
+@app.post("/api/admin/certificates/issue")
+@app.post("/admin/certificates/{identifier}/issue")
+@app.post("/api/admin/certificates/{identifier}/issue")
+def issue_certificate_alias(identifier: Optional[str] = None, db: Session = Depends(get_db)):
+    from routes.certificates import admin_issue_certificate
+    return admin_issue_certificate(identifier=identifier, db=db)
+
+@app.post("/admin/certificates/reject")
+@app.post("/api/admin/certificates/reject")
+@app.post("/admin/certificates/{identifier}/reject")
+@app.post("/api/admin/certificates/{identifier}/reject")
+def reject_certificate_alias(identifier: Optional[str] = None, db: Session = Depends(get_db)):
+    from routes.certificates import admin_reject_certificate
+    return admin_reject_certificate(identifier=identifier, db=db)
+
+@app.get("/admin/certificates/{identifier}/download")
+@app.get("/api/admin/certificates/{identifier}/download")
+def download_certificate_alias(identifier: str, db: Session = Depends(get_db)):
+    from routes.certificates import download_certificate_file
+    return download_certificate_file(certificate_id=identifier, db=db)
+
+
+# =========================================================
+# APPLICATION CHECK SUBMISSIONS & AUTOMATION ALIASES
+# =========================================================
+@app.get("/application-check-submissions")
+@app.get("/admin/application-check-submissions")
+@app.get("/api/application-check-submissions")
+@app.get("/api/admin/application-check-submissions")
+def get_app_check_submissions_alias(db: Session = Depends(get_db)):
+    from routes.programs import get_application_check_submissions
+    return get_application_check_submissions(db=db)
+
+
+@app.get("/application-check-submissions/{attempt_id}")
+@app.get("/admin/application-check-submissions/{attempt_id}")
+@app.get("/api/application-check-submissions/{attempt_id}")
+@app.get("/api/admin/application-check-submissions/{attempt_id}")
+def get_app_check_submission_detail_alias(attempt_id: int, db: Session = Depends(get_db)):
+    from routes.programs import get_application_check_submission_detail
+    return get_application_check_submission_detail(attempt_id=attempt_id, db=db)
+
+
+@app.put("/application-check-submissions/{attempt_id}/review")
+@app.put("/admin/application-check-submissions/{attempt_id}/review")
+@app.post("/admin/application-check-submissions/{attempt_id}/approve")
+@app.post("/admin/application-check-submissions/{attempt_id}/reject")
+def review_app_check_submission_alias(
+    attempt_id: int,
+    request: Request,
+    payload: Optional[dict] = None,
+    db: Session = Depends(get_db)
+):
+    from routes.programs import review_application_check_submission, ApplicationCheckReviewRequest
+    path = request.url.path
+    status = "Approved" if "approve" in path else "Rejected"
+    comment = None
+    if payload:
+        status = payload.get("status", status).capitalize()
+        comment = payload.get("review_comment") or payload.get("feedback")
+    
+    review_req = ApplicationCheckReviewRequest(status=status, review_comment=comment)
+    return review_application_check_submission(attempt_id=attempt_id, payload=review_req, db=db)
+
+
+@app.get("/application-check-automation")
+@app.get("/admin/application-check-automation")
+@app.get("/api/application-check-automation")
+@app.get("/api/admin/application-check-automation")
+def get_app_check_automation_alias(db: Session = Depends(get_db)):
+    from routes.programs import get_application_check_automation
+    return get_application_check_automation(db=db)
+
+
+@app.put("/application-check-automation")
+@app.put("/admin/application-check-automation")
+@app.post("/admin/application-check-settings")
+@app.post("/api/admin/application-check-settings")
+def update_app_check_automation_alias(
+    payload: dict,
+    db: Session = Depends(get_db)
+):
+    from routes.programs import update_application_check_automation, ApplicationCheckAutomationRequest
+    is_enabled = bool(payload.get("is_enabled", payload.get("automate_application_checks", False)))
+    auto_req = ApplicationCheckAutomationRequest(is_enabled=is_enabled)
+    return update_application_check_automation(payload=auto_req, db=db)
+
+
+
+
 @app.get("/")
 def root():
     return {

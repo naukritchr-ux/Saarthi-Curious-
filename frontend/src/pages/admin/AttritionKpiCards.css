@@ -1,498 +1,339 @@
-/* ==========================================================================
-   2x2 KPI METALLIC GRID
-   ========================================================================== */
 .metal-kpi-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  width: 100%;
-  height: 100%;
-}
-
-/* ==========================================================================
-   4 DISTINCT ANODIZED METAL BASE ALLOYS
-   ========================================================================== */
-
-/* 1. ALL - Anodized Amethyst / Violet Titanium */
-.metal-violet {
-  --plate-top: #52437a;
-  --plate-mid: #322652;
-  --plate-bot: #1f1736;
-  --luster-tint: rgba(233, 213, 255, 0.28);
-  --luster-core: rgba(255, 255, 255, 0.22);
-  --underglow: rgba(168, 85, 247, 0.34);
-  --rim-light: #e9d5ff;
-  --rim-warm: #d6bcfa;
-  --squircle-bg: linear-gradient(145deg, rgba(139, 92, 246, 0.45), rgba(46, 16, 101, 0.85));
-  --squircle-border: rgba(216, 180, 254, 0.55);
-  --num-color: #ffffff;
-  --bar-grad: linear-gradient(90deg, #9333ea 0%, #c084fc 72%, #f5d0fe 100%);
-  --bar-glow: rgba(192, 132, 252, 0.55);
-}
-
-/* 2. HIGH RISK - Brushed Crimson / Forged Ruby Steel */
-.metal-crimson {
-  --plate-top: #733244;
-  --plate-mid: #4a1c29;
-  --plate-bot: #2b0f18;
-  --luster-tint: rgba(254, 205, 211, 0.28);
-  --luster-core: rgba(255, 241, 242, 0.22);
-  --underglow: rgba(244, 63, 94, 0.34);
-  --rim-light: #fecdd3;
-  --rim-warm: #fda4af;
-  --squircle-bg: linear-gradient(145deg, rgba(190, 18, 60, 0.48), rgba(76, 5, 25, 0.88));
-  --squircle-border: rgba(253, 164, 175, 0.52);
-  --num-color: #fda4af;
-  --bar-grad: linear-gradient(90deg, #e11d48 0%, #fb7185 72%, #ffe4e6 100%);
-  --bar-glow: rgba(251, 113, 133, 0.55);
-}
-
-/* 3. MEDIUM RISK - Brushed Champagne Bronze / Satin Gold Alloy */
-.metal-bronze {
-  --plate-top: #6e5530;
-  --plate-mid: #47351b;
-  --plate-bot: #291e0e;
-  --luster-tint: rgba(254, 240, 138, 0.25);
-  --luster-core: rgba(255, 251, 235, 0.22);
-  --underglow: rgba(234, 179, 8, 0.3);
-  --rim-light: #fef08a;
-  --rim-warm: #fde047;
-  --squircle-bg: linear-gradient(145deg, rgba(180, 118, 22, 0.48), rgba(69, 39, 7, 0.88));
-  --squircle-border: rgba(253, 224, 71, 0.5);
-  --num-color: #facc15;
-  --bar-grad: linear-gradient(90deg, #d97706 0%, #facc15 72%, #fef9c3 100%);
-  --bar-glow: rgba(250, 204, 21, 0.52);
-}
-
-/* 4. LOW RISK - Brushed Cryo-Cobalt / Ice-Cyan Steel */
-.metal-cyan {
-  --plate-top: #315a78;
-  --plate-mid: #1d394f;
-  --plate-bot: #102230;
-  --luster-tint: rgba(186, 230, 253, 0.28);
-  --luster-core: rgba(240, 249, 255, 0.22);
-  --underglow: rgba(34, 211, 238, 0.32);
-  --rim-light: #bae6fd;
-  --rim-warm: #7dd3fc;
-  --squircle-bg: linear-gradient(145deg, rgba(14, 116, 144, 0.5), rgba(8, 47, 73, 0.88));
-  --squircle-border: rgba(125, 211, 252, 0.52);
-  --num-color: #67e8f9;
-  --bar-grad: linear-gradient(90deg, #0284c7 0%, #22d3ee 72%, #cffafe 100%);
-  --bar-glow: rgba(34, 211, 238, 0.55);
-}
-
-/* ==========================================================================
-   METALLIC CHASSIS CONTAINER
-   ========================================================================== */
-.metal-kpi-card {
-  position: relative;
-  border-radius: 16px;
-  padding: 16px 18px 14px;
-  overflow: hidden;
-  cursor: pointer;
-  user-select: none;
-  contain: paint; /* Locks layout/paint inside card for maximum FPS */
-
-  /* Colored Satin-Matte Anodized Metal Body */
-  background: linear-gradient(
-    162deg,
-    var(--plate-top) 0%,
-    var(--plate-mid) 46%,
-    var(--plate-bot) 100%
-  );
-
-  /* Realistic 3D Elevation & Inner Bevel */
-  box-shadow:
-    0 10px 24px -6px rgba(0, 0, 0, 0.72),
-    inset 0 1.5px 1px rgba(255, 255, 255, 0.55),
-    inset 0 -1.5px 2px rgba(0, 0, 0, 0.55);
-
-  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-              box-shadow 0.22s ease;
-}
-
-.metal-kpi-card:hover {
-  transform: translate3d(0, -2px, 0);
-  box-shadow:
-    0 14px 28px -6px rgba(0, 0, 0, 0.82),
-    inset 0 1.5px 2px rgba(255, 255, 255, 0.72),
-    inset 0 -1.5px 2px rgba(0, 0, 0, 0.55);
-}
-
-.metal-kpi-card.is-selected {
-  box-shadow:
-    0 0 0 1.5px var(--rim-light),
-    0 12px 26px -4px rgba(0, 0, 0, 0.8),
-    inset 0 1.5px 2px rgba(255, 255, 255, 0.8);
-}
-
-/* ==========================================================================
-   SURFACE TEXTURE & STUDIO LIGHTING (EXACT SCREENSHOT MATCH)
-   ========================================================================== */
-
-/* Ultra-fine horizontal brushed titanium grain (zero-cost CSS gradient) */
-.metal-brushed-surface {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background-image: repeating-linear-gradient(
-    0deg,
-    rgba(255, 255, 255, 0.024) 0px,
-    rgba(255, 255, 255, 0.024) 1px,
-    rgba(0, 0, 0, 0.02) 1px,
-    rgba(0, 0, 0, 0.02) 2px
-  );
-}
-
-/* Top-Left Corner Specular Hotspot + Top-Right Diagonal Satin Cone */
-.metal-studio-bevel {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  background:
-    /* Bright top-left corner metallic flare (from reference screenshot) */
-    radial-gradient(
-      ellipse 55% 50% at 6% 4%,
-      rgba(255, 255, 255, 0.34) 0%,
-      var(--luster-tint) 38%,
-      transparent 75%
-    ),
-    /* Top-right brushed diagonal metallic cone (from reference screenshot) */
-    linear-gradient(
-      128deg,
-      transparent 48%,
-      rgba(255, 255, 255, 0.03) 62%,
-      rgba(255, 255, 255, 0.19) 74%,
-      rgba(255, 255, 255, 0.04) 84%,
-      transparent 94%
-    );
-}
-
-/* ==========================================================================
-   120FPS LIVE REALISTIC METAL SHINE (GPU COMPOSITED ONLY)
-   ========================================================================== */
-
-/* Broad Anisotropic Specular Sheen Gliding Smoothly Across Metal Grain */
-.metal-live-luster {
-  position: absolute;
-  top: -35%;
-  bottom: -35%;
-  left: -60%;
-  width: 220%;
-  z-index: 2;
-  pointer-events: none;
-  background: linear-gradient(
-    112deg,
-    transparent 24%,
-    var(--luster-tint) 41%,
-    var(--luster-core) 49.5%,
-    var(--luster-tint) 58%,
-    transparent 75%
-  );
-  will-change: transform, opacity;
-  backface-visibility: hidden;
-  animation: realisticMetalGlide 4.8s cubic-bezier(0.42, 0, 0.58, 1) infinite alternate;
-  animation-delay: var(--phase, 0s);
-}
-
-/* Subtle Base-Color Internal Metallic Underglow */
-.metal-live-underglow {
-  position: absolute;
-  inset: -15%;
-  z-index: 2;
-  pointer-events: none;
-  background: radial-gradient(
-    ellipse 65% 55% at 55% 92%,
-    var(--underglow) 0%,
-    transparent 70%
-  );
-  will-change: transform, opacity;
-  backface-visibility: hidden;
-  animation: metalUnderglowPulse 3.8s ease-in-out infinite alternate;
-  animation-delay: var(--phase, 0s);
-}
-
-@keyframes realisticMetalGlide {
-  0% {
-    transform: translate3d(-18%, 0, 0) rotate(-1.5deg);
-    opacity: 0.72;
-  }
-  50% {
-    opacity: 1;
-  }
-  100% {
-    transform: translate3d(18%, 0, 0) rotate(1.5deg);
-    opacity: 0.78;
-  }
-}
-
-@keyframes metalUnderglowPulse {
-  0% {
-    opacity: 0.55;
-    transform: translate3d(-4%, 2%, 0) scale(0.96);
-  }
-  100% {
-    opacity: 1;
-    transform: translate3d(4%, -2%, 0) scale(1.06);
-  }
-}
-
-/* Diamond-Cut Metallic Outer Rim (Silver-White Top + Warm Champagne Bottom) */
-.metal-chamfer-rim {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  border-radius: 16px;
-  padding: 1.4px;
-  pointer-events: none;
-  background: linear-gradient(
-    140deg,
-    #ffffff 0%,
-    var(--rim-light) 24%,
-    rgba(255, 255, 255, 0.25) 50%,
-    var(--rim-warm) 82%,
-    #fde68a 100%
-  );
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  opacity: 0.88;
-}
-
-/* ==========================================================================
-   FOREGROUND CONTENT (ICON SQUIRCLE, METRICS, BAR, 3D SILVER FILTER PILL)
-   ========================================================================== */
-.metal-kpi-inner {
-  position: relative;
-  z-index: 4;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 12px;
-  height: 100%;
-}
-
-/* Top Section */
-.metal-top-section {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-}
-
-.metal-icon-squircle {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  background: var(--squircle-bg);
-  border: 1px solid var(--squircle-border);
-  box-shadow:
-    0 4px 10px rgba(0, 0, 0, 0.42),
-    inset 0 1.5px 1px rgba(255, 255, 255, 0.38),
-    inset 0 -2px 4px rgba(0, 0, 0, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.metal-icon-squircle svg {
-  width: 30px;
-  height: 30px;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
-}
-
-.metal-title-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-
-.metal-kpi-title {
-  font-size: 12.5px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #f8fafc;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65);
-}
-
-.metal-kpi-number {
-  font-size: 26px;
-  font-weight: 800;
-  line-height: 1.12;
-  letter-spacing: -0.01em;
-  color: var(--num-color);
-  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.65);
-}
-
-/* Middle Recessed Progress Track & Glowing Filament */
-.metal-progress-track {
-  width: 100%;
-  height: 8px;
-  margin-top: 8px;
-  margin-bottom: 2px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
-  box-shadow:
-    inset 0 1.5px 3px rgba(0, 0, 0, 0.55),
-    0 1px 0 rgba(255, 255, 255, 0.14);
-  overflow: hidden;
-}
-
-.metal-progress-bar {
-  height: 100%;
-  border-radius: 999px;
-  background: var(--bar-grad);
-  box-shadow: 0 0 12px var(--bar-glow);
-  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* Bottom Section */
-.metal-bottom-section {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   gap: 10px;
+  width: 100%;
 }
 
-.metal-kpi-sub {
-  font-size: 11.5px;
-  font-weight: 500;
-  color: rgba(248, 250, 252, 0.92);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* 3D Brushed Platinum/Champagne Metallic "Filter ->" Pill (Matches Reference) */
-.metal-filter-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 13px;
-  border-radius: 999px;
-  border: 1px solid #d6c79c;
-  background:
-    radial-gradient(circle at 50% 25%, #ffffff 0%, transparent 65%),
-    linear-gradient(
-      90deg,
-      #aeb6c4 0%,
-      #f1f5f9 28%,
-      #ffffff 50%,
-      #e2e8f0 74%,
-      #9ea7b8 100%
-    );
-  color: #0f172a;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  cursor: pointer;
-  flex-shrink: 0;
-  box-shadow:
-    0 2px 6px rgba(0, 0, 0, 0.55),
-    inset 0 1px 1px #ffffff,
-    inset 0 -1px 1.5px rgba(71, 85, 105, 0.55);
-  transition: transform 0.16s ease, filter 0.16s ease;
-}
-
-.metal-filter-pill:hover {
-  transform: translate3d(0, -1px, 0) scale(1.03);
-  filter: brightness(1.06);
-}
-
-.metal-filter-arrow {
-  font-size: 11.5px;
-  font-weight: 900;
-  transition: transform 0.16s ease;
-}
-
-.metal-filter-pill:hover .metal-filter-arrow {
-  transform: translate3d(2px, 0, 0);
-}
-
-/* Mobile Fallback */
 @media (max-width: 640px) {
   .metal-kpi-grid {
     grid-template-columns: 1fr;
   }
 }
 
-/* ==========================================================================
-   CREAM LUXE THEME INTEGRATION (WHEN isLight IS ACTIVE)
-   ========================================================================== */
-.metal-kpi-card.is-light {
-  background: #FFFDF9;
-  box-shadow: 0 4px 14px rgba(72, 58, 38, 0.08), inset 0 1px 0 #FFFFFF;
+@keyframes neonBaseFlow {
+  0%   { background-position: 0% 50%, 0% 0%; }
+  50%  { background-position: 100% 50%, 100% 100%; }
+  100% { background-position: 0% 50%, 0% 0%; }
 }
 
-.metal-kpi-card.is-light.metal-violet {
-  border: 1.5px solid #DDD0F5;
-  background: linear-gradient(145deg, #FFFDFB 0%, #F7F3FF 100%);
-  --num-color: #1E1B4B;
-  --squircle-bg: #EDE9FE;
-  --squircle-border: #C4B5FD;
-  --bar-grad: linear-gradient(90deg, #8B5CF6, #6D28D9);
+@keyframes neonTubePulsePurple {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(176, 38, 255, 0.36), inset 0 0 12px rgba(176, 38, 255, 0.14);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(217, 70, 239, 0.62), inset 0 0 18px rgba(176, 38, 255, 0.22);
+  }
 }
 
-.metal-kpi-card.is-light.metal-crimson {
-  border: 1.5px solid #F5CBD1;
-  background: linear-gradient(145deg, #FFFDFB 0%, #FFF1F3 100%);
-  --num-color: #BE123C;
-  --squircle-bg: #FFE4E6;
-  --squircle-border: #FDA4AF;
-  --bar-grad: linear-gradient(90deg, #F43F5E, #BE123C);
+@keyframes neonTubePulseFlame {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(244, 63, 94, 0.36), inset 0 0 12px rgba(244, 63, 94, 0.14);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(251, 113, 133, 0.62), inset 0 0 18px rgba(244, 63, 94, 0.22);
+  }
 }
 
-.metal-kpi-card.is-light.metal-bronze {
-  border: 1.5px solid #F2DFB1;
-  background: linear-gradient(145deg, #FFFDFB 0%, #FEF8E8 100%);
-  --num-color: #B45309;
-  --squircle-bg: #FEF3C7;
-  --squircle-border: #FCD34D;
-  --bar-grad: linear-gradient(90deg, #F59E0B, #D97706);
+@keyframes neonTubePulseGold {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(250, 204, 21, 0.34), inset 0 0 12px rgba(250, 204, 21, 0.14);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(254, 240, 138, 0.58), inset 0 0 18px rgba(250, 204, 21, 0.2);
+  }
 }
 
-.metal-kpi-card.is-light.metal-cyan {
-  border: 1.5px solid #C5E2F0;
-  background: linear-gradient(145deg, #FFFDFB 0%, #EFF8FC 100%);
-  --num-color: #0369A1;
-  --squircle-bg: #E0F2FE;
-  --squircle-border: #7DD3FC;
-  --bar-grad: linear-gradient(90deg, #0EA5E9, #0284C7);
+@keyframes neonTubePulseCyan {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(34, 211, 238, 0.36), inset 0 0 12px rgba(34, 211, 238, 0.14);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(103, 232, 249, 0.62), inset 0 0 18px rgba(34, 211, 238, 0.22);
+  }
 }
 
-.metal-kpi-card.is-light .metal-kpi-title {
-  color: #475569;
-  text-shadow: none;
+/* Compact "normal not too big" height matching card text & adjacent wave chart */
+.neon-kpi-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 16px;
+  padding: 14px 16px;
+  min-height: 128px;
+  height: 100%;
+  background-size: 240% 240%, 200% 200% !important;
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.2s ease, outline-color 0.2s ease;
 }
 
-.metal-kpi-card.is-light .metal-kpi-sub {
-  color: #64748B;
-  text-shadow: none;
+.neon-kpi-card:hover {
+  transform: translateY(-2px);
 }
 
-.metal-kpi-card.is-light .metal-progress-track {
-  background: #E2E8F0;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+.neon-kpi-card.is-selected {
+  outline: 1.5px solid #FFFFFF;
+  outline-offset: 1px;
 }
 
-.metal-kpi-card.is-light .metal-filter-pill {
-  background: #FFFFFF;
-  border-color: #CBD5E1;
-  color: #334155;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+.neon-kpi-purple {
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(176, 38, 255, 0.34) 0%, rgba(217, 70, 239, 0.12) 45%, transparent 72%),
+    linear-gradient(135deg, #09031A 0%, #1D0A40 42%, #05040E 78%, #240B4B 100%) !important;
+  border: 1.6px solid rgba(216, 180, 254, 0.82) !important;
+  animation: neonBaseFlow 6.5s ease-in-out infinite, neonTubePulsePurple 4s ease-in-out infinite !important;
 }
 
-.metal-kpi-card.is-light .metal-chamfer-rim,
-.metal-kpi-card.is-light .metal-brushed-surface,
-.metal-kpi-card.is-light .metal-studio-bevel,
-.metal-kpi-card.is-light .metal-live-luster,
-.metal-kpi-card.is-light .metal-live-underglow {
-  display: none;
+.neon-kpi-flame {
+  background-image:
+    radial-gradient(circle at 80% 20%, rgba(244, 63, 94, 0.34) 0%, rgba(251, 113, 133, 0.14) 45%, transparent 72%),
+    linear-gradient(135deg, #17040B 0%, #370918 42%, #090307 78%, #3B0E18 100%) !important;
+  border: 1.6px solid rgba(253, 164, 175, 0.82) !important;
+  animation: neonBaseFlow 6.5s ease-in-out infinite, neonTubePulseFlame 4s ease-in-out infinite !important;
+}
+
+.neon-kpi-gold {
+  background-image:
+    radial-gradient(circle at 25% 80%, rgba(250, 204, 21, 0.28) 0%, rgba(245, 158, 11, 0.14) 45%, transparent 72%),
+    linear-gradient(135deg, #150F03 0%, #322106 42%, #090703 78%, #2E1E06 100%) !important;
+  border: 1.6px solid rgba(253, 224, 71, 0.82) !important;
+  animation: neonBaseFlow 6.5s ease-in-out infinite, neonTubePulseGold 4s ease-in-out infinite !important;
+}
+
+.neon-kpi-cyan {
+  background-image:
+    radial-gradient(circle at 80% 78%, rgba(34, 211, 238, 0.34) 0%, rgba(14, 165, 233, 0.14) 45%, transparent 72%),
+    linear-gradient(135deg, #03111E 0%, #072842 42%, #030812 78%, #08243C 100%) !important;
+  border: 1.6px solid rgba(103, 232, 249, 0.82) !important;
+  animation: neonBaseFlow 6.5s ease-in-out infinite, neonTubePulseCyan 4s ease-in-out infinite !important;
+}
+
+/* ============================================================================
+   VIVID BASE-COLOUR KPI CARDS WITH SMOOTH INTERNAL FLOW +
+   PREMIUM MOVING SAME-COLOUR SPECULAR BORDERS
+============================================================================ */
+@property --b1x { syntax: "<percentage>"; inherits: false; initial-value: 14%; }
+@property --b1y { syntax: "<percentage>"; inherits: false; initial-value: 10%; }
+@property --b2x { syntax: "<percentage>"; inherits: false; initial-value: 86%; }
+@property --b2y { syntax: "<percentage>"; inherits: false; initial-value: 86%; }
+@property --b3x { syntax: "<percentage>"; inherits: false; initial-value: 50%; }
+@property --b3y { syntax: "<percentage>"; inherits: false; initial-value: 96%; }
+
+/* 3 independent organic border light drifts (smooth, non-repeating rhythm) */
+@keyframes kpiRimWanderA {
+  0%   { --b1x: 10%; --b1y: 8%;  }
+  25%  { --b1x: 82%; --b1y: 16%; }
+  52%  { --b1x: 92%; --b1y: 88%; }
+  78%  { --b1x: 18%; --b1y: 84%; }
+  100% { --b1x: 10%; --b1y: 8%;  }
+}
+
+@keyframes kpiRimWanderB {
+  0%   { --b2x: 88%; --b2y: 88%; }
+  30%  { --b2x: 14%; --b2y: 44%; }
+  62%  { --b2x: 70%; --b2y: 6%;  }
+  100% { --b2x: 88%; --b2y: 88%; }
+}
+
+@keyframes kpiRimWanderC {
+  0%   { --b3x: 48%; --b3y: 96%; }
+  34%  { --b3x: 92%; --b3y: 14%; }
+  68%  { --b3x: 8%;  --b3y: 82%; }
+  100% { --b3x: 48%; --b3y: 96%; }
+}
+
+/* Smooth base-colour silk glide (keeps the 4 border layers locked in place) */
+@keyframes kpiBaseSilkFlow {
+  0%   { background-position: 0% 50%,   0% 0%, 0% 0%, 0% 0%, 0% 0%; }
+  50%  { background-position: 100% 50%, 0% 0%, 0% 0%, 0% 0%, 0% 0%; }
+  100% { background-position: 0% 50%,   0% 0%, 0% 0%, 0% 0%, 0% 0%; }
+}
+
+/* Smooth internal luminous waves matching each card's base colour */
+@keyframes kpiWaveDriftA {
+  0%, 100% { transform: translate3d(-16%, -12%, 0) scale(0.96); opacity: 0.48; }
+  50%      { transform: translate3d(28%, 10%, 0)   scale(1.16); opacity: 0.84; }
+}
+
+@keyframes kpiWaveDriftB {
+  0%, 100% { transform: translate3d(26%, 16%, 0)  scale(1.1);  opacity: 0.42; }
+  50%      { transform: translate3d(-16%, -8%, 0) scale(0.94); opacity: 0.76; }
+}
+
+/* Shared Base KPI Card Chassis */
+.kpi-vivid-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  border: 2.2px solid transparent;
+  background-clip: padding-box, border-box, border-box, border-box, border-box;
+  background-origin: padding-box, border-box, border-box, border-box, border-box;
+  background-size: 240% 240%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.24s ease;
+}
+
+.kpi-vivid-card:hover {
+  transform: translateY(-4px);
+}
+
+/* Internal Smooth Moving Colour Waves */
+.kpi-flow-wave-a,
+.kpi-flow-wave-b {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+  z-index: 0;
+  will-change: transform, opacity;
+}
+
+.kpi-flow-wave-a {
+  width: 82%;
+  height: 130%;
+  top: -28%;
+  left: -18%;
+  filter: blur(34px);
+  animation: kpiWaveDriftA 10s ease-in-out infinite;
+}
+
+.kpi-flow-wave-b {
+  width: 76%;
+  height: 120%;
+  bottom: -30%;
+  right: -16%;
+  filter: blur(38px);
+  animation: kpiWaveDriftB 13s ease-in-out infinite;
+}
+
+/* ============================================================================
+   1. ROYAL AMETHYST PURPLE — Clear Purple Base + Moving Violet-Lilac Border
+============================================================================ */
+.kpi-vivid-purple {
+  background-image:
+    linear-gradient(125deg, #4C1D95 0%, #34136C 44%, #250D50 72%, #5B21B6 100%),
+    radial-gradient(ellipse 62% 54% at var(--b1x) var(--b1y), #FFFFFF 0%, #F3E8FF 26%, transparent 64%),
+    radial-gradient(ellipse 68% 58% at var(--b2x) var(--b2y), #E879F9 0%, #A855F7 34%, transparent 66%),
+    radial-gradient(ellipse 58% 58% at var(--b3x) var(--b3y), #DDD6FE 0%, #7C3AED 32%, transparent 64%),
+    linear-gradient(135deg, #D8B4FE 0%, #7E22CE 42%, #F0ABFC 74%, #9333EA 100%);
+  animation:
+    kpiBaseSilkFlow 10.5s ease-in-out infinite,
+    kpiRimWanderA 9.2s ease-in-out infinite,
+    kpiRimWanderB 13.4s ease-in-out infinite,
+    kpiRimWanderC 17.2s ease-in-out infinite;
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.72),
+    0 0 28px -6px rgba(168, 85, 247, 0.55),
+    inset 0 1px 1px rgba(243, 232, 255, 0.34);
+}
+.kpi-vivid-purple:hover {
+  box-shadow:
+    0 20px 44px rgba(0, 0, 0, 0.82),
+    0 0 38px -4px rgba(192, 132, 252, 0.72),
+    inset 0 1px 1px rgba(255, 255, 255, 0.45);
+}
+.kpi-vivid-purple .kpi-flow-wave-a {
+  background: radial-gradient(circle, rgba(216, 180, 254, 0.55) 0%, rgba(168, 85, 247, 0.28) 50%, transparent 74%);
+}
+.kpi-vivid-purple .kpi-flow-wave-b {
+  background: radial-gradient(circle, rgba(232, 121, 249, 0.42) 0%, rgba(126, 34, 206, 0.28) 50%, transparent 74%);
+}
+
+/* ============================================================================
+   2. DEEP SAPPHIRE CYAN — Clear Sapphire Base + Moving Ice-Cyan Border
+============================================================================ */
+.kpi-vivid-cyan {
+  background-image:
+    linear-gradient(125deg, #0E4D73 0%, #093554 44%, #07263F 72%, #115E85 100%),
+    radial-gradient(ellipse 62% 54% at var(--b1x) var(--b1y), #FFFFFF 0%, #CFFAFE 26%, transparent 64%),
+    radial-gradient(ellipse 68% 58% at var(--b2x) var(--b2y), #67E8F9 0%, #0EA5E9 34%, transparent 66%),
+    radial-gradient(ellipse 58% 58% at var(--b3x) var(--b3y), #BAE6FD 0%, #0284C7 32%, transparent 64%),
+    linear-gradient(135deg, #A5F3FC 0%, #0369A1 42%, #38BDF8 74%, #0891B2 100%);
+  animation:
+    kpiBaseSilkFlow 11.2s ease-in-out -2.6s infinite,
+    kpiRimWanderA 10.1s ease-in-out -2.8s infinite,
+    kpiRimWanderB 14.3s ease-in-out -4.9s infinite,
+    kpiRimWanderC 18.1s ease-in-out -1.8s infinite;
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.72),
+    0 0 28px -6px rgba(34, 211, 238, 0.52),
+    inset 0 1px 1px rgba(207, 250, 254, 0.34);
+}
+.kpi-vivid-cyan:hover {
+  box-shadow:
+    0 20px 44px rgba(0, 0, 0, 0.82),
+    0 0 38px -4px rgba(56, 189, 248, 0.7),
+    inset 0 1px 1px rgba(255, 255, 255, 0.45);
+}
+.kpi-vivid-cyan .kpi-flow-wave-a {
+  background: radial-gradient(circle, rgba(103, 232, 249, 0.52) 0%, rgba(14, 165, 233, 0.28) 50%, transparent 74%);
+}
+.kpi-vivid-cyan .kpi-flow-wave-b {
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.44) 0%, rgba(3, 105, 161, 0.28) 50%, transparent 74%);
+}
+
+/* ============================================================================
+   3. BURNISHED AMBER GOLD — Clear Gold Base + Moving 24K Champagne-Gold Border
+============================================================================ */
+.kpi-vivid-amber {
+  background-image:
+    linear-gradient(125deg, #754708 0%, #523006 44%, #3D2204 72%, #8A5409 100%),
+    radial-gradient(ellipse 62% 54% at var(--b1x) var(--b1y), #FFFFFF 0%, #FEF9C3 26%, transparent 64%),
+    radial-gradient(ellipse 68% 58% at var(--b2x) var(--b2y), #FDE047 0%, #F59E0B 34%, transparent 66%),
+    radial-gradient(ellipse 58% 58% at var(--b3x) var(--b3y), #FEF08A 0%, #D97706 32%, transparent 64%),
+    linear-gradient(135deg, #FEF08A 0%, #B45309 42%, #FACC15 74%, #D97706 100%);
+  animation:
+    kpiBaseSilkFlow 10.8s ease-in-out -5.2s infinite,
+    kpiRimWanderA 9.8s ease-in-out -5.4s infinite reverse,
+    kpiRimWanderB 13.9s ease-in-out -2.1s infinite,
+    kpiRimWanderC 17.7s ease-in-out -6.8s infinite;
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.72),
+    0 0 28px -6px rgba(250, 204, 21, 0.52),
+    inset 0 1px 1px rgba(254, 249, 195, 0.36);
+}
+.kpi-vivid-amber:hover {
+  box-shadow:
+    0 20px 44px rgba(0, 0, 0, 0.82),
+    0 0 38px -4px rgba(253, 224, 71, 0.7),
+    inset 0 1px 1px rgba(255, 255, 255, 0.48);
+}
+.kpi-vivid-amber .kpi-flow-wave-a {
+  background: radial-gradient(circle, rgba(254, 240, 138, 0.5) 0%, rgba(245, 158, 11, 0.28) 50%, transparent 74%);
+}
+.kpi-vivid-amber .kpi-flow-wave-b {
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.44) 0%, rgba(180, 83, 9, 0.28) 50%, transparent 74%);
+}
+
+/* ============================================================================
+   4. VELVET RUBY CRIMSON — Clear Crimson Base + Moving Ruby-Rose Border
+============================================================================ */
+.kpi-vivid-crimson {
+  background-image:
+    linear-gradient(125deg, #7A1430 0%, #560C21 44%, #3E0817 72%, #8F1838 100%),
+    radial-gradient(ellipse 62% 54% at var(--b1x) var(--b1y), #FFFFFF 0%, #FFE4E6 26%, transparent 64%),
+    radial-gradient(ellipse 68% 58% at var(--b2x) var(--b2y), #FDA4AF 0%, #F43F5E 34%, transparent 66%),
+    radial-gradient(ellipse 58% 58% at var(--b3x) var(--b3y), #FECDD3 0%, #E11D48 32%, transparent 64%),
+    linear-gradient(135deg, #FECDD3 0%, #9F1239 42%, #FB7185 74%, #BE123C 100%);
+  animation:
+    kpiBaseSilkFlow 11.6s ease-in-out -7.8s infinite,
+    kpiRimWanderA 10.6s ease-in-out -4.1s infinite,
+    kpiRimWanderB 14.8s ease-in-out -7.6s infinite reverse,
+    kpiRimWanderC 18.4s ease-in-out -3.2s infinite;
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.72),
+    0 0 28px -6px rgba(244, 63, 94, 0.55),
+    inset 0 1px 1px rgba(255, 228, 230, 0.34);
+}
+.kpi-vivid-crimson:hover {
+  box-shadow:
+    0 20px 44px rgba(0, 0, 0, 0.82),
+    0 0 38px -4px rgba(251, 113, 133, 0.72),
+    inset 0 1px 1px rgba(255, 255, 255, 0.45);
+}
+.kpi-vivid-crimson .kpi-flow-wave-a {
+  background: radial-gradient(circle, rgba(254, 205, 211, 0.48) 0%, rgba(244, 63, 94, 0.3) 50%, transparent 74%);
+}
+.kpi-vivid-crimson .kpi-flow-wave-b {
+  background: radial-gradient(circle, rgba(251, 113, 133, 0.45) 0%, rgba(159, 18, 57, 0.3) 50%, transparent 74%);
 }

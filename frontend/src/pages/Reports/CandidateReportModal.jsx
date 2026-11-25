@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import {
   ResponsiveContainer,
   RadarChart,
@@ -50,7 +50,7 @@ const ObsidianTooltip = ({ active, payload, label }) => {
 // ============================================================================
 // 2. PERSONALIZED CANDIDATE TELEMETRY ENGINE
 // ============================================================================
-export function buildPersonalizedBackupReport(student, cohortSize = 19) {
+function buildPersonalizedBackupReport(student, cohortSize = 19) {
   const name = student?.name || "Candidate";
   const firstName = name.split(" ")[0];
   const prog = student?.program_name || "Client Relationships";
@@ -58,7 +58,6 @@ export function buildPersonalizedBackupReport(student, cohortSize = 19) {
   const quiz = Number(student?.quiz_mastery_pct ?? 0);
   const attempts = Number(student?.quiz_attempts_count ?? 0);
   const videos = Number(student?.videos_completed_count ?? 0);
-  const curos = Number(student?.curos ?? 0);
   const risk = Number(student?.risk_score ?? 100);
 
   const nameHash = name
@@ -276,22 +275,22 @@ export function buildPersonalizedBackupReport(student, cohortSize = 19) {
 // 3. CANDIDATE DETAIL & INDIVIDUAL REPORT MODAL COMPONENT
 // ============================================================================
 export default function CandidateReportModal({ student, cohortSize = 19, onClose }) {
-  const [aiReport, setAiReport] = useState(null);
   const [chatInput, setChatInput] = useState("");
-  const [chatHistory, setChatHistory] = useState([]);
 
-  useEffect(() => {
-    if (!student) return;
+  const aiReport = useMemo(() => {
+    return student ? buildPersonalizedBackupReport(student, cohortSize) : null;
+  }, [student, cohortSize]);
 
+  const [chatHistory, setChatHistory] = useState(() => {
+    if (!student) return [];
     const prefetchedReport = buildPersonalizedBackupReport(student, cohortSize);
-    setAiReport(prefetchedReport);
-    setChatHistory([
+    return [
       {
         role: "ai",
         text: `Telemetry diagnostic loaded for **${student.name}** (${prefetchedReport.archetype}). ${prefetchedReport.headline} Select a quick prompt above or ask a tailored coaching question below.`,
       },
-    ]);
-  }, [student, cohortSize]);
+    ];
+  });
 
   if (!student || !aiReport) return null;
 
@@ -425,7 +424,7 @@ export default function CandidateReportModal({ student, cohortSize = 19, onClose
               {aiReport.customParameters.map((param, i) => (
                 <div
                   key={i}
-                  className="p-3 rounded-2xl bg-[#070913] border border-white/10 flex flex-col justify-between"
+                  className="p-3 rounded-2xl bg-[#070913] border border-cyan-400/40 shadow-[0_0_10px_rgba(34,211,238,0.15)] flex flex-col justify-between"
                 >
                   <span className="text-[10px] font-bold text-slate-400 uppercase block line-clamp-1">
                     {param.label}
@@ -441,7 +440,7 @@ export default function CandidateReportModal({ student, cohortSize = 19, onClose
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-[#070913] rounded-2xl p-3.5 border border-cyan-500/25">
+              <div className="perm-inner-chart-frame-cyan rounded-2xl p-3.5">
                 <span className="text-[11px] font-extrabold uppercase tracking-wider text-cyan-200 block mb-1">
                   🕸️ {aiReport.radarTitle}
                 </span>
@@ -475,7 +474,7 @@ export default function CandidateReportModal({ student, cohortSize = 19, onClose
                 </div>
               </div>
 
-              <div className="bg-[#070913] rounded-2xl p-3.5 border border-emerald-500/25">
+              <div className="perm-inner-chart-frame-emerald rounded-2xl p-3.5">
                 <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-200 block">
                   🌊 {aiReport.waveTitle}
                 </span>
@@ -602,7 +601,7 @@ export default function CandidateReportModal({ student, cohortSize = 19, onClose
           </div>
 
           {/* RIGHT 5 COLS: 3D ROBOT AVATAR & AI COACHING CHAT */}
-          <div className="col-span-12 lg:col-span-5 flex flex-col justify-between bg-gradient-to-b from-[#0B1528] via-[#081020] to-[#050811] rounded-2xl p-5 border border-cyan-500/35 shadow-[0_0_45px_-10px_rgba(56,189,248,0.28)] min-h-[490px]">
+          <div className="col-span-12 lg:col-span-5 flex flex-col justify-between perm-graph-card perm-light-border-cyan p-5 min-h-[490px]">
             <div className="space-y-3.5">
               {/* Top Co-Pilot Header */}
               <div className="flex items-center gap-3.5 pb-3.5 border-b border-cyan-500/20">

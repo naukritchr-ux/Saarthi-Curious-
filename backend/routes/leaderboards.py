@@ -8,8 +8,16 @@ from models import (
     RetentionQuizAttempt,
     ApplicationCheckAttempt
 )
+from routes.analytics import get_analytics_leaderboards
 
 router = APIRouter(prefix="/leaderboards", tags=["Leaderboards"])
+
+
+@router.get("")
+def get_main_leaderboard(db: Session = Depends(get_db)):
+    """Get full competitors leaderboard"""
+    return get_analytics_leaderboards(db=db)
+
 
 
 @router.get("/completion")

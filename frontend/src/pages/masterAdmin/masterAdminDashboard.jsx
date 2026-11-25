@@ -52,13 +52,11 @@ export function CompletionFunnel({ data }) {
 
   return (
     <div
-      className="h-full flex flex-col"
+      className="h-full flex flex-col admin-panel-border"
       style={{
-        background: "rgba(15,15,24,0.72)",
-        border: "1px solid rgba(139,92,246,0.14)",
+        background: "rgba(15,15,24,0.78)",
         borderRadius: 22,
         padding: 24,
-        boxShadow: "0 20px 40px -18px rgba(0,0,0,0.7)",
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
@@ -309,13 +307,11 @@ export function PulseGauge({ data }) {
 
   return (
     <div
-      className="h-full flex flex-col"
+      className="h-full flex flex-col admin-panel-border"
       style={{
-        background: "rgba(15,15,24,0.72)",
-        border: "1px solid rgba(139,92,246,0.14)",
+        background: "rgba(15,15,24,0.78)",
         borderRadius: 22,
         padding: 24,
-        boxShadow: "0 20px 40px -18px rgba(0,0,0,0.7)",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
@@ -789,11 +785,9 @@ const MasterAdminDashboard = () => {
     <MainLayout>
       {/* ======================== HEADER HERO (Task 1 + Task 2) ======================== */}
       <section
-        className="relative rounded-[22px] overflow-hidden"
+        className="relative rounded-[22px] overflow-hidden admin-panel-border"
         style={{
           minHeight: 480,
-          border: "1px solid rgba(139,92,246,0.14)",
-          boxShadow: "0 24px 48px -20px rgba(0,0,0,0.8)",
         }}
       >
         {/* Background: full desk scene as it is */}
@@ -1071,11 +1065,9 @@ const MasterAdminDashboard = () => {
         {/* Recent Activity — live data from API */}
         <div className="lg:col-span-4">
           <div
-            className="rounded-[22px] p-5"
+            className="rounded-[22px] p-5 admin-panel-border"
             style={{
-              background: "rgba(15,15,24,0.72)",
-              border: "1px solid rgba(139,92,246,0.14)",
-              boxShadow: "0 20px 40px -18px rgba(0,0,0,0.7)",
+              background: "rgba(15,15,24,0.78)",
               display: "flex",
               flexDirection: "column",
               height: "100%",
@@ -1176,7 +1168,7 @@ const MasterAdminDashboard = () => {
                 {(activities?.[tickerIndex] ?? activities?.[0])?.message || (activities?.[tickerIndex] ?? activities?.[0])?.action || "User activity recorded"}
                 {((activities?.[tickerIndex] ?? activities?.[0])?.user || (activities?.[tickerIndex] ?? activities?.[0])?.user_name) && (
                   <span style={{ color: "rgba(200,200,230,0.45)" }}>
-                    {" "}— {(activities?.[tickerIndex] ?? activities?.[0]).user || (activities?.[tickerIndex] ?? activities?.[0]).user_name}
+                    {" "}— {(activities?.[tickerIndex] ?? activities?.[0])?.user || (activities?.[tickerIndex] ?? activities?.[0])?.user_name}
                   </span>
                 )}
               </p>

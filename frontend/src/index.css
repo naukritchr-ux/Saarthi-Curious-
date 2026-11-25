@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./styles/metal-theme.css";
 
 /* Keep every page inside the viewport while its content areas handle scrolling. */
 *,
@@ -28,44 +29,7 @@ body {
   overflow-x: hidden;
 }
 
-img,
-video,
-canvas,
-svg {
-  max-width: 100%;
-}
-
-button,
-input,
-select,
-textarea {
-  font: inherit;
-}
-
-/* Sidebar scroll works but scrollbar hidden */
-.sidebar-scroll {
-  overflow-y: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.sidebar-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-
-/* Hide scrollbar but keep scrolling */
-
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
-/* Custom smooth dark-glow scrollbar */
+/* Custom modern scrollbar */
 ::-webkit-scrollbar {
   width: 7px;
   height: 7px;
@@ -79,4 +43,459 @@ textarea {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(168, 85, 247, 0.75);
-}
+}
+
+/* ============================================================================
+   PREMIUM 3D METALLIC & SKEUOMORPHIC STYLES
+   ============================================================================ */
+
+/* A. THE GOLD EXECUTIVE BUTTON (Like "Refresh" in Image 2) */
+.gold-metallic-btn {
+  background: linear-gradient(180deg, #FFE58F 0%, #F5B041 40%, #B9770E 100%);
+  border: 1px solid #FFF3C4;
+  color: #3E1A00;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.4);
+  box-shadow: 
+    inset 0 2px 2px rgba(255, 255, 255, 0.8),   /* Top Rim Light */
+    inset 0 -2px 4px rgba(0, 0, 0, 0.3),        /* Bottom Inner Shadow */
+    0 6px 15px rgba(245, 176, 65, 0.4);         /* Outer Glow */
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: 800;
+}
+.gold-metallic-btn:hover {
+  background: linear-gradient(180deg, #FFF0B3 0%, #F7C15C 40%, #C98A12 100%);
+  transform: translateY(-2px);
+  box-shadow: inset 0 2px 2px rgba(255, 255, 255, 0.9), 0 8px 20px rgba(245, 176, 65, 0.6);
+}
+.gold-metallic-btn:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3), 0 2px 5px rgba(245, 176, 65, 0.3);
+}
+
+/* B. THE PURPLE SATIN BUTTON (Like "Manage" in Image 2, or "Filter ->") */
+.purple-metallic-btn {
+  background: linear-gradient(180deg, #9B7AFF 0%, #6C47D6 40%, #3E1A8A 100%);
+  border: 1px solid #D8C8FF;
+  color: #FFFFFF;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  box-shadow: 
+    inset 0 2px 2px rgba(255, 255, 255, 0.4), 
+    inset 0 -2px 4px rgba(0, 0, 0, 0.5),
+    0 4px 15px rgba(108, 71, 214, 0.5);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: 800;
+}
+.purple-metallic-btn:hover {
+  background: linear-gradient(180deg, #B095FF 0%, #7E58E8 40%, #4F249F 100%);
+  transform: translateY(-1px);
+  box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.5), 0 6px 20px rgba(108, 71, 214, 0.7);
+}
+.purple-metallic-btn:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3), 0 2px 5px rgba(108, 71, 214, 0.3);
+}
+
+/* C. ACTIVE & INACTIVE FILTER TABS (Like "All", "Active" in Image 2) */
+.tab-active-metallic {
+  background: linear-gradient(180deg, #FFE58F 0%, #F5B041 40%, #B9770E 100%);
+  border: 1px solid #FFF3C4;
+  color: #3E1A00;
+  font-weight: 900;
+  box-shadow: inset 0 2px 2px rgba(255, 255, 255, 0.8), 0 4px 10px rgba(245, 176, 65, 0.4);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.tab-inactive-glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #A7A1C4;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.tab-inactive-glass:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+  border-color: rgba(255, 255, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+/* ============================================================================
+   2. METALLIC KPI CARDS (Like Image 1 & Image 2)
+   ============================================================================ */
+
+/* The base structural setup for a 3D metallic card */
+.metallic-card-base {
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 
+    0 15px 35px rgba(0, 0, 0, 0.6), 
+    inset 0 1px 1px rgba(255, 255, 255, 0.3); /* Top edge shine */
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+.metallic-card-base:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 20px 42px rgba(0, 0, 0, 0.75), 
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.5);
+}
+
+/* Purple Gradient Plate */
+.card-metallic-purple {
+  background: 
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.15) 0%, transparent 40%),
+    linear-gradient(135deg, #2D2352 0%, #1B1436 100%);
+  border: 1.5px solid rgba(168, 130, 255, 0.4);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.4), inset 0 -2px 10px rgba(0,0,0,0.5);
+}
+
+/* Red Gradient Plate (High Risk) */
+.card-metallic-red {
+  background: 
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.15) 0%, transparent 40%),
+    linear-gradient(135deg, #4A1C2A 0%, #2B0F18 100%);
+  border: 1.5px solid rgba(255, 100, 120, 0.4);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.4);
+}
+
+/* Gold Gradient Plate (Medium Risk / Pacesetter) */
+.card-metallic-gold {
+  background: 
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.15) 0%, transparent 40%),
+    linear-gradient(135deg, #423518 0%, #241D0B 100%);
+  border: 1.5px solid rgba(255, 215, 100, 0.4);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.4);
+}
+
+/* Cyan Gradient Plate (Low Risk / Freezes) */
+.card-metallic-cyan {
+  background: 
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.15) 0%, transparent 40%),
+    linear-gradient(135deg, #123548 0%, #091C26 100%);
+  border: 1.5px solid rgba(100, 200, 255, 0.4);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.4);
+}
+
+/* Emerald Gradient Plate */
+.card-metallic-emerald {
+  background: 
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.15) 0%, transparent 40%),
+    linear-gradient(135deg, #16382E 0%, #0D201B 100%);
+  border: 1.5px solid rgba(110, 231, 183, 0.4);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.4);
+}
+
+/* ============================================================================
+   3. GLOWING PROGRESS BARS
+   ============================================================================ */
+.metallic-progress-track {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+  border-radius: 99px;
+  overflow: hidden;
+  height: 6px;
+}
+.metallic-progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  box-shadow: inset 0 1px 1px rgba(255,255,255,0.5), 0 0 10px currentColor;
+}
+
+
+/* ===================================================================
+   ALWAYS-ON PREMIUM LIGHT BORDERS & PERMANENT 4-SIDED LUMINOUS FRAMES
+   Used across Reports & Analytics, Candidate Attrition & Dashboards.
+=================================================================== */
+.premium-card-base {
+  position: relative;
+  background: linear-gradient(165deg, rgba(16, 22, 42, 0.96) 0%, rgba(10, 14, 28, 0.98) 60%, rgba(8, 11, 22, 1) 100%);
+  border-radius: 1.25rem;
+  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.24s ease, border-color 0.24s ease;
+}
+
+.premium-card-base::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 255, 255, 0.14) 35%,
+    rgba(255, 255, 255, 0.05) 65%,
+    rgba(255, 255, 255, 0.32) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.premium-border-cyan {
+  border: 1.5px solid rgba(56, 189, 248, 0.68) !important;
+  box-shadow:
+    0 0 22px -2px rgba(56, 189, 248, 0.28),
+    0 12px 30px -8px rgba(0, 0, 0, 0.85),
+    inset 0 0 18px rgba(56, 189, 248, 0.1) !important;
+}
+.premium-border-cyan:hover {
+  transform: translateY(-3px);
+  border-color: rgba(125, 211, 252, 0.95) !important;
+  box-shadow:
+    0 0 30px 0px rgba(56, 189, 248, 0.45),
+    0 16px 36px -6px rgba(0, 0, 0, 0.9),
+    inset 0 0 24px rgba(56, 189, 248, 0.18) !important;
+}
+
+.premium-border-amber {
+  border: 1.5px solid rgba(251, 191, 36, 0.72) !important;
+  box-shadow:
+    0 0 24px -2px rgba(245, 158, 11, 0.3),
+    0 12px 30px -8px rgba(0, 0, 0, 0.85),
+    inset 0 0 20px rgba(245, 158, 11, 0.12) !important;
+}
+.premium-border-amber:hover {
+  transform: translateY(-3px);
+  border-color: rgba(253, 224, 71, 0.98) !important;
+  box-shadow:
+    0 0 32px 0px rgba(245, 158, 11, 0.48),
+    0 16px 36px -6px rgba(0, 0, 0, 0.9),
+    inset 0 0 26px rgba(245, 158, 11, 0.2) !important;
+}
+
+.premium-border-emerald {
+  border: 1.5px solid rgba(52, 211, 153, 0.68) !important;
+  box-shadow:
+    0 0 22px -2px rgba(16, 185, 129, 0.28),
+    0 12px 30px -8px rgba(0, 0, 0, 0.85),
+    inset 0 0 18px rgba(16, 185, 129, 0.1) !important;
+}
+.premium-border-emerald:hover {
+  transform: translateY(-3px);
+  border-color: rgba(110, 231, 183, 0.95) !important;
+  box-shadow:
+    0 0 30px 0px rgba(16, 185, 129, 0.45),
+    0 16px 36px -6px rgba(0, 0, 0, 0.9),
+    inset 0 0 24px rgba(16, 185, 129, 0.18) !important;
+}
+
+.premium-border-purple {
+  border: 1.5px solid rgba(192, 132, 252, 0.68) !important;
+  box-shadow:
+    0 0 22px -2px rgba(168, 85, 247, 0.28),
+    0 12px 30px -8px rgba(0, 0, 0, 0.85),
+    inset 0 0 18px rgba(168, 85, 247, 0.1) !important;
+}
+.premium-border-purple:hover {
+  transform: translateY(-3px);
+  border-color: rgba(233, 213, 255, 0.95) !important;
+  box-shadow:
+    0 0 30px 0px rgba(168, 85, 247, 0.45),
+    0 16px 36px -6px rgba(0, 0, 0, 0.9),
+    inset 0 0 24px rgba(168, 85, 247, 0.18) !important;
+}
+
+/* ===================================================================
+   PERMANENT 4-SIDED LIGHT BORDERS FOR LOWER GRAPHS & USER TABS
+=================================================================== */
+.perm-graph-card {
+  position: relative;
+  background: linear-gradient(165deg, #11172B 0%, #0B1020 65%, #080C18 100%);
+  border-radius: 1.5rem;
+  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.24s ease, border-color 0.24s ease;
+}
+
+.perm-light-border-cyan {
+  border: 1.8px solid rgba(34, 211, 238, 0.82) !important;
+  box-shadow:
+    0 0 25px -2px rgba(34, 211, 238, 0.32),
+    0 14px 32px -8px rgba(0, 0, 0, 0.88),
+    inset 0 0 22px rgba(34, 211, 238, 0.12),
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.45) !important;
+}
+.perm-light-border-cyan:hover {
+  transform: translateY(-3px);
+  border-color: #67E8F9 !important;
+  box-shadow:
+    0 0 34px 2px rgba(34, 211, 238, 0.48),
+    0 18px 38px -6px rgba(0, 0, 0, 0.92),
+    inset 0 0 28px rgba(34, 211, 238, 0.2) !important;
+}
+
+.perm-light-border-amber {
+  border: 1.8px solid rgba(251, 191, 36, 0.84) !important;
+  box-shadow:
+    0 0 25px -2px rgba(245, 158, 11, 0.34),
+    0 14px 32px -8px rgba(0, 0, 0, 0.88),
+    inset 0 0 22px rgba(245, 158, 11, 0.13),
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.45) !important;
+}
+.perm-light-border-amber:hover {
+  transform: translateY(-3px);
+  border-color: #FDE047 !important;
+  box-shadow:
+    0 0 34px 2px rgba(245, 158, 11, 0.5),
+    0 18px 38px -6px rgba(0, 0, 0, 0.92),
+    inset 0 0 28px rgba(245, 158, 11, 0.22) !important;
+}
+
+.perm-light-border-emerald {
+  border: 1.8px solid rgba(52, 211, 153, 0.82) !important;
+  box-shadow:
+    0 0 25px -2px rgba(16, 185, 129, 0.32),
+    0 14px 32px -8px rgba(0, 0, 0, 0.88),
+    inset 0 0 22px rgba(16, 185, 129, 0.12),
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.45) !important;
+}
+.perm-light-border-emerald:hover {
+  transform: translateY(-3px);
+  border-color: #6EE7B7 !important;
+  box-shadow:
+    0 0 34px 2px rgba(16, 185, 129, 0.48),
+    0 18px 38px -6px rgba(0, 0, 0, 0.92),
+    inset 0 0 28px rgba(16, 185, 129, 0.2) !important;
+}
+
+.perm-light-border-purple {
+  border: 1.8px solid rgba(192, 132, 252, 0.82) !important;
+  box-shadow:
+    0 0 25px -2px rgba(168, 85, 247, 0.32),
+    0 14px 32px -8px rgba(0, 0, 0, 0.88),
+    inset 0 0 22px rgba(168, 85, 247, 0.12),
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.45) !important;
+}
+.perm-light-border-purple:hover {
+  transform: translateY(-3px);
+  border-color: #E9D5FF !important;
+  box-shadow:
+    0 0 34px 2px rgba(168, 85, 247, 0.48),
+    0 18px 38px -6px rgba(0, 0, 0, 0.92),
+    inset 0 0 28px rgba(168, 85, 247, 0.2) !important;
+}
+
+/* ===================================================================
+   INNER GRAPH SUB-BOXES (Permanently lit inner frames)
+=================================================================== */
+.perm-inner-chart-frame-amber {
+  background: radial-gradient(circle at 50% 0%, rgba(245, 158, 11, 0.14) 0%, rgba(11, 15, 28, 0.96) 70%);
+  border: 1.5px solid rgba(251, 191, 36, 0.62) !important;
+  box-shadow: 0 0 18px rgba(245, 158, 11, 0.2), inset 0 0 18px rgba(245, 158, 11, 0.08) !important;
+}
+.perm-inner-chart-frame-emerald {
+  background: radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.14) 0%, rgba(11, 15, 28, 0.96) 70%);
+  border: 1.5px solid rgba(52, 211, 153, 0.62) !important;
+  box-shadow: 0 0 18px rgba(16, 185, 129, 0.2), inset 0 0 18px rgba(16, 185, 129, 0.08) !important;
+}
+.perm-inner-chart-frame-cyan {
+  background: radial-gradient(circle at 50% 0%, rgba(34, 211, 238, 0.14) 0%, rgba(11, 15, 28, 0.96) 70%);
+  border: 1.5px solid rgba(34, 211, 238, 0.62) !important;
+  box-shadow: 0 0 18px rgba(34, 211, 238, 0.2), inset 0 0 18px rgba(34, 211, 238, 0.08) !important;
+}
+.perm-inner-chart-frame-purple {
+  background: radial-gradient(circle at 50% 0%, rgba(168, 85, 247, 0.14) 0%, rgba(11, 15, 28, 0.96) 70%);
+  border: 1.5px solid rgba(192, 132, 252, 0.62) !important;
+  box-shadow: 0 0 18px rgba(168, 85, 247, 0.2), inset 0 0 18px rgba(168, 85, 247, 0.08) !important;
+}
+
+/* ===================================================================
+   PERMANENT LIGHT-BORDER USER TABS / CANDIDATE CARDS (5 ACCENTS)
+=================================================================== */
+.perm-user-tab-cyan {
+  background: linear-gradient(155deg, rgba(20, 36, 58, 0.95) 0%, rgba(12, 20, 34, 0.98) 65%, #09101D 100%);
+  border: 1.8px solid rgba(34, 211, 238, 0.8) !important;
+  box-shadow:
+    0 0 20px -2px rgba(34, 211, 238, 0.3),
+    0 10px 26px rgba(0, 0, 0, 0.8),
+    inset 0 0 16px rgba(34, 211, 238, 0.1),
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.4) !important;
+  transition: all 0.22s ease;
+}
+.perm-user-tab-cyan:hover {
+  transform: translateY(-4px);
+  border-color: #A5F3FC !important;
+  box-shadow: 0 0 28px 1px rgba(34, 211, 238, 0.48), inset 0 0 22px rgba(34, 211, 238, 0.18) !important;
+}
+
+.perm-user-tab-amber {
+  background: linear-gradient(155deg, rgba(48, 34, 22, 0.95) 0%, rgba(24, 18, 16, 0.98) 65%, #120E0E 100%);
+  border: 1.8px solid rgba(251, 191, 36, 0.82) !important;
+  box-shadow:
+    0 0 20px -2px rgba(245, 158, 11, 0.32),
+    0 10px 26px rgba(0, 0, 0, 0.8),
+    inset 0 0 16px rgba(245, 158, 11, 0.12),
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.4) !important;
+  transition: all 0.22s ease;
+}
+.perm-user-tab-amber:hover {
+  transform: translateY(-4px);
+  border-color: #FEF08A !important;
+  box-shadow: 0 0 28px 1px rgba(245, 158, 11, 0.5), inset 0 0 22px rgba(245, 158, 11, 0.2) !important;
+}
+
+.perm-user-tab-purple {
+  background: linear-gradient(155deg, rgba(38, 28, 64, 0.95) 0%, rgba(19, 15, 36, 0.98) 65%, #0F0C1D 100%);
+  border: 1.8px solid rgba(192, 132, 252, 0.8) !important;
+  box-shadow:
+    0 0 20px -2px rgba(168, 85, 247, 0.3),
+    0 10px 26px rgba(0, 0, 0, 0.8),
+    inset 0 0 16px rgba(168, 85, 247, 0.1),
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.4) !important;
+  transition: all 0.22s ease;
+}
+.perm-user-tab-purple:hover {
+  transform: translateY(-4px);
+  border-color: #E9D5FF !important;
+  box-shadow: 0 0 28px 1px rgba(168, 85, 247, 0.48), inset 0 0 22px rgba(168, 85, 247, 0.18) !important;
+}
+
+.perm-user-tab-emerald {
+  background: linear-gradient(155deg, rgba(18, 44, 40, 0.95) 0%, rgba(11, 24, 24, 0.98) 65%, #081314 100%);
+  border: 1.8px solid rgba(52, 211, 153, 0.8) !important;
+  box-shadow:
+    0 0 20px -2px rgba(16, 185, 129, 0.3),
+    0 10px 26px rgba(0, 0, 0, 0.8),
+    inset 0 0 16px rgba(16, 185, 129, 0.1),
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.4) !important;
+  transition: all 0.22s ease;
+}
+.perm-user-tab-emerald:hover {
+  transform: translateY(-4px);
+  border-color: #A7F3D0 !important;
+  box-shadow: 0 0 28px 1px rgba(16, 185, 129, 0.48), inset 0 0 22px rgba(16, 185, 129, 0.18) !important;
+}
+
+.perm-user-tab-rose {
+  background: linear-gradient(155deg, rgba(52, 24, 38, 0.95) 0%, rgba(26, 13, 22, 0.98) 65%, #140911 100%);
+  border: 1.8px solid rgba(251, 113, 133, 0.8) !important;
+  box-shadow:
+    0 0 20px -2px rgba(244, 63, 94, 0.3),
+    0 10px 26px rgba(0, 0, 0, 0.8),
+    inset 0 0 16px rgba(244, 63, 94, 0.1),
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.4) !important;
+  transition: all 0.22s ease;
+}
+.perm-user-tab-rose:hover {
+  transform: translateY(-4px);
+  border-color: #FECDD3 !important;
+  box-shadow: 0 0 28px 1px rgba(244, 63, 94, 0.48), inset 0 0 22px rgba(244, 63, 94, 0.18) !important;
+}

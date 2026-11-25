@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import NotificationBell from "./NotificationBell";
+import AgentCommandDrawer from "../AgentCommandDrawer";
 import { useNavigate } from "react-router-dom";
 
 const roleNames = {
@@ -92,6 +93,9 @@ const Navbar = ({ onMenuToggle }) => {
 
       {/* Right Section */}
       <div className="flex shrink-0 items-center gap-2 sm:gap-4 lg:gap-5">
+        {[1, 2].includes(roleId) && (
+          <AgentCommandDrawer onNavigate={navigate} />
+        )}
         <NotificationBell />
 
         {/* Profile */}

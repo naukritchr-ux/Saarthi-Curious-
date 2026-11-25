@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import Sidebar from "../components/layout/sidebar";
 import Navbar from "../components/layout/navbar";
 
-const MainLayout = ({ children }) => {
+const MainLayout = ({ children, dark = false, mainClassName = "" }) => {
   // Change 1: Keep the sidebar visibility in the layout and start expanded.
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(
     () => window.innerWidth >= 768
@@ -38,7 +38,7 @@ const MainLayout = ({ children }) => {
   };
 
   return (
-    <div className="h-screen bg-[#F1ECF7] overflow-hidden">
+    <div className={`h-screen overflow-hidden ${dark ? "bg-[#05060C]" : "bg-[#F1ECF7]"}`}>
 
       {/* Sidebar */}
       <Sidebar
@@ -64,7 +64,7 @@ const MainLayout = ({ children }) => {
         <Navbar onMenuToggle={() => setIsSidebarExpanded((value) => !value)} />
 
         {/* Content Area */}
-        <main className="ml-0 flex-1 overflow-y-auto bg-[#F1ECF7] p-4 scrollbar-hide transition-all duration-300 sm:p-6 md:ml-20">
+        <main className={`ml-0 flex-1 overflow-y-auto p-4 scrollbar-hide transition-all duration-300 sm:p-6 md:ml-20 ${dark ? "bg-[#05060C]" : "bg-[#F1ECF7]"} ${mainClassName}`}>
           {children}
         </main>
 

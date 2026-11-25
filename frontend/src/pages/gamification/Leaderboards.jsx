@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import axios from "axios";
 import {
@@ -40,7 +41,6 @@ function resolveTrophyCabinetSources() {
   const matchedFromSrc = Object.entries(VSCODE_ASSET_IMAGES).find(([path]) =>
     /trophy[_-\s]?cabinet|glass\s*trophy\s*display/i.test(path)
   );
-
   const candidates = [
     ...(matchedFromSrc ? [matchedFromSrc[1]] : []),
     "/trophy_cabinet.png",
@@ -53,7 +53,6 @@ function resolveTrophyCabinetSources() {
     "/assets/trophy_cabinet.png",
     "/assets/trophy_cabinet.jpg",
   ];
-
   return Array.from(new Set(candidates.filter(Boolean)));
 }
 
@@ -61,27 +60,33 @@ const CABINET_CANDIDATE_URLS = resolveTrophyCabinetSources();
 const STORAGE_KEY_CABINET_IMG = "saarthi_trophy_cabinet_override_v5";
 
 // ============================================================================
-// 1. DYNAMIC THEME-AWARE RECHARTS TOOLTIP
+// 1. DYNAMIC GOLDEN / THEME-AWARE RECHARTS TOOLTIP
 // ============================================================================
 const DynamicTooltip = ({ active, payload, label, unit, accentHex }) => {
   if (!active || !payload || !payload.length) return null;
   return (
     <div
-      className="bg-[#090A0F]/95 backdrop-blur-xl px-3.5 py-2.5 rounded-xl text-xs z-50 border"
+      className="bg-[#090806]/95 backdrop-blur-xl px-4 py-3 rounded-2xl text-xs z-50 border min-w-[165px]"
       style={{
-        borderColor: `${accentHex}66`,
-        boxShadow: `0 0 28px ${accentHex}35`,
+        borderColor: `${accentHex}88`,
+        boxShadow: `0 12px 30px rgba(0,0,0,0.85), 0 0 24px ${accentHex}38`,
       }}
     >
       <p
-        className="font-extrabold mb-1 border-b border-white/10 pb-1 tracking-wide"
+        className="font-black mb-1.5 border-b border-amber-200/15 pb-1.5 tracking-wide flex items-center justify-between gap-3"
         style={{ color: accentHex }}
       >
-        {label}
+        <span>{label}</span>
+        <span className="text-[9px] uppercase tracking-widest text-amber-100/60">
+          Live
+        </span>
       </p>
       {payload.map((entry, idx) => (
-        <div key={idx} className="flex items-center justify-between gap-4 py-0.5">
-          <span className="text-slate-300 font-medium">{entry.name}:</span>
+        <div
+          key={idx}
+          className="flex items-center justify-between gap-4 py-0.5"
+        >
+          <span className="text-slate-300 font-semibold">{entry.name}:</span>
           <span className="font-black text-white">
             {entry.value}
             {unit}
@@ -93,10 +98,7 @@ const DynamicTooltip = ({ active, payload, label, unit, accentHex }) => {
 };
 
 // ============================================================================
-// 2. PHOTOREALISTIC 3D METALLIC MEDAL SVG (EXACT REPLICA OF medal_2.jpg)
-//    - Woven Red-White-Blue Tricolor V-Ribbon + Rectangular Cast-Metal Bail
-//    - Multi-Stop High-Gloss Specular Metallic Rim (Gold #1, Silver #2, Bronze #3)
-//    - 3D Embossed Laurel Wreath with Crossed Stems + 3D Lathe-Shaded Trophy Cup
+// 2. PHOTOREALISTIC 3D METALLIC MEDAL SVG (Gold #1, Silver #2, Bronze #3)
 // ============================================================================
 function RealisticMetallicMedalSVG({
   tier = "gold",
@@ -134,7 +136,7 @@ function RealisticMetallicMedalSVG({
       leafDark: "#713F12",
       rimHighlight: "#FFFFFF",
       deepShadow: "#2E1503",
-      glowColor: "rgba(250, 204, 21, 0.45)",
+      glowColor: "rgba(250, 204, 21, 0.5)",
     },
     silver: {
       bezelOuter: [
@@ -188,13 +190,12 @@ function RealisticMetallicMedalSVG({
       leafDark: "#431407",
       rimHighlight: "#FFF7ED",
       deepShadow: "#230702",
-      glowColor: "rgba(251, 146, 60, 0.45)",
+      glowColor: "rgba(251, 146, 60, 0.48)",
     },
   };
 
   const p = palettes[tier] || palettes.gold;
 
-  // 8 pairs of sculpted 3D laurel leaves along each side of the wreath (matching medal_2.jpg)
   const laurelPairs = [
     { cx: -16, cy: 23, ang: -48, s: 0.92 },
     { cx: -24, cy: 15, ang: -28, s: 1.0 },
@@ -203,7 +204,6 @@ function RealisticMetallicMedalSVG({
     { cx: -27, cy: -17, ang: 28, s: 1.0 },
     { cx: -21, cy: -26, ang: 45, s: 0.92 },
     { cx: -14, cy: -32, ang: 62, s: 0.82 },
-    // Inner leaf row for lush embossed volume
     { cx: -18, cy: 11, ang: -52, s: 0.85 },
     { cx: -22, cy: 0, ang: -32, s: 0.9 },
     { cx: -22, cy: -11, ang: -12, s: 0.9 },
@@ -215,19 +215,22 @@ function RealisticMetallicMedalSVG({
       className="relative inline-flex items-center justify-center select-none shrink-0"
       style={{ width: size, height: size }}
     >
-      {/* Realistic Metallic Back-Glow */}
       <div
         className="pointer-events-none absolute inset-2 rounded-full blur-2xl opacity-80"
         style={{ background: p.glowColor }}
       />
-
       <svg
         viewBox={showRibbon ? "0 0 160 175" : "12 36 136 136"}
         className="w-full h-full relative z-10 overflow-visible drop-shadow-[0_14px_22px_rgba(0,0,0,0.9)]"
       >
         <defs>
-          {/* 1. Stepped Outer Metallic Bezel Gradient */}
-          <linearGradient id={`bezel-${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient
+            id={`bezel-${uid}`}
+            x1="0%"
+            y1="0%"
+            x2="100%"
+            y2="100%"
+          >
             <stop offset="0%" stopColor={p.bezelOuter[0]} />
             <stop offset="18%" stopColor={p.bezelOuter[1]} />
             <stop offset="38%" stopColor={p.bezelOuter[2]} />
@@ -236,8 +239,6 @@ function RealisticMetallicMedalSVG({
             <stop offset="88%" stopColor={p.bezelOuter[5]} />
             <stop offset="100%" stopColor={p.bezelOuter[6]} />
           </linearGradient>
-
-          {/* 2. Brushed Metallic Dish Face Gradient */}
           <radialGradient id={`dish-${uid}`} cx="32%" cy="26%" r="78%">
             <stop offset="0%" stopColor={p.dishFace[0]} />
             <stop offset="32%" stopColor={p.dishFace[1]} />
@@ -245,8 +246,6 @@ function RealisticMetallicMedalSVG({
             <stop offset="90%" stopColor={p.dishFace[3]} />
             <stop offset="100%" stopColor={p.dishFace[4]} />
           </radialGradient>
-
-          {/* 3. Horizontal Cylindrical Lathe Gradient for 3D Center Trophy Cup */}
           <linearGradient id={`cup-${uid}`} x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor={p.cupLathe[0]} />
             <stop offset="18%" stopColor={p.cupLathe[1]} />
@@ -256,23 +255,29 @@ function RealisticMetallicMedalSVG({
             <stop offset="84%" stopColor={p.cupLathe[5]} />
             <stop offset="100%" stopColor={p.cupLathe[6]} />
           </linearGradient>
-
-          {/* 4. 3D Embossed Laurel Leaf Gradient */}
-          <linearGradient id={`leaf-${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient
+            id={`leaf-${uid}`}
+            x1="0%"
+            y1="0%"
+            x2="100%"
+            y2="100%"
+          >
             <stop offset="0%" stopColor={p.leafLight} />
             <stop offset="48%" stopColor={p.leafMid} />
             <stop offset="100%" stopColor={p.leafDark} />
           </linearGradient>
-
-          {/* 5. Specular White Mirror Sweep */}
           <linearGradient id={`sheen-${uid}`} x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0" />
             <stop offset="50%" stopColor="#FFFFFF" stopOpacity="0.58" />
             <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
           </linearGradient>
-
-          {/* 6. 3D Emboss Drop Shadow Filter for Trophy & Wreath */}
-          <filter id={`emboss-${uid}`} x="-20%" y="-20%" width="140%" height="140%">
+          <filter
+            id={`emboss-${uid}`}
+            x="-20%"
+            y="-20%"
+            width="140%"
+            height="140%"
+          >
             <feDropShadow
               dx="1.4"
               dy="2.2"
@@ -283,25 +288,15 @@ function RealisticMetallicMedalSVG({
           </filter>
         </defs>
 
-        {/* ===============================================================
-            WOVEN RED-WHITE-BLUE TRICOLOR V-RIBBON & METALLIC BAIL (medal_2.jpg)
-        =============================================================== */}
         {showRibbon && (
           <g>
-            {/* Left Ribbon Strap (Blue outer, White middle, Red inner) */}
             <polygon points="36,2 65,44 55,48 24,2" fill="#1E40AF" />
             <polygon points="44,2 71,44 63,46 35,2" fill="#F1F5F9" />
             <polygon points="52,2 77,44 70,45 44,2" fill="#DC2626" />
-
-            {/* Right Ribbon Strap (Red inner, White middle, Blue outer) */}
             <polygon points="108,2 83,44 90,45 116,2" fill="#DC2626" />
             <polygon points="116,2 89,44 97,46 125,2" fill="#F1F5F9" />
             <polygon points="124,2 95,44 105,48 136,2" fill="#1E40AF" />
-
-            {/* Ribbon Shadow Over Bail */}
             <ellipse cx="80" cy="43" rx="18" ry="4" fill="rgba(0,0,0,0.55)" />
-
-            {/* Cast-Metal Rectangular Top Loop / Bail (From medal_2.jpg) */}
             <rect
               x="61"
               y="34"
@@ -326,13 +321,7 @@ function RealisticMetallicMedalSVG({
           </g>
         )}
 
-        {/* ===============================================================
-            STEPPED HIGH-GLOSS METALLIC COIN BODY & BEZEL RIMS
-        =============================================================== */}
-        {/* 3D Lower Coin Edge Thickness */}
         <circle cx="81" cy="107.5" r="56" fill={p.deepShadow} />
-
-        {/* Outer Mirror-Polished Bezel */}
         <circle
           cx="80"
           cy="105"
@@ -341,16 +330,7 @@ function RealisticMetallicMedalSVG({
           stroke={p.rimHighlight}
           strokeWidth="1.4"
         />
-
-        {/* Outer Bezel Specular Inner Lip */}
-        <circle
-          cx="80"
-          cy="105"
-          r="49.5"
-          fill={p.deepShadow}
-        />
-
-        {/* Recessed Metallic Dish Face */}
+        <circle cx="80" cy="105" r="49.5" fill={p.deepShadow} />
         <circle
           cx="80"
           cy="105"
@@ -359,8 +339,6 @@ function RealisticMetallicMedalSVG({
           stroke={`url(#bezel-${uid})`}
           strokeWidth="2.2"
         />
-
-        {/* Crisp Specular Rim Ring Inside Dish */}
         <circle
           cx="80"
           cy="105"
@@ -371,11 +349,7 @@ function RealisticMetallicMedalSVG({
           opacity="0.75"
         />
 
-        {/* ===============================================================
-            EMBOSSED 3D LAUREL WREATH + 3D TROPHY CUP (medal_2.jpg)
-        =============================================================== */}
         <g transform="translate(80, 106)" filter={`url(#emboss-${uid})`}>
-          {/* Curved Left & Right Laurel Stems */}
           <path
             d="M-4,28 C-24,22 -32,4 -28,-18 C-26,-26 -21,-31 -15,-35"
             fill="none"
@@ -390,11 +364,8 @@ function RealisticMetallicMedalSVG({
             strokeWidth="2.6"
             strokeLinecap="round"
           />
-
-          {/* Sculpted 3D Laurel Leaves (Mirrored Left & Right with Central Vein) */}
           {laurelPairs.map((lf, i) => (
             <React.Fragment key={i}>
-              {/* Left Leaf */}
               <g
                 transform={`translate(${lf.cx}, ${lf.cy}) rotate(${lf.ang}) scale(${lf.s})`}
               >
@@ -414,8 +385,6 @@ function RealisticMetallicMedalSVG({
                   opacity="0.8"
                 />
               </g>
-
-              {/* Right Mirrored Leaf */}
               <g
                 transform={`translate(${-lf.cx}, ${lf.cy}) rotate(${-lf.ang}) scale(${lf.s})`}
               >
@@ -438,7 +407,6 @@ function RealisticMetallicMedalSVG({
             </React.Fragment>
           ))}
 
-          {/* Crossed Laurel Stems & Ribbon Knot at Bottom (6 o'clock in medal_2.jpg) */}
           <path
             d="M-11,26 L9,34 M11,26 L-9,34"
             stroke={`url(#cup-${uid})`}
@@ -454,11 +422,6 @@ function RealisticMetallicMedalSVG({
             stroke={p.leafDark}
             strokeWidth="0.7"
           />
-
-          {/* =============================================================
-              CENTER 3D EMBOSSED CHAMPIONSHIP TROPHY CUP (medal_2.jpg)
-          ============================================================= */}
-          {/* Ornate S-Curved Trophy Handles (Left & Right) */}
           <path
             d="M-12,-21 C-22,-21 -22,-6 -13,-4 C-10,-3.5 -9,-1 -11,1"
             fill="none"
@@ -473,16 +436,12 @@ function RealisticMetallicMedalSVG({
             strokeWidth="2.8"
             strokeLinecap="round"
           />
-
-          {/* Main 3D Lathe-Shaded Trophy Cup Bowl */}
           <path
             d="M-14,-24 L14,-24 C14,-4 7,5 0,5 C-7,5 -14,-4 -14,-24 Z"
             fill={`url(#cup-${uid})`}
             stroke={p.leafDark}
             strokeWidth="0.85"
           />
-
-          {/* Raised Top Rim Lip of Trophy Cup */}
           <rect
             x="-15"
             y="-26"
@@ -493,23 +452,17 @@ function RealisticMetallicMedalSVG({
             stroke={p.leafLight}
             strokeWidth="0.6"
           />
-
-          {/* Bright Specular Vertical Glint on Trophy Bowl */}
           <path
             d="M-8,-22 L-3,-22 C-3,-7 -4.5,1 -6,2 C-7.5,1 -8,-7 -8,-22 Z"
             fill="#FFFFFF"
             opacity="0.65"
           />
-
-          {/* Sculpted Trophy Stem */}
           <path
             d="M-3,5 L3,5 L4.5,15 L-4.5,15 Z"
             fill={`url(#cup-${uid})`}
             stroke={p.leafDark}
             strokeWidth="0.7"
           />
-
-          {/* Two-Tiered Trophy Pedestal Base */}
           <rect
             x="-9.5"
             y="14.5"
@@ -528,14 +481,11 @@ function RealisticMetallicMedalSVG({
           />
         </g>
 
-        {/* Diagonal Specular Light Sheen Across Medal Face */}
         <path
           d="M42,72 L68,52 L116,134 L90,154 Z"
           fill={`url(#sheen-${uid})`}
           opacity="0.45"
         />
-
-        {/* Crisp Starburst Glints on Bezel */}
         <g transform="translate(42, 66)" fill="#FFFFFF">
           <polygon points="0,-8 1.8,-1.8 8,0 1.8,1.8 0,8 -1.8,1.8 -8,0 -1.8,-1.8" />
         </g>
@@ -548,7 +498,7 @@ function RealisticMetallicMedalSVG({
 }
 
 // ============================================================================
-// 3. TROPHY CABINET SHOWCASE + ALIGNED WINNER PLAQUES
+// 3. TROPHY CABINET SHOWCASE (CLEAN STAGE — NO SHINE WAVE, HOVER SPOTLIGHTS)
 // ============================================================================
 function TrophyCabinetPodiumStage({
   firstPlace,
@@ -556,7 +506,7 @@ function TrophyCabinetPodiumStage({
   thirdPlace,
   totalCompetitors,
   tabTheme,
-  activeTab,
+  activeTab = "curos",
   onSelectCompetitor,
 }) {
   const [urlIndex, setUrlIndex] = useState(0);
@@ -620,18 +570,18 @@ function TrophyCabinetPodiumStage({
       title: tabTheme.titles[1],
       user: secondPlace,
       isChampion: false,
-      tetherGrad: "from-purple-400 via-slate-200 to-transparent",
-      dotCls: "bg-slate-100 shadow-[0_0_14px_#E2E8F0]",
-      cardBg:
-        "bg-gradient-to-b from-[#18152B]/95 via-[#0E0D18]/98 to-[#07070C]",
+      tetherGrad: "from-slate-100 via-slate-300 to-transparent",
+      dotCls: "bg-slate-100 shadow-[0_0_16px_#FFFFFF]",
+      cardBg: "podium-plaque-silver",
       borderCls:
         hoveredSlot === "second"
-          ? "border-purple-400 ring-2 ring-purple-400/40 shadow-[0_0_35px_rgba(168,85,247,0.45)] -translate-y-1.5"
-          : "border-slate-300/35 hover:border-purple-400/75 shadow-[0_10px_28px_rgba(0,0,0,0.85)]",
-      topHighlight: "from-transparent via-purple-400 to-transparent",
-      badgePill: "bg-purple-500/25 text-purple-200 border-purple-400/50",
+          ? "border-white ring-2 ring-slate-200/50 shadow-[0_0_38px_rgba(226,232,240,0.45)] -translate-y-1.5"
+          : "border-slate-300/65 hover:border-white shadow-[0_12px_28px_rgba(0,0,0,0.88)]",
+      topHighlight: "from-transparent via-white to-transparent",
+      badgePill:
+        "bg-gradient-to-r from-slate-200 via-white to-slate-300 text-slate-950 border-white shadow-[0_0_12px_rgba(255,255,255,0.35)]",
       nameCls: "text-white",
-      scoreBox: "bg-white/[0.05] border-slate-300/30",
+      scoreBox: "bg-black/50 border-slate-300/40",
       scoreText: "text-slate-100",
     },
     {
@@ -640,22 +590,21 @@ function TrophyCabinetPodiumStage({
       title: tabTheme.titles[0],
       user: firstPlace,
       isChampion: true,
-      tetherGrad: "from-amber-200 via-yellow-400 to-transparent",
-      dotCls: "bg-amber-300 shadow-[0_0_18px_#FBBF24]",
-      cardBg:
-        "bg-gradient-to-b from-[#291F0B]/98 via-[#161106]/98 to-[#090703]",
+      tetherGrad: "from-yellow-100 via-amber-400 to-transparent",
+      dotCls: "bg-amber-200 shadow-[0_0_20px_#FDE047]",
+      cardBg: "podium-plaque-gold",
       borderCls:
         hoveredSlot === "first"
-          ? "border-amber-300 ring-2 ring-amber-400/60 shadow-[0_0_55px_rgba(245,158,11,0.6)] -translate-y-2.5"
-          : "border-amber-400/85 shadow-[0_0_45px_-5px_rgba(245,158,11,0.42)] -translate-y-1.5",
-      topHighlight: "from-amber-500/20 via-yellow-300 to-amber-500/20",
+          ? "border-yellow-200 ring-2 ring-amber-300/70 shadow-[0_0_60px_rgba(245,158,11,0.65)] -translate-y-2.5"
+          : "border-amber-300/90 shadow-[0_0_45px_-5px_rgba(245,158,11,0.48)] -translate-y-1.5",
+      topHighlight: "from-amber-400/20 via-yellow-200 to-amber-400/20",
       badgePill:
-        "bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 text-black border-amber-200 shadow-[0_0_18px_rgba(245,158,11,0.5)]",
+        "bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 text-black border-yellow-100 shadow-[0_0_20px_rgba(250,204,21,0.58)]",
       nameCls:
         "bg-gradient-to-r from-amber-100 via-yellow-200 to-amber-100 bg-clip-text text-transparent",
       scoreBox:
-        "bg-amber-500/20 border-amber-400/65 shadow-[inset_0_0_15px_rgba(245,158,11,0.25)]",
-      scoreText: "text-amber-300",
+        "bg-amber-500/20 border-amber-300/75 shadow-[inset_0_0_16px_rgba(250,204,21,0.28)]",
+      scoreText: "text-amber-200",
     },
     {
       id: "third",
@@ -663,26 +612,26 @@ function TrophyCabinetPodiumStage({
       title: tabTheme.titles[2],
       user: thirdPlace,
       isChampion: false,
-      tetherGrad: "from-rose-500 via-orange-400 to-transparent",
-      dotCls: "bg-orange-400 shadow-[0_0_14px_#FB923C]",
-      cardBg:
-        "bg-gradient-to-b from-[#271312]/95 via-[#140B0B]/98 to-[#080506]",
+      tetherGrad: "from-orange-200 via-amber-500 to-transparent",
+      dotCls: "bg-orange-300 shadow-[0_0_16px_#FB923C]",
+      cardBg: "podium-plaque-bronze",
       borderCls:
         hoveredSlot === "third"
-          ? "border-orange-400 ring-2 ring-orange-400/40 shadow-[0_0_35px_rgba(251,146,60,0.45)] -translate-y-1.5"
-          : "border-orange-400/35 hover:border-orange-400/75 shadow-[0_10px_28px_rgba(0,0,0,0.85)]",
-      topHighlight: "from-transparent via-orange-400 to-transparent",
-      badgePill: "bg-orange-500/25 text-orange-200 border-orange-400/50",
+          ? "border-orange-300 ring-2 ring-orange-400/50 shadow-[0_0_38px_rgba(251,146,60,0.5)] -translate-y-1.5"
+          : "border-orange-400/65 hover:border-orange-200 shadow-[0_12px_28px_rgba(0,0,0,0.88)]",
+      topHighlight: "from-transparent via-orange-300 to-transparent",
+      badgePill:
+        "bg-gradient-to-r from-orange-200 via-amber-400 to-orange-500 text-slate-950 border-orange-200 shadow-[0_0_12px_rgba(251,146,60,0.4)]",
       nameCls: "text-white",
-      scoreBox: "bg-orange-500/15 border-orange-400/35",
-      scoreText: "text-orange-300",
+      scoreBox: "bg-black/50 border-orange-400/45",
+      scoreText: "text-orange-200",
     },
   ];
 
   return (
-    <div
-      className={`lg:col-span-7 ${tabTheme.cardBg} rounded-3xl border border-white/10 shadow-[0_15px_50px_rgba(0,0,0,0.85)] flex flex-col justify-between relative overflow-hidden select-none`}
-    >
+    <div className="lg:col-span-7 gold-vault-frame rounded-3xl flex flex-col justify-between relative overflow-hidden select-none">
+      <div className="gold-brushed-grain" />
+
       <input
         ref={fileInputRef}
         type="file"
@@ -694,70 +643,70 @@ function TrophyCabinetPodiumStage({
         className="hidden"
       />
 
-      {/* 1. TOP STAGE HEADER BAR */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-6 pt-5 pb-3 relative z-30 bg-gradient-to-b from-black/80 to-transparent">
+      {/* Top Podium Stage Header */}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-6 pt-5 pb-3 relative z-30 bg-gradient-to-b from-black/85 via-black/45 to-transparent">
         <div>
           <span
-            className={`text-[10px] font-extrabold uppercase tracking-widest border px-2.5 py-0.5 rounded-full ${tabTheme.badgeCls}`}
+            className={`text-[10px] font-black uppercase tracking-[0.2em] border px-3 py-0.5 rounded-full inline-flex items-center gap-1.5 ${tabTheme.badgeCls}`}
           >
-            🏆 {tabTheme.label} Championship Podium
+            <span>🏆</span>
+            <span>{tabTheme.label} Championship Podium</span>
           </span>
-          <h2 className="text-base font-extrabold text-white mt-1.5">
+          <h2 className="text-lg font-black text-white mt-1.5 tracking-tight">
             Top 3 {tabTheme.label} Leaders
           </h2>
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-slate-400 font-semibold">
-            Live Standing • {totalCompetitors} Competitors
+        <div className="flex items-center gap-2.5">
+          <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-300/35 text-[11px] text-amber-200 font-bold flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-300 animate-ping" />
+            <span>Live Standing • {totalCompetitors} Competitors</span>
           </span>
         </div>
       </div>
 
-      {/* 2. FULL-BLEED GLASS TROPHY CABINET IMAGE STAGE */}
-      <div className="relative w-full overflow-hidden bg-[#0A0C12] -mt-2">
+      {/* CLEAN TROPHY CABINET STAGE (NO SHINE WAVE) */}
+      <div className="relative w-full overflow-hidden bg-[#060609] -mt-2">
         <img
           src={activeImgSrc}
           alt="Glass Trophy Display with Gold Cup and Medals"
           onError={handleImageError}
-          className="w-full h-[250px] sm:h-[295px] object-cover object-center block select-none pointer-events-none"
+          className="w-full h-[255px] sm:h-[305px] object-cover object-center block select-none pointer-events-none"
         />
 
-        {/* Synchronized Spotlight Aura When Hovering a Winner */}
-        <div className="pointer-events-none absolute inset-0 grid grid-cols-12">
+        {/* Subtle Interactive Hover Spotlights Only */}
+        <div className="pointer-events-none absolute inset-0 z-10 grid grid-cols-12">
           <div className="col-span-1" />
           <div
-            className={`col-span-3 transition-opacity duration-300 bg-gradient-to-b from-purple-400/25 via-white/10 to-transparent blur-md ${
+            className={`col-span-3 transition-opacity duration-300 bg-gradient-to-b from-white/20 via-slate-200/10 to-transparent blur-md ${
               hoveredSlot === "second" ? "opacity-100" : "opacity-0"
             }`}
           />
           <div
-            className={`col-span-4 transition-opacity duration-300 bg-gradient-to-b from-amber-300/30 via-yellow-200/15 to-transparent blur-md ${
+            className={`col-span-4 transition-opacity duration-300 bg-gradient-to-b from-amber-200/25 via-white/10 to-transparent blur-md ${
               hoveredSlot === "first" ? "opacity-100" : "opacity-0"
             }`}
           />
           <div
-            className={`col-span-3 transition-opacity duration-300 bg-gradient-to-b from-orange-400/25 via-rose-400/10 to-transparent blur-md ${
+            className={`col-span-3 transition-opacity duration-300 bg-gradient-to-b from-orange-300/20 via-white/10 to-transparent blur-md ${
               hoveredSlot === "third" ? "opacity-100" : "opacity-0"
             }`}
           />
           <div className="col-span-1" />
         </div>
 
-        {/* Top & Bottom Vignette Blends */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-8 bg-gradient-to-b from-[#0A0C12] to-transparent" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#08090E] via-[#08090E]/80 to-transparent" />
+        {/* Seamless Top & Bottom Edge Vignettes */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-8 bg-gradient-to-b from-[#080706] to-transparent z-10" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#080705] via-[#080705]/85 to-transparent z-10" />
 
-        {/* Interactive Click/Hover Zones Over the 3 Pedestals */}
+        {/* Clickable Trophy Hit Zones */}
         <div className="absolute inset-0 z-20 grid grid-cols-12">
           <div className="col-span-1" />
           <div
             onMouseEnter={() => setHoveredSlot("second")}
             onMouseLeave={() => setHoveredSlot(null)}
             onClick={() =>
-              secondPlace &&
-              onSelectCompetitor &&
-              onSelectCompetitor(secondPlace)
+              secondPlace && onSelectCompetitor && onSelectCompetitor(secondPlace)
             }
             className="col-span-3 cursor-pointer h-full"
           />
@@ -765,9 +714,7 @@ function TrophyCabinetPodiumStage({
             onMouseEnter={() => setHoveredSlot("first")}
             onMouseLeave={() => setHoveredSlot(null)}
             onClick={() =>
-              firstPlace &&
-              onSelectCompetitor &&
-              onSelectCompetitor(firstPlace)
+              firstPlace && onSelectCompetitor && onSelectCompetitor(firstPlace)
             }
             className="col-span-4 cursor-pointer h-full"
           />
@@ -775,9 +722,7 @@ function TrophyCabinetPodiumStage({
             onMouseEnter={() => setHoveredSlot("third")}
             onMouseLeave={() => setHoveredSlot(null)}
             onClick={() =>
-              thirdPlace &&
-              onSelectCompetitor &&
-              onSelectCompetitor(thirdPlace)
+              thirdPlace && onSelectCompetitor && onSelectCompetitor(thirdPlace)
             }
             className="col-span-3 cursor-pointer h-full"
           />
@@ -785,8 +730,8 @@ function TrophyCabinetPodiumStage({
         </div>
       </div>
 
-      {/* 3. PEDESTAL-DOCKED WINNER PLAQUES DIRECTLY BELOW THE 3 GLASS PEDESTALS */}
-      <div className="relative z-30 -mt-9 sm:-mt-11 px-4 sm:px-8 pb-5 bg-gradient-to-b from-transparent via-[#08090E] to-[#08090E]">
+      {/* Aligned Top-3 Winner Plaques */}
+      <div className="relative z-30 -mt-9 sm:-mt-11 px-4 sm:px-7 pb-5 bg-gradient-to-b from-transparent via-[#080705] to-[#080705]">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4 items-stretch">
           {podiumSlots.map((slot) => {
             const u = slot.user;
@@ -801,7 +746,6 @@ function TrophyCabinetPodiumStage({
                 onClick={() => onSelectCompetitor && onSelectCompetitor(u)}
                 className="flex flex-col items-center cursor-pointer group"
               >
-                {/* Glowing Vertical Laser Tether Connecting Pedestal Base to Winner Plaque */}
                 <div className="flex flex-col items-center mb-1">
                   <span
                     className={`w-2.5 h-2.5 rounded-full ${slot.dotCls} transition-transform duration-300 group-hover:scale-125`}
@@ -811,23 +755,19 @@ function TrophyCabinetPodiumStage({
                   />
                 </div>
 
-                {/* Illuminated Winner Plaque Card */}
                 <div
                   className={`w-full flex-1 rounded-2xl p-3.5 sm:p-4 border ${slot.cardBg} ${slot.borderCls} backdrop-blur-xl transition-all duration-300 relative overflow-hidden flex flex-col items-center justify-between text-center`}
                 >
-                  {/* Top Specular Neon Line */}
                   <div
                     className={`pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r ${slot.topHighlight}`}
                   />
 
-                  {/* Rank Badge Pill */}
                   <div
                     className={`px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${slot.badgePill}`}
                   >
                     {slot.rankTag}
                   </div>
 
-                  {/* Winner Name & Official Title */}
                   <div className="my-2.5 w-full">
                     <h3
                       className={`${
@@ -838,16 +778,15 @@ function TrophyCabinetPodiumStage({
                     >
                       {u.name}
                     </h3>
-                    <span className="text-[11px] font-bold text-slate-400 block truncate mt-0.5">
+                    <span className="text-[11px] font-bold text-amber-100/65 block truncate mt-0.5">
                       {slot.title}
                     </span>
                   </div>
 
-                  {/* Highlighted Score Readout Box */}
                   <div
                     className={`w-full py-1.5 px-3 rounded-xl border ${slot.scoreBox} flex items-center justify-between`}
                   >
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-300">
                       {tabTheme.label}
                     </span>
                     <span
@@ -857,8 +796,7 @@ function TrophyCabinetPodiumStage({
                           : "text-sm sm:text-base"
                       } font-black ${slot.scoreText}`}
                     >
-                      {activeTab === "curos" && "🪙 "}
-                      {val}
+                      🪙 {val}
                       {tabTheme.shortUnit}
                     </span>
                   </div>
@@ -874,14 +812,9 @@ function TrophyCabinetPodiumStage({
 
 // ============================================================================
 // 4. LIVE VIEW COMPETITOR SHOWCASE MODAL
-//    - Rank #1 -> Shiny Metallic Gold Medal (medal_2.jpg)
-//    - Rank #2 -> Shiny Metallic Silver Medal (medal_2.jpg)
-//    - Rank #3 -> Shiny Metallic Bronze Medal (medal_2.jpg)
-//    - Rank #4+ -> NO Medal (Clean Obsidian Rank Shield)
 // ============================================================================
 function CompetitorLiveViewModal({ user, onClose, tabTheme }) {
   if (!user) return null;
-
   const isTop3 = user.rank <= 3;
   const medalTier =
     user.rank === 1 ? "gold" : user.rank === 2 ? "silver" : "bronze";
@@ -893,25 +826,24 @@ function CompetitorLiveViewModal({ user, onClose, tabTheme }) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-lg bg-[#070911] border border-amber-400/45 rounded-3xl p-6 text-center shadow-[0_0_90px_rgba(245,158,11,0.3)] overflow-hidden"
+        className="relative w-full max-w-lg gold-vault-frame rounded-3xl p-6 text-center shadow-[0_0_90px_rgba(212,175,55,0.35)] overflow-hidden"
       >
-        <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-80 h-80 bg-white/15 rounded-full blur-3xl" />
+        <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-80 h-80 bg-amber-300/20 rounded-full blur-3xl" />
 
         <div className="flex items-center justify-between relative z-10 mb-3">
           <span
             className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${tabTheme.badgeCls}`}
           >
-            ◎ Live Competitor Showcase • Rank #{user.rank}
+            Live Competitor Showcase • Rank #{user.rank}
           </span>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-xl bg-white/5 hover:bg-rose-500/20 text-slate-300 hover:text-rose-300 font-bold text-xs cursor-pointer"
+            className="w-8 h-8 rounded-xl bg-white/5 hover:bg-amber-500/20 text-slate-300 hover:text-amber-200 font-bold text-xs cursor-pointer border border-white/10"
           >
             ✕
           </button>
         </div>
 
-        {/* Realistic Metallic Medal ONLY for Top 3 Winners; Clean Rank Shield for Others */}
         <div className="my-5 flex justify-center relative z-10">
           {isTop3 ? (
             <RealisticMetallicMedalSVG
@@ -920,8 +852,8 @@ function CompetitorLiveViewModal({ user, onClose, tabTheme }) {
               showRibbon={true}
             />
           ) : (
-            <div className="w-28 h-28 rounded-3xl bg-gradient-to-b from-[#161926] to-[#090B12] border-2 border-white/15 shadow-[0_12px_30px_rgba(0,0,0,0.8)] flex flex-col items-center justify-center">
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+            <div className="w-28 h-28 rounded-3xl bg-gradient-to-b from-[#1E1910] to-[#0B0906] border-2 border-amber-300/45 shadow-[0_12px_30px_rgba(0,0,0,0.85)] flex flex-col items-center justify-center">
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-200/70">
                 Standing
               </span>
               <span className="text-3xl font-black text-white mt-0.5">
@@ -935,14 +867,12 @@ function CompetitorLiveViewModal({ user, onClose, tabTheme }) {
           {user.name}
         </h2>
         <p className="text-xs font-bold text-amber-300 mt-1 relative z-10">
-          {isTop3
-            ? tabTheme.titles[user.rank - 1]
-            : "Cohort Contender"}{" "}
-          • {user.program_name}
+          {isTop3 ? tabTheme.titles[user.rank - 1] : "Cohort Contender"} •{" "}
+          {user.program_name}
         </p>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 my-5 relative z-10">
-          <div className="p-3 rounded-2xl bg-[#0E101A] border border-amber-400/25">
+          <div className="p-3 rounded-2xl bg-[#0D0B07] border border-amber-400/40">
             <span className="text-[10px] text-slate-400 font-bold uppercase block">
               Curos
             </span>
@@ -950,23 +880,23 @@ function CompetitorLiveViewModal({ user, onClose, tabTheme }) {
               🪙 {user.curos}
             </span>
           </div>
-          <div className="p-3 rounded-2xl bg-[#0E101A] border border-purple-400/25">
+          <div className="p-3 rounded-2xl bg-[#0D0B07] border border-purple-400/35">
             <span className="text-[10px] text-slate-400 font-bold uppercase block">
               Completion
             </span>
             <span className="text-base font-black text-purple-300 mt-0.5 block">
-              🏆 {user.completion_pct}%
+              {user.completion_pct}%
             </span>
           </div>
-          <div className="p-3 rounded-2xl bg-[#0E101A] border border-emerald-400/25">
+          <div className="p-3 rounded-2xl bg-[#0D0B07] border border-emerald-400/35">
             <span className="text-[10px] text-slate-400 font-bold uppercase block">
               Retention
             </span>
             <span className="text-base font-black text-emerald-300 mt-0.5 block">
-              📈 {user.retention_pct}%
+              {user.retention_pct}%
             </span>
           </div>
-          <div className="p-3 rounded-2xl bg-[#0E101A] border border-rose-400/25">
+          <div className="p-3 rounded-2xl bg-[#0D0B07] border border-rose-400/35">
             <span className="text-[10px] text-slate-400 font-bold uppercase block">
               Streak
             </span>
@@ -988,18 +918,194 @@ function CompetitorLiveViewModal({ user, onClose, tabTheme }) {
 }
 
 // ============================================================================
-// 5. MAIN COMPONENT: Leaderboards.jsx
+// 4B. GRAPH SCORE BREAKDOWN TAB / MODAL (OPENS WHEN CLICKING THE GRAPH)
+//     Lists all users currently plotted on the graph with Name & Score beside it
+// ============================================================================
+function GraphScoreBreakdownModal({
+  isOpen,
+  onClose,
+  graphUsers = [],
+  graphTheme,
+  graphMetric,
+  onSelectGraphMetric,
+  onInspectUser,
+}) {
+  if (!isOpen) return null;
+
+  const maxScore = Math.max(
+    1,
+    ...graphUsers.map((u) => graphTheme.getValue(u))
+  );
+
+  return (
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 overflow-y-auto"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-2xl gold-vault-frame rounded-3xl p-6 space-y-5 my-auto relative overflow-hidden"
+        style={{
+          borderColor: `${graphTheme.accentHex}aa`,
+          boxShadow: `0 0 65px -10px ${graphTheme.accentHex}45, 0 24px 60px rgba(0,0,0,0.95)`,
+        }}
+      >
+        <div className="gold-brushed-grain" />
+
+        {/* Header */}
+        <div className="relative z-10 flex flex-wrap items-start justify-between gap-3 border-b border-amber-300/25 pb-4">
+          <div>
+            <span
+              className="text-[10px] font-black uppercase tracking-[0.22em] px-3 py-0.5 rounded-full border inline-flex items-center gap-1.5"
+              style={{
+                color: graphTheme.accentHex,
+                borderColor: `${graphTheme.accentHex}66`,
+                backgroundColor: `${graphTheme.accentHex}18`,
+              }}
+            >
+              <span>📊</span>
+              <span>{graphTheme.label} Graph Roster</span>
+            </span>
+            <h2 className="text-xl font-black text-white mt-1.5 tracking-tight">
+              {graphTheme.chartTitle} — User Scores
+            </h2>
+            <p className="text-xs text-amber-100/65 mt-0.5">
+              Showing all {graphUsers.length} users plotted on the active{" "}
+              {graphTheme.label} chart
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-amber-500/20 border border-amber-200/30 text-xs font-black text-amber-100 cursor-pointer transition"
+          >
+            ✕ Close
+          </button>
+        </div>
+
+        {/* Metric Switcher Inside Modal for Fast Comparison */}
+        <div className="relative z-10 flex flex-wrap items-center gap-1.5">
+          {[
+            { id: "curos", label: "🪙 Curos" },
+            { id: "completion", label: "🏆 Completion" },
+            { id: "retention", label: "🛡️ Retention" },
+            { id: "application", label: "🎯 Application" },
+            { id: "streaks", label: "🔥 Streaks" },
+          ].map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => onSelectGraphMetric(m.id)}
+              className={`px-3 py-1.5 rounded-xl text-[11px] font-black transition cursor-pointer ${
+                graphMetric === m.id
+                  ? graphTheme.pillActive
+                  : "bg-[#0D0B08] text-slate-300 border border-amber-200/20 hover:border-amber-300/60"
+              }`}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Ranked User Name + Score Rows */}
+        <div className="relative z-10 space-y-2.5 max-h-[390px] overflow-y-auto pr-1">
+          {graphUsers.map((u, idx) => {
+            const val = graphTheme.getValue(u);
+            const pct = Math.round((val / maxScore) * 100);
+            const rankNum = idx + 1;
+
+            const rowCls =
+              rankNum === 1
+                ? "lb-tab-rank-1"
+                : rankNum === 2
+                ? "lb-tab-rank-2"
+                : rankNum === 3
+                ? "lb-tab-rank-3"
+                : "lb-tab-standard";
+
+            return (
+              <div
+                key={u.id ?? `${u.name}-${idx}`}
+                onClick={() => {
+                  onClose();
+                  onInspectUser && onInspectUser(u);
+                }}
+                className={`cursor-pointer rounded-2xl px-4 py-3 flex items-center justify-between gap-4 ${rowCls}`}
+              >
+                {/* Left: Rank + Avatar + Name */}
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <span
+                    className={`w-8 h-8 rounded-xl text-xs font-black flex items-center justify-center shrink-0 ${
+                      rankNum === 1
+                        ? "bg-gradient-to-br from-amber-200 via-yellow-400 to-amber-500 text-black"
+                        : rankNum === 2
+                        ? "bg-gradient-to-br from-white via-slate-200 to-slate-400 text-black"
+                        : rankNum === 3
+                        ? "bg-gradient-to-br from-orange-200 via-amber-400 to-orange-600 text-black"
+                        : "bg-black/60 text-amber-100 border border-amber-200/35"
+                    }`}
+                  >
+                    #{rankNum}
+                  </span>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="font-black text-sm text-white truncate">
+                      {u.name}
+                    </div>
+                    <div className="w-full h-1.5 rounded-full bg-black/60 border border-white/10 overflow-hidden mt-1.5">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${Math.max(val > 0 ? 8 : 2, pct)}%`,
+                          background: `linear-gradient(90deg, ${graphTheme.accentHex}, #FEF08A)`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: Exact Score Beside Name */}
+                <span
+                  className="px-3.5 py-1.5 rounded-xl text-sm font-black border shrink-0"
+                  style={{
+                    color: val > 0 ? graphTheme.accentHex : "#94A3B8",
+                    borderColor:
+                      val > 0
+                        ? `${graphTheme.accentHex}88`
+                        : "rgba(253,230,138,0.28)",
+                    backgroundColor:
+                      val > 0 ? `${graphTheme.accentHex}1A` : "rgba(0,0,0,0.5)",
+                  }}
+                >
+                  {graphMetric === "curos" && "🪙 "}
+                  {val}
+                  {graphTheme.unit}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// ============================================================================
+// MAIN COMPONENT: Leaderboards.jsx (DARK PREMIUM GOLDEN SHINING THEME)
 // ============================================================================
 export default function Leaderboards({ backendData = null }) {
   const [rawCompetitors, setRawCompetitors] = useState([]);
   const [loading, setLoading] = useState(!backendData);
   const [syncing, setSyncing] = useState(false);
   const [lastSynced, setLastSynced] = useState(null);
-
-  // 5 Distinct Tabs: 'curos' | 'completion' | 'retention' | 'application' | 'streaks'
-  const [activeTab, setActiveTab] = useState("curos");
   const [searchQuery, setSearchQuery] = useState("");
   const [liveViewUser, setLiveViewUser] = useState(null);
+
+  // Main Tab is permanently based on Curos; Variations belong ONLY to the Graph Tab
+  const [graphMetric, setGraphMetric] = useState("curos");
+  const [graphModalOpen, setGraphModalOpen] = useState(false);
 
   const fetchLeaderboard = useCallback(async (isBackground = false) => {
     if (!isBackground) setLoading(true);
@@ -1055,6 +1161,7 @@ export default function Leaderboards({ backendData = null }) {
               ),
             };
           });
+
           setRawCompetitors(normalized);
           setLastSynced(new Date().toLocaleTimeString());
           setLoading(false);
@@ -1065,6 +1172,7 @@ export default function Leaderboards({ backendData = null }) {
         // Try next endpoint
       }
     }
+
     setLoading(false);
     setSyncing(false);
   }, []);
@@ -1075,6 +1183,7 @@ export default function Leaderboards({ backendData = null }) {
       setLoading(false);
       return;
     }
+
     fetchLeaderboard(false);
 
     const onFocus = () => fetchLeaderboard(true);
@@ -1083,8 +1192,8 @@ export default function Leaderboards({ backendData = null }) {
     };
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibility);
-    const timer = setInterval(() => fetchLeaderboard(true), 15000);
 
+    const timer = setInterval(() => fetchLeaderboard(true), 15000);
     return () => {
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);
@@ -1092,11 +1201,13 @@ export default function Leaderboards({ backendData = null }) {
     };
   }, [backendData, fetchLeaderboard]);
 
-  // Deduplicate & Rank by Active Tab
-  const rankedCompetitors = useMemo(() => {
+  // Deduplicated base roster
+  const uniqueCompetitors = useMemo(() => {
     const map = new Map();
     rawCompetitors.forEach((c, idx) => {
-      const key = String(c.email || c.name || idx).toLowerCase().trim();
+      const key = String(c.email || c.name || idx)
+        .toLowerCase()
+        .trim();
       if (
         !map.has(key) ||
         (c.curos || 0) > (map.get(key).curos || 0) ||
@@ -1105,88 +1216,92 @@ export default function Leaderboards({ backendData = null }) {
         map.set(key, { ...c });
       }
     });
+    return Array.from(map.values());
+  }, [rawCompetitors]);
 
-    const unique = Array.from(map.values());
-    const sorted = [...unique].sort((a, b) => {
-      if (activeTab === "curos")
+  // 1. MAIN TAB RANKING (PERMANENTLY BY CURO COUNT)
+  const curosRankedCompetitors = useMemo(() => {
+    const sorted = [...uniqueCompetitors].sort(
+      (a, b) =>
+        (b.curos || 0) - (a.curos || 0) ||
+        (b.completion_pct || 0) - (a.completion_pct || 0)
+    );
+    return sorted.map((u, idx) => ({ ...u, rank: idx + 1 }));
+  }, [uniqueCompetitors]);
+
+  // 2. GRAPH-ONLY RANKING (DYNAMIC BY SELECTED GRAPH VARIATION)
+  const graphRankedCompetitors = useMemo(() => {
+    const sorted = [...uniqueCompetitors].sort((a, b) => {
+      if (graphMetric === "curos")
         return (
           (b.curos || 0) - (a.curos || 0) ||
           (b.completion_pct || 0) - (a.completion_pct || 0)
         );
-      if (activeTab === "completion")
+      if (graphMetric === "completion")
         return (
           (b.completion_pct || 0) - (a.completion_pct || 0) ||
           (b.curos || 0) - (a.curos || 0)
         );
-      if (activeTab === "retention")
+      if (graphMetric === "retention")
         return (
           (b.retention_pct || 0) - (a.retention_pct || 0) ||
           (b.curos || 0) - (a.curos || 0)
         );
-      if (activeTab === "application")
+      if (graphMetric === "application")
         return (
           (b.application_pct || 0) - (a.application_pct || 0) ||
           (b.curos || 0) - (a.curos || 0)
         );
-      if (activeTab === "streaks")
+      if (graphMetric === "streaks")
         return (
           (b.streak_days || 0) - (a.streak_days || 0) ||
           (b.curos || 0) - (a.curos || 0)
         );
       return 0;
     });
+    return sorted.map((u, idx) => ({ ...u, graphRank: idx + 1 }));
+  }, [uniqueCompetitors, graphMetric]);
 
-    return sorted.map((u, idx) => ({
-      ...u,
-      rank: idx + 1,
-    }));
-  }, [rawCompetitors, activeTab]);
+  const curosMainTheme = useMemo(
+    () => ({
+      id: "curos",
+      label: "Curos",
+      columnHeader: "CUROS",
+      subtitle: "Top performers based on current Curo treasury balance",
+      unit: " Curos",
+      shortUnit: "",
+      accentHex: "#F5C451",
+      secondaryHex: "#D97706",
+      badgeCls:
+        "text-amber-200 bg-amber-500/15 border-amber-300/50 shadow-[0_0_12px_rgba(245,196,81,0.18)]",
+      champRibbon: "from-amber-200 via-yellow-400 to-amber-500 text-black",
+      titles: ["Curo Champion", "Curo Achiever", "Curo Star"],
+      getValue: (u) => Number(u?.curos || 0),
+    }),
+    []
+  );
 
-  // 5 DISTINCT VISUAL THEMES & STAGE CONFIGURATIONS (ONE PER TAB!)
-  const tabTheme = useMemo(() => {
+  // Graph Theme (Uses themes object keyed by graphMetric)
+  const graphTheme = useMemo(() => {
     const themes = {
       curos: {
-        id: "curos",
-        label: "Curos",
-        columnHeader: "CUROS",
-        subtitle: "Top performers based on current Curo treasury balance",
-        unit: " Curos",
-        shortUnit: "",
-        accentHex: "#D4AF37",
-        secondaryHex: "#F59E0B",
-        pageBg: "bg-[#050505]",
-        cardBg: "bg-[#0D0D0F]",
-        headerGrad:
-          "from-[#1B150A] via-[#14110B] to-[#0A0907] border-amber-400/30 shadow-[0_0_55px_-12px_rgba(212,175,55,0.28)]",
-        hairline: "via-amber-400/80",
+        ...curosMainTheme,
         pillActive:
-          "bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-black shadow-[0_0_22px_rgba(212,175,55,0.5)]",
-        badgeCls: "text-amber-300 bg-amber-500/15 border-amber-400/35",
-        champRibbon: "from-amber-300 via-yellow-400 to-amber-500 text-black",
-        titles: ["Curo Champion", "Curo Achiever", "Curo Star"],
+          "bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 text-black shadow-[0_0_18px_rgba(245,196,81,0.55)] border border-yellow-100/80",
         chartType: "area",
         chartTitle: "Top 10 Curos Treasury Curve",
-        getValue: (u) => Number(u?.curos || 0),
       },
       completion: {
         id: "completion",
         label: "Completion",
-        columnHeader: "COMPLETION",
         subtitle: "Top performers based on curriculum completion percentage",
         unit: "%",
         shortUnit: "%",
-        accentHex: "#A855F7",
-        secondaryHex: "#6366F1",
-        pageBg: "bg-[#070510]",
-        cardBg: "bg-[#110D20]",
-        headerGrad:
-          "from-[#1E1038] via-[#150D2A] to-[#0B0718] border-purple-500/35 shadow-[0_0_55px_-12px_rgba(168,85,247,0.32)]",
-        hairline: "via-purple-400/80",
+        accentHex: "#C084FC",
+        secondaryHex: "#F5C451",
         pillActive:
-          "bg-gradient-to-r from-purple-500 via-fuchsia-500 to-indigo-600 text-white shadow-[0_0_22px_rgba(168,85,247,0.55)]",
-        badgeCls: "text-purple-200 bg-purple-500/15 border-purple-400/35",
-        champRibbon: "from-purple-400 via-fuchsia-400 to-indigo-400 text-slate-950",
-        titles: ["Completion Master", "Curriculum Finisher", "Track Pacesetter"],
+          "bg-gradient-to-r from-purple-400 via-fuchsia-500 to-amber-400 text-slate-950 shadow-[0_0_18px_rgba(192,132,252,0.55)] border border-purple-200/80",
+        badgeCls: "text-purple-200 bg-purple-500/15 border-purple-300/50",
         chartType: "bar",
         chartTitle: "Curriculum Completion Milestone Bars",
         getValue: (u) => Number(u?.completion_pct || 0),
@@ -1194,22 +1309,14 @@ export default function Leaderboards({ backendData = null }) {
       retention: {
         id: "retention",
         label: "Retention",
-        columnHeader: "RETENTION",
         subtitle: "Top performers based on long-term knowledge retention stability",
         unit: "%",
         shortUnit: "%",
-        accentHex: "#10B981",
-        secondaryHex: "#14B8A6",
-        pageBg: "bg-[#040B09]",
-        cardBg: "bg-[#091612]",
-        headerGrad:
-          "from-[#09291E] via-[#071C15] to-[#040E0B] border-emerald-500/35 shadow-[0_0_55px_-12px_rgba(16,185,129,0.3)]",
-        hairline: "via-emerald-400/80",
+        accentHex: "#34D399",
+        secondaryHex: "#F5C451",
         pillActive:
-          "bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-500 text-slate-950 shadow-[0_0_22px_rgba(16,185,129,0.5)]",
-        badgeCls: "text-emerald-200 bg-emerald-500/15 border-emerald-400/35",
-        champRibbon: "from-emerald-300 via-teal-300 to-cyan-300 text-slate-950",
-        titles: ["Retention Guardian", "Stability Anchor", "Memory Sentinel"],
+          "bg-gradient-to-r from-emerald-300 via-teal-400 to-amber-300 text-slate-950 shadow-[0_0_18px_rgba(52,211,153,0.5)] border border-emerald-200/80",
+        badgeCls: "text-emerald-200 bg-emerald-500/15 border-emerald-300/50",
         chartType: "radar",
         chartTitle: "5-Pillar Cohort Stability Polygon",
         getValue: (u) => Number(u?.retention_pct || 0),
@@ -1217,22 +1324,14 @@ export default function Leaderboards({ backendData = null }) {
       application: {
         id: "application",
         label: "Application",
-        columnHeader: "APPLICATION",
         subtitle: "Top performers based on assessment accuracy and practical mastery",
         unit: "%",
         shortUnit: "%",
         accentHex: "#38BDF8",
-        secondaryHex: "#3B82F6",
-        pageBg: "bg-[#040812]",
-        cardBg: "bg-[#0A1224]",
-        headerGrad:
-          "from-[#0C2244] via-[#091730] to-[#050C1A] border-cyan-400/35 shadow-[0_0_55px_-12px_rgba(56,189,248,0.3)]",
-        hairline: "via-cyan-400/80",
+        secondaryHex: "#F5C451",
         pillActive:
-          "bg-gradient-to-r from-cyan-400 via-sky-500 to-blue-600 text-slate-950 shadow-[0_0_22px_rgba(56,189,248,0.5)]",
-        badgeCls: "text-cyan-200 bg-cyan-500/15 border-cyan-400/35",
-        champRibbon: "from-cyan-300 via-sky-300 to-blue-400 text-slate-950",
-        titles: ["Mastery Architect", "Precision Specialist", "Applied Scholar"],
+          "bg-gradient-to-r from-cyan-300 via-sky-400 to-amber-300 text-slate-950 shadow-[0_0_18px_rgba(56,189,248,0.5)] border border-cyan-200/80",
+        badgeCls: "text-cyan-200 bg-cyan-500/15 border-cyan-300/50",
         chartType: "composed",
         chartTitle: "Quiz Application vs. Completion Precision",
         getValue: (u) => Number(u?.application_pct || 0),
@@ -1240,79 +1339,67 @@ export default function Leaderboards({ backendData = null }) {
       streaks: {
         id: "streaks",
         label: "Streaks",
-        columnHeader: "STREAK",
         subtitle: "Top performers based on consecutive active learning days",
         unit: " Days",
         shortUnit: "d",
-        accentHex: "#F43F5E",
-        secondaryHex: "#F97316",
-        pageBg: "bg-[#0C0407]",
-        cardBg: "bg-[#1A0B11]",
-        headerGrad:
-          "from-[#380D1A] via-[#240913] to-[#120509] border-rose-500/35 shadow-[0_0_55px_-12px_rgba(244,63,94,0.32)]",
-        hairline: "via-rose-400/80",
+        accentHex: "#FB7185",
+        secondaryHex: "#F5C451",
         pillActive:
-          "bg-gradient-to-r from-rose-500 via-orange-500 to-amber-500 text-white shadow-[0_0_22px_rgba(244,63,94,0.55)]",
-        badgeCls: "text-rose-200 bg-rose-500/15 border-rose-400/35",
-        champRibbon: "from-rose-400 via-orange-400 to-amber-300 text-slate-950",
-        titles: ["Inferno Titan", "Blaze Runner", "Flame Keeper"],
+          "bg-gradient-to-r from-rose-400 via-orange-400 to-amber-300 text-slate-950 shadow-[0_0_18px_rgba(251,113,133,0.55)] border border-rose-200/80",
+        badgeCls: "text-rose-200 bg-rose-500/15 border-rose-300/50",
         chartType: "stepArea",
         chartTitle: "Consecutive Habit Flame Momentum",
         getValue: (u) => Number(u?.streak_days || 0),
       },
     };
-    return themes[activeTab] || themes.curos;
-  }, [activeTab]);
+    return themes[graphMetric] || themes.curos;
+  }, [graphMetric, curosMainTheme]);
 
-  const kpis = useMemo(() => {
-    const activeWithCuros = rankedCompetitors.filter(
-      (u) => (u.curos || 0) > 0
-    ).length;
-    return {
-      total_users:
-        activeWithCuros > 0 ? activeWithCuros : rankedCompetitors.length,
-      total_roster: rankedCompetitors.length,
-      all_curos: rankedCompetitors.reduce(
-        (s, u) => s + Number(u.curos || 0),
-        0
-      ),
-      highest_streak: rankedCompetitors.reduce(
-        (m, u) => Math.max(m, Number(u.streak_days || 0)),
-        0
-      ),
-      programs_completed: rankedCompetitors.reduce(
-        (s, u) => s + Number(u.programs_completed || 0),
-        0
-      ),
-    };
-  }, [rankedCompetitors]);
+  
 
   const filteredCompetitors = useMemo(() => {
-    if (!searchQuery.trim()) return rankedCompetitors;
+    if (!searchQuery.trim()) return curosRankedCompetitors;
     const q = searchQuery.toLowerCase();
-    return rankedCompetitors.filter((u) =>
+    return curosRankedCompetitors.filter((u) =>
       u.name.toLowerCase().includes(q)
     );
-  }, [rankedCompetitors, searchQuery]);
+  }, [curosRankedCompetitors, searchQuery]);
 
-  const chartData = useMemo(() => {
-    return rankedCompetitors.slice(0, 10).map((u) => ({
-      name: u.name.split(" ")[0],
-      score: tabTheme.getValue(u),
-      secondary: Number(u.completion_pct || 0),
-    }));
-  }, [rankedCompetitors, tabTheme]);
+  // Top 10 plotted on the graph + Top 3 for the Graph vs. Top 3 for Curos Podium
+  const graphTop10Users = useMemo(
+    () => graphRankedCompetitors.slice(0, 10),
+    [graphRankedCompetitors]
+  );
+
+  const chartData = useMemo(
+    () =>
+      graphTop10Users.map((u) => ({
+        name: u.name.split(" ")[0],
+        score: graphTheme.getValue(u),
+        secondary: Number(u.completion_pct || 0),
+      })),
+    [graphTop10Users, graphTheme]
+  );
+
+  const cohortAvgMetric = useMemo(() => {
+    if (!graphRankedCompetitors.length) return 0;
+    const sum = graphRankedCompetitors.reduce(
+      (acc, u) => acc + graphTheme.getValue(u),
+      0
+    );
+    return Math.round((sum / graphRankedCompetitors.length) * 10) / 10;
+  }, [graphRankedCompetitors, graphTheme]);
 
   const cohortRadarData = useMemo(() => {
-    const denom = Math.max(1, rankedCompetitors.length);
+    const denom = Math.max(1, graphRankedCompetitors.length);
     const avgComp = Math.round(
-      rankedCompetitors.reduce((s, u) => s + (u.completion_pct || 0), 0) / denom
+      graphRankedCompetitors.reduce((s, u) => s + (u.completion_pct || 0), 0) / denom
     );
     const avgRet = Math.round(
-      rankedCompetitors.reduce((s, u) => s + (u.retention_pct || 0), 0) / denom
+      graphRankedCompetitors.reduce((s, u) => s + (u.retention_pct || 0), 0) / denom
     );
     const avgApp = Math.round(
-      rankedCompetitors.reduce((s, u) => s + (u.application_pct || 0), 0) / denom
+      graphRankedCompetitors.reduce((s, u) => s + (u.application_pct || 0), 0) / denom
     );
     return [
       { subject: "Retention", score: Math.max(25, avgRet), target: 85 },
@@ -1321,80 +1408,271 @@ export default function Leaderboards({ backendData = null }) {
       { subject: "Consistency", score: 68, target: 75 },
       { subject: "Curos Velocity", score: 74, target: 75 },
     ];
-  }, [rankedCompetitors]);
+  }, [graphRankedCompetitors]);
 
-  const firstPlace = rankedCompetitors[0];
-  const secondPlace = rankedCompetitors[1];
-  const thirdPlace = rankedCompetitors[2];
+  // Curos Podium Leaders
+  const firstPlace = curosRankedCompetitors[0];
+  const secondPlace = curosRankedCompetitors[1];
+  const thirdPlace = curosRankedCompetitors[2];
+
+  // Graph Top 3 Leaders (Names displayed below graph without "1st / 2nd / 3rd Place")
+  const graphTop1 = graphTop10Users[0];
+  const graphTop2 = graphTop10Users[1];
+  const graphTop3 = graphTop10Users[2];
 
   return (
-    <div
-      className={`h-screen w-full ${tabTheme.pageBg} text-slate-100 font-sans overflow-y-auto overflow-x-hidden scroll-smooth transition-colors duration-500 leaderboards-scroll-container`}
-    >
+    <div className="h-screen w-full obsidian-gold-canvas text-slate-100 font-sans overflow-y-auto overflow-x-hidden scroll-smooth leaderboards-scroll-container relative">
+      {/* =====================================================================
+          PREMIUM DARK GOLDEN SHINING & MACHINED METAL KPI CSS
+      ===================================================================== */}
       <style>{`
         .leaderboards-scroll-container {
           scrollbar-width: thin;
-          scrollbar-color: ${tabTheme.accentHex}66 #080711;
+          scrollbar-color: rgba(245, 196, 81, 0.5) #070605;
         }
         .leaderboards-scroll-container::-webkit-scrollbar {
           width: 8px;
         }
         .leaderboards-scroll-container::-webkit-scrollbar-track {
-          background: rgba(0, 0, 0, 0.4);
+          background: #070605;
         }
         .leaderboards-scroll-container::-webkit-scrollbar-thumb {
-          background: ${tabTheme.accentHex}55;
+          background: linear-gradient(180deg, #F5C451, #92400E);
           border-radius: 9999px;
         }
-        .leaderboards-scroll-container::-webkit-scrollbar-thumb:hover {
-          background: ${tabTheme.accentHex}aa;
+
+        /* 1. ROYAL OBSIDIAN & CARBON-GOLD PAGE TEXTURE */
+        .obsidian-gold-canvas {
+          background-color: #050506;
+          background-image:
+            radial-gradient(ellipse 75% 40% at 50% -5%, rgba(212, 175, 55, 0.16) 0%, transparent 70%),
+            radial-gradient(ellipse 45% 35% at 88% 35%, rgba(245, 158, 11, 0.08) 0%, transparent 65%),
+            radial-gradient(ellipse 45% 35% at 12% 75%, rgba(212, 175, 55, 0.07) 0%, transparent 65%),
+            repeating-linear-gradient(
+              135deg,
+              rgba(255, 232, 175, 0.018) 0px,
+              rgba(255, 232, 175, 0.018) 1px,
+              transparent 1px,
+              transparent 5px
+            );
+        }
+
+        /* Fine Brushed Metallic Gold Grain Overlay */
+        .gold-brushed-grain {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          z-index: 0;
+          background-image: repeating-linear-gradient(
+            135deg,
+            rgba(254, 240, 138, 0.028) 0px,
+            rgba(254, 240, 138, 0.028) 1px,
+            transparent 1px,
+            transparent 3px
+          );
+        }
+
+        /* 2. PREMIUM GOLDEN VAULT CONTAINER (HEADER, PODIUM, GRAPH, RANKINGS) */
+        .gold-vault-frame {
+          position: relative;
+          isolation: isolate;
+          background:
+            radial-gradient(circle at 12% 0%, rgba(254, 240, 138, 0.12) 0%, transparent 42%),
+            radial-gradient(circle at 88% 100%, rgba(217, 119, 6, 0.1) 0%, transparent 45%),
+            linear-gradient(155deg, #120F0A 0%, #0A0908 54%, #060607 100%);
+          border: 1.8px solid rgba(234, 179, 8, 0.55);
+          box-shadow:
+            0 20px 50px rgba(0, 0, 0, 0.88),
+            0 0 32px -6px rgba(212, 175, 55, 0.22),
+            inset 0 1.5px 2px rgba(254, 249, 195, 0.35),
+            inset 0 0 24px rgba(212, 175, 55, 0.06);
+        }
+
+                
+        /* 2. HIGH-VISIBILITY GRAPH INNER FRAME BORDER */
+        .graph-inner-lit-frame {
+          background: radial-gradient(circle at 50% 0%, rgba(245, 196, 81, 0.1) 0%, #060608 72%);
+          border: 2px solid rgba(251, 191, 36, 0.78) !important;
+          box-shadow:
+            0 0 26px -4px rgba(245, 196, 81, 0.32),
+            inset 0 0 20px rgba(245, 196, 81, 0.12),
+            inset 0 1px 2px rgba(254, 249, 195, 0.45) !important;
+        }
+
+        /* 3. RANK #4+ HORIZONTAL TABS: CLEARLY VISIBLE LIGHT CHAMPAGNE BORDER */
+        .lb-tab-standard {
+          position: relative;
+          background: linear-gradient(145deg, #13110E 0%, #0C0B0B 60%, #080809 100%);
+          border: 1.6px solid rgba(253, 230, 138, 0.52) !important;
+          box-shadow:
+            0 6px 18px rgba(0, 0, 0, 0.72),
+            0 0 14px -4px rgba(245, 196, 81, 0.22),
+            inset 0 1px 1.5px rgba(255, 255, 255, 0.2) !important;
+          transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+        }
+        .lb-tab-standard:hover {
+          transform: translateY(-1.5px);
+          border-color: rgba(254, 240, 138, 0.9) !important;
+          background: linear-gradient(145deg, #1C170F 0%, #110F0C 60%, #0A0908 100%);
+          box-shadow:
+            0 10px 24px rgba(0, 0, 0, 0.85),
+            0 0 20px -3px rgba(250, 204, 21, 0.38) !important;
+        }
+
+        /* Podium Plaque Surfaces */
+        .podium-plaque-gold {
+          background: linear-gradient(180deg, rgba(50, 36, 12, 0.96) 0%, rgba(22, 16, 7, 0.98) 55%, #090703 100%);
+        }
+        .podium-plaque-silver {
+          background: linear-gradient(180deg, rgba(34, 38, 48, 0.95) 0%, rgba(16, 18, 24, 0.98) 55%, #07080C 100%);
+        }
+        .podium-plaque-bronze {
+          background: linear-gradient(180deg, rgba(46, 23, 14, 0.95) 0%, rgba(22, 11, 8, 0.98) 55%, #0A0504 100%);
+        }
+
+        /* 5. CHART TELEMETRY SCANLINE */
+        @keyframes goldTelemetryScan {
+          0% { left: -20%; opacity: 0; }
+          20% { opacity: 1; }
+          80% { opacity: 1; }
+          100% { left: 110%; opacity: 0; }
+        }
+        .animate-gold-chart-scan {
+          animation: goldTelemetryScan 5.5s linear infinite;
+        }
+
+        /* 6. LEADERBOARD RANKING HORIZONTAL TABS:
+              - TOP 3: Noticeable Metallic Borders + Live Sweeping Shine
+              - REST (#4+): Separate Horizontal Tabs with Crisp Light Border */
+        @keyframes top3LiveShineSweep {
+          0%   { transform: translateX(-140%) skewX(-24deg); }
+          48%, 100% { transform: translateX(250%) skewX(-24deg); }
+        }
+
+        .lb-row-shine-overlay {
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          left: 0;
+          width: 34%;
+          pointer-events: none;
+          z-index: 1;
+          background: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.06) 35%,
+            rgba(255, 255, 255, 0.28) 50%,
+            rgba(255, 255, 255, 0.06) 65%,
+            transparent 100%
+          );
+          animation: top3LiveShineSweep 5.5s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+        }
+
+        /* RANK #1: 24K GOLD HORIZONTAL TAB WITH LIVE SHINE */
+        .lb-tab-rank-1 {
+          position: relative;
+          overflow: hidden;
+          background:
+            radial-gradient(circle at 12% 50%, rgba(250, 204, 21, 0.22) 0%, transparent 55%),
+            linear-gradient(135deg, #2D210B 0%, #191308 55%, #0F0C06 100%);
+          border: 2px solid rgba(253, 224, 71, 0.92);
+          box-shadow:
+            0 10px 26px rgba(0, 0, 0, 0.8),
+            0 0 26px -3px rgba(245, 158, 11, 0.45),
+            inset 0 1.5px 2px rgba(254, 249, 195, 0.55);
+          transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+        }
+        .lb-tab-rank-1:hover {
+          transform: translateY(-2px);
+          border-color: #FEF9C3;
+          box-shadow:
+            0 14px 32px rgba(0, 0, 0, 0.9),
+            0 0 34px 0px rgba(250, 204, 21, 0.62);
+        }
+
+        /* RANK #2: PLATINUM-SILVER HORIZONTAL TAB WITH LIVE SHINE */
+        .lb-tab-rank-2 {
+          position: relative;
+          overflow: hidden;
+          background:
+            radial-gradient(circle at 12% 50%, rgba(226, 232, 240, 0.2) 0%, transparent 55%),
+            linear-gradient(135deg, #232732 0%, #14171F 55%, #0C0E14 100%);
+          border: 2px solid rgba(226, 232, 240, 0.85);
+          box-shadow:
+            0 10px 26px rgba(0, 0, 0, 0.8),
+            0 0 22px -4px rgba(226, 232, 240, 0.32),
+            inset 0 1.5px 2px rgba(255, 255, 255, 0.5);
+          transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+        }
+        .lb-tab-rank-2:hover {
+          transform: translateY(-2px);
+          border-color: #FFFFFF;
+          box-shadow:
+            0 14px 32px rgba(0, 0, 0, 0.9),
+            0 0 30px 0px rgba(241, 245, 249, 0.45);
+        }
+
+        /* RANK #3: BURNISHED BRONZE HORIZONTAL TAB WITH LIVE SHINE */
+        .lb-tab-rank-3 {
+          position: relative;
+          overflow: hidden;
+          background:
+            radial-gradient(circle at 12% 50%, rgba(251, 146, 60, 0.22) 0%, transparent 55%),
+            linear-gradient(135deg, #2B170E 0%, #190E0A 55%, #100907 100%);
+          border: 2px solid rgba(253, 186, 116, 0.85);
+          box-shadow:
+            0 10px 26px rgba(0, 0, 0, 0.8),
+            0 0 22px -4px rgba(249, 115, 22, 0.36),
+            inset 0 1.5px 2px rgba(255, 237, 213, 0.48);
+          transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+        }
+        .lb-tab-rank-3:hover {
+          transform: translateY(-2px);
+          border-color: #FFEDD5;
+          box-shadow:
+            0 14px 32px rgba(0, 0, 0, 0.9),
+            0 0 30px 0px rgba(251, 146, 60, 0.5);
         }
       `}</style>
 
-      <div className="w-full p-5 md:p-6 pb-28 space-y-6">
+      <div className="w-full p-5 md:p-6 pb-28 space-y-6 relative z-10">
         {/* ===================================================================
-            1. DYNAMIC CHAMELEON HERO BANNER HEADER
+            1. PREMIUM DARK-GOLD HEADER BAR (PERMANENTLY CUROS ARENA)
         =================================================================== */}
-        <header
-          className={`relative overflow-hidden rounded-3xl bg-gradient-to-br ${tabTheme.headerGrad} p-6 md:p-8 border transition-all duration-500 flex flex-wrap items-center justify-between gap-4`}
-        >
-          <div
-            className={`pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent ${tabTheme.hairline} to-transparent`}
-          />
-          <div
-            className="pointer-events-none absolute -right-10 -top-16 w-72 h-72 rounded-full blur-3xl opacity-20 transition-all duration-500"
-            style={{ backgroundColor: tabTheme.accentHex }}
-          />
+        <header className="gold-vault-frame rounded-3xl p-6 md:p-7 flex flex-wrap items-center justify-between gap-4 overflow-hidden">
+          <div className="gold-brushed-grain" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-300/90 to-transparent" />
+          <div className="pointer-events-none absolute -right-10 -top-16 w-72 h-72 rounded-full blur-3xl opacity-20 bg-amber-400" />
 
           <div className="relative z-10">
             <div className="flex flex-wrap items-center gap-2.5">
-              <span
-                className="text-[10px] font-extrabold uppercase tracking-[0.25em]"
-                style={{ color: tabTheme.accentHex }}
-              >
-                PERFORMANCE & ACHIEVEMENTS • {tabTheme.label.toUpperCase()} ARENA
+              <span className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-300">
+                PERFORMANCE &amp; ACHIEVEMENTS • {curosMainTheme.label.toUpperCase()}{" "}
+                ARENA
               </span>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-white/5 text-slate-300 border border-white/10 flex items-center gap-1.5">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/10 text-amber-200 border border-amber-300/30 flex items-center gap-1.5">
                 <span
                   className={`w-1.5 h-1.5 rounded-full bg-emerald-400 ${
                     syncing ? "animate-ping" : ""
                   }`}
                 />
-                {lastSynced ? `Live Synced ${lastSynced}` : "Supabase Connected"}
+                {lastSynced
+                  ? `Live Synced ${lastSynced}`
+                  : "Supabase Connected"}
               </span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold text-white mt-1.5 tracking-tight">
+            <h1 className="text-2xl md:text-3xl font-black tracking-tight mt-1.5 bg-gradient-to-r from-white via-amber-100 to-amber-300 bg-clip-text text-transparent">
               Leaderboards
             </h1>
-            <p className="text-xs md:text-sm text-slate-400 mt-1">
-              {tabTheme.subtitle}
+            <p className="text-xs md:text-sm text-amber-100/65 mt-1 font-medium">
+              {curosMainTheme.subtitle}
             </p>
           </div>
 
           <div className="relative z-10 flex items-center gap-2.5">
             <button
               onClick={() => fetchLeaderboard(false)}
-              className="px-4 py-2.5 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/15 hover:border-white/35 text-xs font-extrabold text-white transition-all flex items-center gap-2 cursor-pointer"
+              className="px-4 py-2.5 rounded-2xl bg-gradient-to-b from-[#231B0E] to-[#120E07] hover:from-[#302411] hover:to-[#181209] border border-amber-300/55 hover:border-amber-200 text-xs font-black text-amber-100 shadow-[0_6px_18px_rgba(0,0,0,0.65)] transition-all flex items-center gap-2 cursor-pointer"
             >
               <span className={syncing ? "animate-spin" : ""}>↻</span>
               <span>{syncing ? "Syncing..." : "Refresh Standings"}</span>
@@ -1402,614 +1680,638 @@ export default function Leaderboards({ backendData = null }) {
           </div>
         </header>
 
-        {/* ===================================================================
-            2. 4 KPI SUMMARY CARDS
-        =================================================================== */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            {
-              targetTab: "curos",
-              label: "Total Users",
-              value: kpis.total_users,
-              sub: `${kpis.total_roster} Total Enrolled`,
-              icon: "👥",
-              accent: "text-white",
-              iconCls: "bg-white/[0.04] text-slate-300 border-white/10",
-              borderCls: "border-white/10 hover:border-white/25",
-            },
-            {
-              targetTab: "curos",
-              label: "All Curos",
-              value: kpis.all_curos,
-              sub: "Active Reward Pool",
-              icon: "🪙",
-              accent: "text-amber-300",
-              iconCls: "bg-amber-500/10 text-amber-300 border-amber-500/25",
-              borderCls:
-                activeTab === "curos"
-                  ? "border-amber-400/60 ring-1 ring-amber-400/30"
-                  : "border-amber-500/15 hover:border-amber-400/50",
-            },
-            {
-              targetTab: "streaks",
-              label: "Highest Streak",
-              value: `${kpis.highest_streak}d`,
-              sub: "Consecutive Learning Days",
-              icon: "🔥",
-              accent: "text-rose-400",
-              iconCls: "bg-rose-500/10 text-rose-300 border-rose-500/25",
-              borderCls:
-                activeTab === "streaks"
-                  ? "border-rose-400/60 ring-1 ring-rose-400/30"
-                  : "border-rose-500/15 hover:border-rose-400/45",
-            },
-            {
-              targetTab: "completion",
-              label: "Programs Completed",
-              value: kpis.programs_completed,
-              sub: "Full Track Graduations",
-              icon: "🎖️",
-              accent: "text-purple-300",
-              iconCls: "bg-purple-500/10 text-purple-300 border-purple-500/25",
-              borderCls:
-                activeTab === "completion"
-                  ? "border-purple-400/60 ring-1 ring-purple-400/30"
-                  : "border-purple-500/15 hover:border-purple-400/45",
-            },
-          ].map((card, i) => (
-            <div
-              key={i}
-              onClick={() => setActiveTab(card.targetTab)}
-              className={`cursor-pointer group ${tabTheme.cardBg} rounded-2xl p-5 border ${card.borderCls} shadow-[0_8px_30px_rgba(0,0,0,0.6)] transition-all duration-300 hover:-translate-y-0.5 flex items-center justify-between`}
-            >
-              <div>
-                <span className="text-xs font-semibold text-slate-400 block">
-                  {card.label}
-                </span>
-                <span
-                  className={`text-3xl font-extrabold my-1 block ${card.accent}`}
-                >
-                  {card.value}
-                </span>
-                <span className="text-[11px] text-slate-500 font-medium">
-                  {card.sub}
-                </span>
-              </div>
-              <div
-                className={`w-12 h-12 rounded-2xl border flex items-center justify-center text-xl transition-transform group-hover:scale-105 ${card.iconCls}`}
-              >
-                {card.icon}
-              </div>
-            </div>
-          ))}
-        </section>
+        
 
         {/* ===================================================================
-            3. 5 CATEGORY TABS + SEARCH BAR
+            2. GRAND STAGE: CUROS PODIUM (NO SHINE WAVE) + CLICKABLE GRAPH TAB
+               WITH VARIATION SWITCHERS AT TOP & TOPPER NAMES ONLY BELOW
         =================================================================== */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="overflow-x-auto max-w-full pb-1">
-            <div
-              className={`inline-flex items-center gap-1.5 ${tabTheme.cardBg} p-1.5 rounded-2xl border border-white/10 shadow-md whitespace-nowrap`}
-            >
-              {[
-                { id: "curos", label: "🪙 Curos" },
-                { id: "completion", label: "🏆 Completion" },
-                { id: "retention", label: "📈 Retention" },
-                { id: "application", label: "🎖️ Application" },
-                { id: "streaks", label: "🔥 Streaks" },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all duration-300 cursor-pointer ${
-                    activeTab === tab.id
-                      ? tabTheme.pillActive
-                      : "text-slate-400 hover:text-white hover:bg-white/5"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="relative w-full sm:w-72">
-            <span className="absolute left-3.5 top-2.5 text-xs text-slate-500">
-              🔍
-            </span>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={`Search in ${tabTheme.label}...`}
-              className={`w-full ${tabTheme.cardBg} border border-white/10 focus:border-white/35 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 outline-none transition`}
-            />
-          </div>
-        </div>
-
-        {/* ===================================================================
-            4. GRAND STAGE: TROPHY CABINET + WINNER PLAQUES (LEFT 7 COLS)
-               + PER-TAB TELEMETRY CHART (RIGHT 5 COLS)
-        =================================================================== */}
-        {!loading && rankedCompetitors.length > 0 && (
+        {!loading && curosRankedCompetitors.length > 0 && (
           <section className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+            {/* LEFT (7 COLS): Curos Championship Podium */}
             <TrophyCabinetPodiumStage
               firstPlace={firstPlace}
               secondPlace={secondPlace}
               thirdPlace={thirdPlace}
-              totalCompetitors={rankedCompetitors.length}
-              tabTheme={tabTheme}
-              activeTab={activeTab}
+              totalCompetitors={curosRankedCompetitors.length}
+              tabTheme={curosMainTheme}
+              activeTab="curos"
               onSelectCompetitor={(u) => setLiveViewUser(u)}
             />
 
-            {/* RIGHT 5 COLS: BESPOKE VISUALIZATION THAT CHANGES PER TAB */}
+            {/* RIGHT (5 COLS): CLICKABLE TELEMETRY GRAPH WITH VARIATIONS AT TOP */}
             <div
-              className={`lg:col-span-5 ${tabTheme.cardBg} rounded-3xl p-6 border border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.6)] flex flex-col justify-between`}
+              onClick={() => setGraphModalOpen(true)}
+              title="Click graph to view full list of users & scores"
+              className="lg:col-span-5 gold-vault-frame rounded-3xl p-5 sm:p-6 flex flex-col justify-between overflow-hidden cursor-pointer group"
+              style={{
+                borderColor: `${graphTheme.accentHex}99`,
+              }}
             >
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span
-                    className={`text-[10px] font-extrabold uppercase tracking-widest border px-2.5 py-0.5 rounded-full ${tabTheme.badgeCls}`}
+              <div className="gold-brushed-grain" />
+              <div
+                className="pointer-events-none absolute inset-x-0 top-0 h-[2.5px]"
+                style={{
+                  background: `linear-gradient(90deg, transparent, ${graphTheme.accentHex}, transparent)`,
+                }}
+              />
+
+              {/* TOP VARIATION SELECTOR BAR (LIMITED ONLY TO GRAPH!) */}
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="relative z-10 flex flex-wrap items-center gap-1.5 pb-3 border-b border-amber-300/20"
+              >
+                {[
+                  { id: "curos", label: "🪙 Curos" },
+                  { id: "completion", label: "🏆 Completion" },
+                  { id: "retention", label: "🛡️ Retention" },
+                  { id: "application", label: "🎯 Application" },
+                  { id: "streaks", label: "🔥 Streaks" },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setGraphMetric(tab.id)}
+                    className={`px-2.5 py-1.5 rounded-xl text-[10.5px] font-black transition-all cursor-pointer ${
+                      graphMetric === tab.id
+                        ? graphTheme.pillActive
+                        : "bg-black/50 text-amber-100/70 border border-white/10 hover:text-amber-200 hover:border-amber-300/45"
+                    }`}
                   >
-                    📊 {tabTheme.label} Telemetry
-                  </span>
-                  <span
-                    className="text-xs font-extrabold"
-                    style={{ color: tabTheme.accentHex }}
-                  >
-                    Leader:{" "}
-                    {firstPlace
-                      ? `${tabTheme.getValue(firstPlace)}${tabTheme.unit}`
-                      : "-"}
-                  </span>
-                </div>
-                <h3 className="text-base font-extrabold text-white mt-1.5">
-                  {tabTheme.chartTitle}
-                </h3>
-                <p className="text-xs text-slate-400">{tabTheme.subtitle}</p>
+                    {tab.label}
+                  </button>
+                ))}
               </div>
 
-              <div className="w-full h-60 my-3 bg-black/50 rounded-2xl p-3 border border-white/5">
-                <ResponsiveContainer width="100%" height="100%">
-                  {tabTheme.chartType === "bar" ? (
-                    <BarChart
-                      data={chartData}
-                      margin={{ top: 10, right: 10, left: -22, bottom: 0 }}
-                    >
-                      <CartesianGrid
-                        stroke="#1F1930"
-                        strokeDasharray="3 3"
-                        vertical={false}
-                      />
-                      <XAxis
-                        dataKey="name"
-                        tick={{ fill: "#94A3B8", fontSize: 10, fontWeight: 600 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        tick={{ fill: "#64748B", fontSize: 10 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <Tooltip
-                        content={
-                          <DynamicTooltip
-                            unit={tabTheme.unit}
-                            accentHex={tabTheme.accentHex}
-                          />
-                        }
-                      />
-                      <Bar
-                        dataKey="score"
-                        name={tabTheme.label}
-                        radius={[6, 6, 0, 0]}
-                        barSize={24}
+              {/* Graph Title + Leader/Avg + Click Hint */}
+              <div className="relative z-10 pt-3 flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-white tracking-tight">
+                    {graphTheme.chartTitle}
+                  </h3>
+                  <p className="text-[11px] text-amber-100/65 font-medium">
+                    Click graph to view all plotted users &amp; scores →
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-1.5 text-[10.5px] font-black">
+                  <span
+                    className="px-2.5 py-0.5 rounded-lg border"
+                    style={{
+                      color: graphTheme.accentHex,
+                      borderColor: `${graphTheme.accentHex}66`,
+                      backgroundColor: `${graphTheme.accentHex}18`,
+                    }}
+                  >
+                    Top:{" "}
+                    {graphTop1
+                      ? `${graphTheme.getValue(graphTop1)}${graphTheme.shortUnit}`
+                      : "-"}
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-lg bg-white/5 border border-white/15 text-slate-300">
+                    Avg: {cohortAvgMetric}
+                    {graphTheme.shortUnit}
+                  </span>
+                </div>
+              </div>
+
+              {/* INNER GRAPH BOX WITH HIGH-VISIBILITY GLOWING BORDER */}
+              <div
+                className="relative z-10 w-full h-56 my-3.5 rounded-2xl p-3.5 graph-inner-lit-frame overflow-hidden transition group-hover:brightness-110"
+                style={{
+                  borderColor: `${graphTheme.accentHex}CC`,
+                  boxShadow: `0 0 26px -4px ${graphTheme.accentHex}45, inset 0 0 20px ${graphTheme.accentHex}1A`,
+                }}
+              >
+                <div className="pointer-events-none absolute inset-y-0 w-24 bg-gradient-to-r from-transparent via-amber-300/[0.08] to-transparent animate-gold-chart-scan z-0" />
+
+                <div className="relative z-10 w-full h-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    {graphTheme.chartType === "bar" ? (
+                      <BarChart
+                        data={chartData}
+                        margin={{ top: 12, right: 10, left: -20, bottom: 0 }}
                       >
-                        {chartData.map((_, i) => (
-                          <Cell
-                            key={i}
-                            fill={
-                              i === 0
-                                ? tabTheme.accentHex
-                                : i < 3
-                                ? tabTheme.secondaryHex
-                                : "#3B2854"
-                            }
-                          />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  ) : tabTheme.chartType === "radar" ? (
-                    <RadarChart
-                      cx="50%"
-                      cy="50%"
-                      outerRadius="70%"
-                      data={cohortRadarData}
-                    >
-                      <PolarGrid stroke="#152C24" />
-                      <PolarAngleAxis
-                        dataKey="subject"
-                        tick={{ fill: "#A7F3D0", fontSize: 10, fontWeight: 700 }}
-                      />
-                      <PolarRadiusAxis
-                        domain={[0, 100]}
-                        tick={false}
-                        axisLine={false}
-                      />
-                      <Tooltip
-                        content={
-                          <DynamicTooltip
-                            unit="%"
-                            accentHex={tabTheme.accentHex}
-                          />
-                        }
-                      />
-                      <Radar
-                        name="Cohort Stability"
-                        dataKey="score"
-                        stroke="#10B981"
-                        fill="#10B981"
-                        fillOpacity={0.4}
-                        strokeWidth={2.4}
-                      />
-                      <Radar
-                        name="Benchmark"
-                        dataKey="target"
-                        stroke="#14B8A6"
-                        fill="none"
-                        strokeDasharray="4 4"
-                      />
-                    </RadarChart>
-                  ) : tabTheme.chartType === "composed" ? (
-                    <ComposedChart
-                      data={chartData}
-                      margin={{ top: 10, right: 10, left: -22, bottom: 0 }}
-                    >
-                      <defs>
-                        <linearGradient
-                          id="appCyanGrad"
-                          x1="0"
-                          y1="0"
-                          x2="0"
-                          y2="1"
+                        <CartesianGrid
+                          stroke="rgba(254, 243, 199, 0.08)"
+                          strokeDasharray="3 3"
+                          vertical={false}
+                        />
+                        <XAxis
+                          dataKey="name"
+                          tick={{ fill: "#E2E8F0", fontSize: 10, fontWeight: 700 }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <YAxis
+                          tick={{ fill: "#94A3B8", fontSize: 10 }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <Tooltip
+                          content={
+                            <DynamicTooltip
+                              unit={graphTheme.unit}
+                              accentHex={graphTheme.accentHex}
+                            />
+                          }
+                        />
+                        <Bar
+                          dataKey="score"
+                          name={graphTheme.label}
+                          radius={[8, 8, 0, 0]}
+                          barSize={24}
                         >
-                          <stop
-                            offset="5%"
-                            stopColor="#38BDF8"
-                            stopOpacity={0.5}
-                          />
-                          <stop
-                            offset="95%"
-                            stopColor="#38BDF8"
-                            stopOpacity={0.02}
-                          />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid
-                        stroke="#132238"
-                        strokeDasharray="3 3"
-                        vertical={false}
-                      />
-                      <XAxis
-                        dataKey="name"
-                        tick={{ fill: "#94A3B8", fontSize: 10, fontWeight: 600 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        tick={{ fill: "#64748B", fontSize: 10 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <Tooltip
-                        content={
-                          <DynamicTooltip
-                            unit="%"
-                            accentHex={tabTheme.accentHex}
-                          />
-                        }
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="score"
-                        name="Application Mastery"
-                        stroke="#38BDF8"
-                        strokeWidth={2.5}
-                        fill="url(#appCyanGrad)"
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="secondary"
-                        name="Course Progress"
-                        stroke="#818CF8"
-                        strokeWidth={2}
-                        dot={{ r: 3, fill: "#818CF8" }}
-                      />
-                    </ComposedChart>
-                  ) : (
-                    <AreaChart
-                      data={chartData}
-                      margin={{ top: 10, right: 10, left: -22, bottom: 0 }}
-                    >
-                      <defs>
-                        <linearGradient
-                          id="dynamicCurveGrad"
-                          x1="0"
-                          y1="0"
-                          x2="0"
-                          y2="1"
-                        >
-                          <stop
-                            offset="5%"
-                            stopColor={tabTheme.accentHex}
-                            stopOpacity={0.58}
-                          />
-                          <stop
-                            offset="95%"
-                            stopColor={tabTheme.accentHex}
-                            stopOpacity={0.02}
-                          />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid
-                        stroke="#1A1A1E"
-                        strokeDasharray="3 3"
-                        vertical={false}
-                      />
-                      <XAxis
-                        dataKey="name"
-                        tick={{ fill: "#94A3B8", fontSize: 10, fontWeight: 600 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        tick={{ fill: "#64748B", fontSize: 10 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <Tooltip
-                        content={
-                          <DynamicTooltip
-                            unit={tabTheme.unit}
-                            accentHex={tabTheme.accentHex}
-                          />
-                        }
-                      />
-                      <Area
-                        type={
-                          tabTheme.chartType === "stepArea"
-                            ? "stepAfter"
-                            : "monotone"
-                        }
-                        dataKey="score"
-                        name={tabTheme.label}
-                        stroke={tabTheme.accentHex}
-                        strokeWidth={2.8}
-                        fill="url(#dynamicCurveGrad)"
-                      />
-                    </AreaChart>
-                  )}
-                </ResponsiveContainer>
+                          {chartData.map((_, i) => (
+                            <Cell
+                              key={i}
+                              fill={
+                                i === 0
+                                  ? "#FEF08A"
+                                  : i < 3
+                                  ? graphTheme.accentHex
+                                  : "rgba(212, 175, 55, 0.35)"
+                              }
+                            />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    ) : graphTheme.chartType === "radar" ? (
+                      <RadarChart
+                        cx="50%"
+                        cy="50%"
+                        outerRadius="70%"
+                        data={cohortRadarData}
+                      >
+                        <PolarGrid stroke="rgba(254, 243, 199, 0.14)" />
+                        <PolarAngleAxis
+                          dataKey="subject"
+                          tick={{ fill: "#FEF08A", fontSize: 10, fontWeight: 800 }}
+                        />
+                        <PolarRadiusAxis
+                          domain={[0, 100]}
+                          tick={false}
+                          axisLine={false}
+                        />
+                        <Tooltip
+                          content={
+                            <DynamicTooltip
+                              unit="%"
+                              accentHex={graphTheme.accentHex}
+                            />
+                          }
+                        />
+                        <Radar
+                          name="Cohort Stability"
+                          dataKey="score"
+                          stroke={graphTheme.accentHex}
+                          fill={graphTheme.accentHex}
+                          fillOpacity={0.42}
+                          strokeWidth={2.8}
+                        />
+                        <Radar
+                          name="Benchmark"
+                          dataKey="target"
+                          stroke="#F5C451"
+                          fill="none"
+                          strokeDasharray="4 4"
+                          strokeWidth={1.8}
+                        />
+                      </RadarChart>
+                    ) : graphTheme.chartType === "composed" ? (
+                      <ComposedChart
+                        data={chartData}
+                        margin={{ top: 12, right: 10, left: -20, bottom: 0 }}
+                      >
+                        <defs>
+                          <linearGradient
+                            id="appGoldCyanGrad"
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
+                            <stop offset="5%" stopColor="#38BDF8" stopOpacity={0.55} />
+                            <stop offset="95%" stopColor="#38BDF8" stopOpacity={0.02} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid
+                          stroke="rgba(254, 243, 199, 0.08)"
+                          strokeDasharray="3 3"
+                          vertical={false}
+                        />
+                        <XAxis
+                          dataKey="name"
+                          tick={{ fill: "#E2E8F0", fontSize: 10, fontWeight: 700 }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <YAxis
+                          tick={{ fill: "#94A3B8", fontSize: 10 }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <Tooltip
+                          content={
+                            <DynamicTooltip
+                              unit="%"
+                              accentHex={graphTheme.accentHex}
+                            />
+                          }
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="score"
+                          name="Application Mastery"
+                          stroke="#38BDF8"
+                          strokeWidth={3}
+                          fill="url(#appGoldCyanGrad)"
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="secondary"
+                          name="Course Progress"
+                          stroke="#F5C451"
+                          strokeWidth={2.4}
+                          dot={{
+                            r: 3.5,
+                            fill: "#F5C451",
+                            stroke: "#FFFFFF",
+                            strokeWidth: 1,
+                          }}
+                        />
+                      </ComposedChart>
+                    ) : (
+                      <AreaChart
+                        data={chartData}
+                        margin={{ top: 14, right: 12, left: -20, bottom: 0 }}
+                      >
+                        <defs>
+                          <linearGradient
+                            id="luxuryGoldCurveFill"
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
+                            <stop
+                              offset="0%"
+                              stopColor={graphTheme.accentHex}
+                              stopOpacity={0.68}
+                            />
+                            <stop
+                              offset="55%"
+                              stopColor={graphTheme.secondaryHex}
+                              stopOpacity={0.22}
+                            />
+                            <stop
+                              offset="100%"
+                              stopColor={graphTheme.accentHex}
+                              stopOpacity={0.02}
+                            />
+                          </linearGradient>
+                          <filter
+                            id="goldCurveNeonGlow"
+                            x="-20%"
+                            y="-20%"
+                            width="140%"
+                            height="140%"
+                          >
+                            <feGaussianBlur
+                              stdDeviation="3.5"
+                              result="coloredBlur"
+                            />
+                            <feMerge>
+                              <feMergeNode in="coloredBlur" />
+                              <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                          </filter>
+                        </defs>
+                        <CartesianGrid
+                          stroke="rgba(254, 243, 199, 0.08)"
+                          strokeDasharray="3 3"
+                          vertical={false}
+                        />
+                        <XAxis
+                          dataKey="name"
+                          tick={{ fill: "#E2E8F0", fontSize: 10, fontWeight: 700 }}
+                          axisLine={{ stroke: "rgba(254, 243, 199, 0.14)" }}
+                          tickLine={false}
+                        />
+                        <YAxis
+                          tick={{ fill: "#94A3B8", fontSize: 10 }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <Tooltip
+                          content={
+                            <DynamicTooltip
+                              unit={graphTheme.unit}
+                              accentHex={graphTheme.accentHex}
+                            />
+                          }
+                        />
+                        <Area
+                          type={
+                            graphTheme.chartType === "stepArea"
+                              ? "stepAfter"
+                              : "monotone"
+                          }
+                          dataKey="score"
+                          name={graphTheme.label}
+                          stroke={graphTheme.accentHex}
+                          strokeWidth={3.2}
+                          fill="url(#luxuryGoldCurveFill)"
+                          filter="url(#goldCurveNeonGlow)"
+                          dot={{
+                            r: 4,
+                            fill: "#FEF08A",
+                            stroke: graphTheme.accentHex,
+                            strokeWidth: 2,
+                          }}
+                          activeDot={{
+                            r: 7,
+                            fill: "#FFFFFF",
+                            stroke: graphTheme.accentHex,
+                            strokeWidth: 2.5,
+                          }}
+                        />
+                      </AreaChart>
+                    )}
+                  </ResponsiveContainer>
+                </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/10 text-center text-xs">
-                <div className="bg-black/40 p-2 rounded-xl border border-white/5">
-                  <span className="text-[10px] text-slate-500 block">
-                    1st Place
-                  </span>
-                  <span
-                    className="font-extrabold"
-                    style={{ color: tabTheme.accentHex }}
+              {/* 3 TOPPER NAME CARDS BELOW GRAPH (NAMES ONLY — NO 1ST / 2ND / 3RD PLACE TEXT!) */}
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="relative z-10 grid grid-cols-3 gap-2.5 pt-2.5 border-t border-amber-300/20 text-center text-xs"
+              >
+                {[
+                  {
+                    user: graphTop1,
+                    boxCls:
+                      "bg-gradient-to-b from-[#2A1F0B] to-[#110D06] border-amber-300/75 shadow-[0_0_16px_-4px_rgba(245,196,81,0.38)]",
+                    nameCls: "text-amber-200",
+                    valCls: "text-white",
+                  },
+                  {
+                    user: graphTop2,
+                    boxCls:
+                      "bg-gradient-to-b from-[#20232C] to-[#0E1015] border-slate-300/60",
+                    nameCls: "text-slate-200",
+                    valCls: "text-slate-100",
+                  },
+                  {
+                    user: graphTop3,
+                    boxCls:
+                      "bg-gradient-to-b from-[#29160E] to-[#110A07] border-orange-300/60",
+                    nameCls: "text-orange-200",
+                    valCls: "text-orange-100",
+                  },
+                ].map((slot, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => slot.user && setLiveViewUser(slot.user)}
+                    className={`p-2.5 rounded-2xl border cursor-pointer transition hover:-translate-y-0.5 ${slot.boxCls}`}
                   >
-                    {firstPlace
-                      ? `${tabTheme.getValue(firstPlace)}${tabTheme.shortUnit}`
-                      : "-"}
-                  </span>
-                </div>
-                <div className="bg-black/40 p-2 rounded-xl border border-white/5">
-                  <span className="text-[10px] text-slate-500 block">
-                    2nd Place
-                  </span>
-                  <span className="font-extrabold text-slate-200">
-                    {secondPlace
-                      ? `${tabTheme.getValue(secondPlace)}${tabTheme.shortUnit}`
-                      : "-"}
-                  </span>
-                </div>
-                <div className="bg-black/40 p-2 rounded-xl border border-white/5">
-                  <span className="text-[10px] text-slate-500 block">
-                    3rd Place
-                  </span>
-                  <span className="font-extrabold text-orange-300">
-                    {thirdPlace
-                      ? `${tabTheme.getValue(thirdPlace)}${tabTheme.shortUnit}`
-                      : "-"}
-                  </span>
-                </div>
+                    <span
+                      className={`text-[11px] font-black truncate block ${slot.nameCls}`}
+                    >
+                      {slot.user?.name || "—"}
+                    </span>
+                    <span
+                      className={`font-black text-base mt-0.5 block ${slot.valCls}`}
+                    >
+                      {slot.user
+                        ? `${graphTheme.getValue(slot.user)}${graphTheme.shortUnit}`
+                        : "-"}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           </section>
         )}
 
         {/* ===================================================================
-            5. RESTORED LEADERBOARD RANKINGS TABLE
-               - Original 4 Columns: RANK | USER | TIER & TRACK | {COLUMN_HEADER}
-               - RELATIVE STANDING removed; no extra columns added
-               - Gold Medal for #1, Silver for #2, Bronze for #3, NO medals for #4+
-               - Only candidate name visible (no Gmail/email clutter)
+            4. CUROS LEADERBOARD RANKINGS VAULT (WITH INTEGRATED SEARCH)
         =================================================================== */}
-        <section
-          className={`${tabTheme.cardBg} rounded-3xl p-6 border border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.6)] space-y-4`}
-        >
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-4">
+        <section className="gold-vault-frame rounded-3xl p-5 sm:p-7 space-y-5 overflow-hidden">
+          <div className="gold-brushed-grain" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-[2.5px] bg-gradient-to-r from-amber-500/20 via-yellow-200 to-amber-500/20" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400/60 to-transparent" />
+
+          {/* Rankings Vault Header with Integrated Search */}
+          <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 border-b border-amber-300/25 pb-4">
             <div>
-              <h2 className="text-lg font-extrabold text-white">
-                {tabTheme.label} Leaderboard Rankings
+              <span className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-300 block">
+                ✦ OFFICIAL HALL OF STANDINGS
+              </span>
+              <h2 className="text-xl font-black text-white mt-0.5 tracking-tight">
+                Curos Leaderboard Rankings
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                {tabTheme.subtitle}
+              <p className="text-xs text-amber-100/65 mt-0.5 font-medium">
+                Top performers based on current Curo treasury balance
               </p>
             </div>
-            <span
-              className={`text-xs font-extrabold border px-3 py-1 rounded-full ${tabTheme.badgeCls}`}
-            >
-              Showing {filteredCompetitors.length} Competitors
-            </span>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative w-56 sm:w-64">
+                <span className="absolute left-3.5 top-2.5 text-xs text-amber-300/80">
+                  🔍
+                </span>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search competitor..."
+                  className="w-full bg-[#0A0907] border border-amber-300/45 focus:border-amber-300 rounded-2xl pl-9 pr-3 py-2 text-xs font-bold text-white placeholder-slate-400 outline-none transition"
+                />
+              </div>
+
+              <span className={`text-xs font-black border px-4 py-1.5 rounded-full ${curosMainTheme.badgeCls}`}>
+                Showing {filteredCompetitors.length} Competitors
+              </span>
+            </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-white/10 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-                  <th className="py-3.5 px-4 w-32">RANK</th>
-                  <th className="py-3.5 px-4 w-[38%]">USER</th>
-                  <th className="py-3.5 px-4 hidden md:table-cell">
-                    TIER & TRACK
-                  </th>
-                  <th className="py-3.5 px-4 text-right">
-                    {tabTheme.columnHeader}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5 text-xs">
-                {filteredCompetitors.map((u) => {
-                  const val = tabTheme.getValue(u);
-                  const isTop3 = u.rank <= 3;
+          {/* Aligned 4-Column Table Header Bar + Separate Horizontal Tabs */}
+          <div className="relative z-10 overflow-x-auto">
+            <div className="min-w-[680px] space-y-2.5">
+              {/* Golden Column Header Strip */}
+              <div className="grid grid-cols-12 items-center px-5 py-3 rounded-2xl bg-[#0D0B07]/95 border border-amber-300/30 text-[11px] font-black uppercase tracking-[0.16em] text-amber-200/85">
+                <div className="col-span-2">RANK</div>
+                <div className="col-span-4">USER</div>
+                <div className="col-span-4">TIER &amp; TRACK</div>
+                <div className="col-span-2 text-right">
+                  {curosMainTheme.columnHeader}
+                </div>
+              </div>
 
-                  const rowBg =
-                    u.rank === 1
-                      ? "bg-gradient-to-r from-amber-500/10 via-transparent to-transparent"
-                      : u.rank === 2
-                      ? "bg-gradient-to-r from-slate-300/[0.06] via-transparent to-transparent"
-                      : u.rank === 3
-                      ? "bg-gradient-to-r from-orange-500/[0.07] via-transparent to-transparent"
-                      : "hover:bg-white/[0.03]";
+              {/* Separate Horizontal Tab for Every Ranked Competitor */}
+              {filteredCompetitors.map((u) => {
+                const val = curosMainTheme.getValue(u);
+                const isTop3 = u.rank <= 3;
 
-                  const tierBadge =
-                    u.rank === 1
-                      ? {
-                          label: tabTheme.titles[0],
-                          cls: tabTheme.badgeCls,
-                        }
-                      : u.rank === 2
-                      ? {
-                          label: tabTheme.titles[1],
-                          cls: "bg-slate-400/15 text-slate-200 border-slate-300/35",
-                        }
-                      : u.rank === 3
-                      ? {
-                          label: tabTheme.titles[2],
-                          cls: "bg-orange-500/15 text-orange-300 border-orange-400/35",
-                        }
-                      : {
-                          label: "Cohort Contender",
-                          cls: "bg-white/5 text-slate-400 border-white/10",
-                        };
+                const rowTabClass =
+                  u.rank === 1
+                    ? "lb-tab-rank-1"
+                    : u.rank === 2
+                    ? "lb-tab-rank-2"
+                    : u.rank === 3
+                    ? "lb-tab-rank-3"
+                    : "lb-tab-standard";
 
-                  return (
-                    <tr
-                      key={u.id ?? u.name}
-                      onClick={() => setLiveViewUser(u)}
-                      className={`cursor-pointer ${rowBg} transition group`}
-                    >
-                      {/* 1. RANK (Realistic Gold #1, Silver #2, Bronze #3; No medal for #4+) */}
-                      <td className="py-3.5 px-4 font-extrabold">
-                        <div className="flex items-center gap-2.5">
-                          {isTop3 && (
-                            <RealisticMetallicMedalSVG
-                              tier={
-                                u.rank === 1
-                                  ? "gold"
-                                  : u.rank === 2
-                                  ? "silver"
-                                  : "bronze"
-                              }
-                              size={32}
-                              showRibbon={false}
-                            />
-                          )}
-                          <span
-                            className={`px-2.5 py-1 rounded-lg text-xs font-black ${
-                              u.rank === 1
-                                ? `bg-gradient-to-r ${tabTheme.champRibbon}`
-                                : u.rank === 2
-                                ? "bg-slate-300 text-black"
-                                : u.rank === 3
-                                ? "bg-orange-400 text-black"
-                                : "text-slate-400 bg-black/50 border border-white/10"
-                            }`}
-                          >
-                            #{u.rank}
-                          </span>
-                        </div>
-                      </td>
+                const tierBadge =
+                  u.rank === 1
+                    ? {
+                        label: curosMainTheme.titles[0],
+                        cls: "bg-amber-400/20 text-amber-200 border-amber-300/60",
+                      }
+                    : u.rank === 2
+                    ? {
+                        label: curosMainTheme.titles[1],
+                        cls: "bg-slate-200/15 text-slate-100 border-slate-200/45",
+                      }
+                    : u.rank === 3
+                    ? {
+                        label: curosMainTheme.titles[2],
+                        cls: "bg-orange-400/20 text-orange-200 border-orange-300/50",
+                      }
+                    : {
+                        label: "Cohort Contender",
+                        cls: "bg-white/[0.05] text-slate-300 border-white/15",
+                      };
 
-                      {/* 2. USER (Clean Name Only — No Gmail/Email) */}
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-3.5">
-                          <div
-                            className={`w-9 h-9 rounded-xl font-extrabold text-xs flex items-center justify-center shrink-0 ${
-                              u.rank === 1
-                                ? `bg-gradient-to-br ${tabTheme.champRibbon}`
-                                : u.rank === 2
-                                ? "bg-gradient-to-br from-white via-slate-300 to-slate-400 text-black"
-                                : u.rank === 3
-                                ? "bg-gradient-to-br from-orange-300 via-amber-500 to-orange-700 text-black"
-                                : "bg-white/[0.04] text-slate-300 border border-white/10"
-                            }`}
-                          >
-                            {(u.name || "U").slice(0, 2).toUpperCase()}
-                          </div>
-                          <span className="font-extrabold text-white text-[15px] tracking-wide group-hover:text-amber-200 transition">
-                            {u.name}
-                          </span>
-                        </div>
-                      </td>
+                return (
+                  <div
+                    key={u.id ?? `${u.name}-${u.rank}`}
+                    onClick={() => setLiveViewUser(u)}
+                    className={`cursor-pointer group rounded-2xl px-5 py-3.5 grid grid-cols-12 items-center gap-3 select-none ${rowTabClass}`}
+                  >
+                    {/* Live Sweeping Shine ONLY on Top 3 Champion Tabs */}
+                    {isTop3 && (
+                      <div
+                        className="lb-row-shine-overlay"
+                        style={{
+                          animationDelay: `${(u.rank - 1) * -1.4}s`,
+                        }}
+                      />
+                    )}
 
-                      {/* 3. TIER & TRACK */}
-                      <td className="py-3.5 px-4 hidden md:table-cell">
-                        <div className="flex items-center gap-2.5">
-                          <span
-                            className={`px-3 py-0.5 rounded-full text-[11px] font-extrabold border ${tierBadge.cls}`}
-                          >
-                            {tierBadge.label}
-                          </span>
-                          <span className="text-xs text-slate-400 font-medium">
-                            • {u.program_name}
-                          </span>
-                        </div>
-                      </td>
+                    {/* COL 1: RANK + 3D MEDAL FOR TOP 3 */}
+                    <div className="col-span-2 flex items-center gap-2.5 relative z-10">
+                      {isTop3 && (
+                        <RealisticMetallicMedalSVG
+                          tier={
+                            u.rank === 1
+                              ? "gold"
+                              : u.rank === 2
+                              ? "silver"
+                              : "bronze"
+                          }
+                          size={34}
+                          showRibbon={false}
+                        />
+                      )}
+                      <span
+                        className={`px-2.5 py-1 rounded-xl text-xs font-black ${
+                          u.rank === 1
+                            ? "bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 text-black shadow-[0_0_12px_rgba(250,204,21,0.45)]"
+                            : u.rank === 2
+                            ? "bg-gradient-to-r from-white via-slate-200 to-slate-300 text-slate-950"
+                            : u.rank === 3
+                            ? "bg-gradient-to-r from-orange-200 via-amber-400 to-orange-500 text-slate-950"
+                            : "text-amber-100/80 bg-black/55 border border-amber-100/20"
+                        }`}
+                      >
+                        #{u.rank}
+                      </span>
+                    </div>
 
-                      {/* 4. SCORE COLUMN */}
-                      <td className="py-3.5 px-4 text-right">
-                        <span
-                          className={`text-sm font-black px-3.5 py-1 rounded-xl border ${
-                            val > 0
-                              ? tabTheme.badgeCls
-                              : "text-slate-500 border-white/5 bg-black/30"
-                          }`}
-                        >
-                          {activeTab === "curos" && "🪙 "}
-                          {val}
-                          {tabTheme.shortUnit}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                    {/* COL 2: USER AVATAR + NAME */}
+                    <div className="col-span-4 flex items-center gap-3.5 min-w-0 relative z-10">
+                      <div
+                        className={`w-10 h-10 rounded-xl font-black text-xs flex items-center justify-center shrink-0 ${
+                          u.rank === 1
+                            ? "bg-gradient-to-br from-yellow-200 via-amber-400 to-amber-600 text-black shadow-[0_0_16px_rgba(245,196,81,0.45)]"
+                            : u.rank === 2
+                            ? "bg-gradient-to-br from-white via-slate-200 to-slate-400 text-black"
+                            : u.rank === 3
+                            ? "bg-gradient-to-br from-orange-200 via-amber-500 to-orange-700 text-black"
+                            : "bg-[#171512] text-amber-100/90 border border-amber-200/25"
+                        }`}
+                      >
+                        {(u.name || "U").slice(0, 2).toUpperCase()}
+                      </div>
+
+                      <span
+                        className={`font-black text-[15px] tracking-wide truncate transition ${
+                          u.rank === 1
+                            ? "bg-gradient-to-r from-amber-100 via-yellow-200 to-amber-100 bg-clip-text text-transparent"
+                            : "text-white group-hover:text-amber-200"
+                        }`}
+                      >
+                        {u.name}
+                      </span>
+                    </div>
+
+                    {/* COL 3: TIER & TRACK */}
+                    <div className="col-span-4 flex items-center gap-2.5 min-w-0 relative z-10">
+                      <span
+                        className={`px-3 py-1 rounded-full text-[11px] font-extrabold border shrink-0 ${tierBadge.cls}`}
+                      >
+                        {tierBadge.label}
+                      </span>
+                      <span className="text-xs text-slate-300/80 font-medium truncate">
+                        • {u.program_name}
+                      </span>
+                    </div>
+
+                    {/* COL 4: SCORE / CUROS VALUE */}
+                    <div className="col-span-2 text-right relative z-10">
+                      <span
+                        className={`inline-block text-sm font-black px-3.5 py-1.5 rounded-xl border ${
+                          u.rank === 1
+                            ? "bg-amber-400/20 text-amber-200 border-amber-300/75 shadow-[0_0_14px_rgba(245,196,81,0.3)]"
+                            : u.rank === 2
+                            ? "bg-slate-200/15 text-white border-slate-200/55"
+                            : u.rank === 3
+                            ? "bg-orange-400/20 text-orange-200 border-orange-300/60"
+                            : val > 0
+                            ? curosMainTheme.badgeCls
+                            : "text-slate-400 border-amber-100/15 bg-black/45"
+                        }`}
+                      >
+                        🪙 {val}
+                        {curosMainTheme.shortUnit}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </section>
 
-        {/* LIVE VIEW COMPETITOR SHOWCASE MODAL */}
+        {/* ===================================================================
+            4. MOUNT GRAPH SCORE BREAKDOWN MODAL & COMPETITOR LIVE VIEW MODAL
+        =================================================================== */}
+        <GraphScoreBreakdownModal
+          isOpen={graphModalOpen}
+          onClose={() => setGraphModalOpen(false)}
+          graphUsers={graphTop10Users}
+          graphTheme={graphTheme}
+          graphMetric={graphMetric}
+          onSelectGraphMetric={(m) => setGraphMetric(m)}
+          onInspectUser={(u) => setLiveViewUser(u)}
+        />
+
         <CompetitorLiveViewModal
           user={liveViewUser}
           onClose={() => setLiveViewUser(null)}
-          tabTheme={tabTheme}
+          tabTheme={curosMainTheme}
         />
       </div>
     </div>

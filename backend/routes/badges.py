@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Depends
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from pydantic import BaseModel
 
 from database import get_db
 from models import (
@@ -16,6 +18,39 @@ router = APIRouter(
     prefix="/badges",
     tags=["Badges"]
 )
+
+
+@router.get("")
+def get_user_earned_badge_ids(
+    user_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Get earned badge IDs for a user, or all active badges"""
+    if not user_id:
+        return {
+            "earned_badge_ids": [],
+            "badges": []
+        }
+
+    user_badges = (
+        db.query(UserBadge, Badge)
+        .join(Badge, UserBadge.badge_id == Badge.badge_id)
+        .filter(UserBadge.user_id == user_id)
+        .all()
+    )
+
+    earned_ids = []
+    for ub, b in user_badges:
+        earned_ids.append(str(b.badge_id))
+        if b.badge_name:
+            earned_ids.append(b.badge_name.lower().replace(" ", "_"))
+
+    return {
+        "user_id": user_id,
+        "earned_badge_ids": earned_ids,
+        "count": len(user_badges)
+    }
+
 
 
 @router.post("/check/{user_id}")
@@ -178,4 +213,55 @@ def check_all_users_badges(db: Session = Depends(get_db)):
         "total_users_checked": len(users),
         "total_badges_awarded": total_awarded,
         "details": results
+    }
+
+
+class UpdateBadgeRequest(BaseModel):
+    badge_name: Optional[str] = None
+    badge_type: Optional[str] = None
+    tier: Optional[str] = None
+    requirement_value: Optional[int] = None
+    curos_reward: Optional[int] = None
+    description: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+@router.put("/{badge_id}")
+@router.patch("/{badge_id}")
+def update_badge_rule(
+    badge_id: int,
+    request: UpdateBadgeRequest,
+    db: Session = Depends(get_db)
+):
+    """Update rule thresholds, Curo reward, or active status for a badge"""
+    badge = db.query(Badge).filter(Badge.badge_id == badge_id).first()
+    if not badge:
+        raise HTTPException(status_code=404, detail="Badge not found")
+    
+    if request.badge_name is not None:
+        badge.badge_name = request.badge_name
+    if request.badge_type is not None:
+        badge.badge_type = request.badge_type
+    if request.tier is not None:
+        badge.tier = request.tier
+    if request.requirement_value is not None:
+        badge.requirement_value = request.requirement_value
+    if request.curos_reward is not None:
+        badge.curos_reward = request.curos_reward
+    if request.description is not None:
+        badge.description = request.description
+    if request.is_active is not None:
+        badge.is_active = request.is_active
+        
+    db.commit()
+    db.refresh(badge)
+    return {
+        "badge_id": badge.badge_id,
+        "badge_name": badge.badge_name,
+        "badge_type": badge.badge_type,
+        "tier": badge.tier,
+        "requirement_value": badge.requirement_value,
+        "curos_reward": badge.curos_reward,
+        "description": badge.description,
+        "is_active": badge.is_active
     }

@@ -86,11 +86,9 @@ export default function TodayMeetingsWidget({ adminId = 57 }) {
 
   return (
     <div
-      className="rounded-[22px] p-5 h-full"
+      className="rounded-[22px] p-5 h-full admin-panel-border"
       style={{
-        background: "rgba(15,15,24,0.72)",
-        border: "1px solid rgba(139,92,246,0.14)",
-        boxShadow: "0 20px 40px -18px rgba(0,0,0,0.7)",
+        background: "rgba(15,15,24,0.78)",
       }}
     >
       <div className="flex items-center justify-between mb-4">

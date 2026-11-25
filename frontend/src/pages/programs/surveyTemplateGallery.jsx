@@ -62,25 +62,25 @@ const SurveyTemplateGallery = ({ isOpen, onClose, onSelectTemplate, apiBaseUrl }
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-      <div className="w-full max-w-5xl h-[85vh] rounded-3xl bg-[#F8F9FA] shadow-2xl flex flex-col overflow-hidden border border-gray-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4">
+      <div className="w-full max-w-5xl h-[85vh] rounded-3xl bg-[#080C1A] shadow-[0_0_50px_rgba(168,85,247,0.35)] flex flex-col overflow-hidden border-2 border-purple-500 text-white">
         
         {/* Header Ribbon Context */}
-        <div className="bg-white border-b px-6 py-4 flex items-center justify-between shrink-0">
+        <div className="bg-[#0D1226] border-b border-slate-800 px-6 py-4 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             {previewTemplate && (
               <button 
                 onClick={() => setPreviewTemplate(null)}
-                className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 mr-1"
+                className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white mr-1 transition cursor-pointer"
               >
                 <ArrowLeft size={18} />
               </button>
             )}
-            <h2 className="text-xl font-bold text-gray-800">
+            <h2 className="text-xl font-black text-white tracking-tight">
               {previewTemplate ? "Template Preview" : "Survey Template Gallery"}
             </h2>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition">
+          <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-xl text-slate-400 hover:text-white transition cursor-pointer border border-slate-700">
             <X size={20} />
           </button>
         </div>
@@ -88,25 +88,25 @@ const SurveyTemplateGallery = ({ isOpen, onClose, onSelectTemplate, apiBaseUrl }
         {/* Dynamic Display Layout */}
         {previewTemplate ? (
           /* PREVIEW WINDOW VIEW */
-          <div className="flex-1 overflow-y-auto p-6 space-y-4 max-w-3xl mx-auto w-full">
-            <div className="bg-white border-t-8 border-purple-700 rounded-2xl p-6 shadow-sm space-y-2">
-              <h1 className="text-3xl font-bold text-gray-900">{previewTemplate.title}</h1>
-              <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{previewTemplate.description || "No description provided."}</p>
+          <div className="flex-1 overflow-y-auto p-6 space-y-4 max-w-3xl mx-auto w-full custom-scrollbar">
+            <div className="bg-[#0A0E1F] border-t-8 border-purple-500 rounded-2xl p-6 shadow-sm space-y-2 border border-slate-700">
+              <h1 className="text-3xl font-black text-white">{previewTemplate.title}</h1>
+              <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{previewTemplate.description || "No description provided."}</p>
             </div>
             
             {previewTemplate.questions?.map((q, idx) => (
-              <div key={q.id || idx} className="bg-white border rounded-2xl p-5 shadow-xs space-y-3">
-                <h3 className="font-semibold text-gray-800 text-base">
-                  {idx + 1}. {q.question} {q.is_required && <span className="text-red-500">*</span>}
+              <div key={q.id || idx} className="bg-[#0A0E1F] border-2 border-slate-700/80 rounded-2xl p-5 shadow-xs space-y-3">
+                <h3 className="font-bold text-white text-base">
+                  {idx + 1}. {q.question} {q.is_required && <span className="text-rose-400">*</span>}
                 </h3>
-                <p className="text-xs text-purple-600 font-medium bg-purple-50 px-2.5 py-1 rounded-md inline-block">
+                <p className="text-xs text-purple-300 font-bold bg-purple-950/80 border border-purple-500/40 px-2.5 py-1 rounded-md inline-block">
                   Type: {q.question_type}
                 </p>
                 <div className="space-y-2 pl-2">
                   {["Multiple Choice", "Checkbox", "Dropdown"].includes(q.question_type) && 
                     q.options?.map((opt, oIdx) => (
-                      <div key={opt.id || oIdx} className="flex items-center gap-2 text-sm text-gray-700">
-                        <span className="text-gray-300 text-lg">
+                      <div key={opt.id || oIdx} className="flex items-center gap-2 text-sm text-slate-300">
+                        <span className="text-purple-400 text-lg">
                           {q.question_type === "Multiple Choice" ? "○" : "□"}
                         </span>
                         <span>{opt.option_text}</span>
@@ -114,7 +114,7 @@ const SurveyTemplateGallery = ({ isOpen, onClose, onSelectTemplate, apiBaseUrl }
                     ))
                   }
                   {["Short Answer", "Paragraph"].includes(q.question_type) && (
-                    <div className="w-full border-b border-dashed border-gray-300 py-2 text-xs italic text-gray-400">
+                    <div className="w-full border-b border-dashed border-slate-700 py-2 text-xs italic text-slate-500">
                       User placeholder dynamic textbox response viewport
                     </div>
                   )}
@@ -122,10 +122,10 @@ const SurveyTemplateGallery = ({ isOpen, onClose, onSelectTemplate, apiBaseUrl }
               </div>
             ))}
             
-            <div className="flex justify-end gap-3 pt-4 border-t sticky bottom-0 bg-[#F8F9FA] pb-4">
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-800 sticky bottom-0 bg-[#080C1A] pb-4">
               <button 
                 onClick={() => setPreviewTemplate(null)}
-                className="px-5 py-2.5 rounded-xl border font-medium bg-white hover:bg-gray-50 text-gray-700"
+                className="px-5 py-2.5 rounded-xl border border-slate-700 font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 cursor-pointer"
               >
                 Back to Selection
               </button>
@@ -135,7 +135,7 @@ const SurveyTemplateGallery = ({ isOpen, onClose, onSelectTemplate, apiBaseUrl }
                   setPreviewTemplate(null);
                   onSelectTemplate(target);
                 }}
-                className="px-6 py-2.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-semibold shadow-md flex items-center gap-2"
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold shadow-md flex items-center gap-2 cursor-pointer"
               >
                 <Copy size={16} /> Use This Template
               </button>
@@ -145,28 +145,28 @@ const SurveyTemplateGallery = ({ isOpen, onClose, onSelectTemplate, apiBaseUrl }
           /* SELECTION LIST WINDOW VIEW */
           <>
             {/* Search Frame Control */}
-            <div className="bg-white border-b px-6 py-3 shrink-0">
+            <div className="bg-[#0D1226] border-b border-slate-800 px-6 py-3 shrink-0">
               <div className="relative max-w-md">
-                <Search className="absolute left-3.5 top-3 text-gray-400" size={18} />
+                <Search className="absolute left-3.5 top-3 text-slate-400" size={18} />
                 <input
                   type="text"
                   placeholder="Search form templates..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-gray-100 border border-transparent rounded-xl pl-11 pr-4 py-2 text-sm outline-none focus:bg-white focus:border-purple-600 transition"
+                  className="w-full bg-[#050814] border border-slate-700 rounded-xl pl-11 pr-4 py-2 text-sm text-white placeholder-slate-500 outline-none focus:border-purple-400 transition"
                 />
               </div>
             </div>
 
             {/* Template Gallery Workspace Grid */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-[#050814]">
               {loading ? (
-                <div className="h-full flex items-center justify-center text-gray-500 font-medium">
+                <div className="h-full flex items-center justify-center text-slate-400 font-bold">
                   Loading Gallery Modules...
                 </div>
               ) : filteredTemplates.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-2">
-                  <ClipboardList size={40} className="text-gray-300" />
+                <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-2">
+                  <ClipboardList size={40} className="text-slate-600" />
                   <p className="text-sm font-medium">No layout blocks found matching your query.</p>
                 </div>
               ) : (
@@ -174,50 +174,50 @@ const SurveyTemplateGallery = ({ isOpen, onClose, onSelectTemplate, apiBaseUrl }
                   {filteredTemplates.map((template) => (
                     <div 
                       key={template.id} 
-                      className="bg-white border rounded-2xl p-5 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-purple-200 transition-all group"
+                      className="bg-[#0A0E1F] border-2 border-slate-700/80 rounded-2xl p-5 shadow-xs flex flex-col justify-between hover:border-purple-400 transition-all group"
                     >
                       <div className="space-y-2">
                         <div className="flex items-start justify-between">
-                          <h4 className="font-bold text-gray-900 line-clamp-1 group-hover:text-purple-700 transition-colors">
+                          <h4 className="font-bold text-white line-clamp-1 group-hover:text-purple-300 transition-colors">
                             {template.title}
                           </h4>
-                          <span className="text-[11px] bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full font-bold uppercase shrink-0 ml-2">
+                          <span className="text-[11px] bg-purple-950/80 text-purple-300 border border-purple-500/40 px-2 py-0.5 rounded-full font-bold uppercase shrink-0 ml-2">
                             {template.questions?.length || 0} Qs
                           </span>
                         </div>
-                        <p className="text-xs text-gray-500 line-clamp-3 leading-relaxed min-h-[48px]">
+                        <p className="text-xs text-slate-400 line-clamp-3 leading-relaxed min-h-[48px]">
                           {template.description || "No instruction rules established."}
                         </p>
-                        <p className="text-[10px] text-gray-400 font-medium">
+                        <p className="text-[10px] text-slate-500 font-medium">
                           Created: {new Date(template.created_at).toLocaleDateString()}
                         </p>
                       </div>
 
-                      <div className="flex gap-2 border-t mt-4 pt-3">
-  <button
-    onClick={() => setPreviewTemplate(template)}
-    className="flex-1 py-2 border rounded-xl font-semibold text-xs text-gray-600 bg-white hover:bg-gray-50 transition flex items-center justify-center gap-1"
-  >
-    <Eye size={14} />
-    Preview
-  </button>
+                      <div className="flex gap-2 border-t border-slate-800 mt-4 pt-3">
+                        <button
+                          onClick={() => setPreviewTemplate(template)}
+                          className="flex-1 py-2 border border-slate-700 rounded-xl font-bold text-xs text-slate-300 bg-slate-900 hover:bg-slate-800 transition flex items-center justify-center gap-1 cursor-pointer"
+                        >
+                          <Eye size={14} />
+                          Preview
+                        </button>
 
-  <button
-    onClick={() => onSelectTemplate(template)}
-    className="flex-1 py-2 rounded-xl font-bold text-xs text-white bg-purple-600 hover:bg-purple-700 transition shadow-xs flex items-center justify-center gap-1"
-  >
-    <Copy size={14} />
-    Use Template
-  </button>
+                        <button
+                          onClick={() => onSelectTemplate(template)}
+                          className="flex-1 py-2 rounded-xl font-bold text-xs text-white bg-purple-600 hover:bg-purple-500 transition shadow-xs flex items-center justify-center gap-1 cursor-pointer"
+                        >
+                          <Copy size={14} />
+                          Use Template
+                        </button>
 
-  <button
-    onClick={() => handleDeleteTemplate(template.id)}
-    className="w-10 py-2 border border-red-200 rounded-xl text-red-500 bg-red-50 hover:bg-red-100 hover:text-red-700 transition flex items-center justify-center"
-    title="Delete survey"
-  >
-    <Trash2 size={15} />
-  </button>
-</div>
+                        <button
+                          onClick={() => handleDeleteTemplate(template.id)}
+                          className="w-10 py-2 border border-rose-500/40 rounded-xl text-rose-400 bg-rose-950/40 hover:bg-rose-900/60 transition flex items-center justify-center cursor-pointer"
+                          title="Delete survey"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

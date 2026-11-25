@@ -16,20 +16,143 @@
   border-color: rgba(139, 92, 246, 0.14) !important;
 }
 
-/* ============ NEON CARD — metallic depth ============ */
+/* ============ NEON CARD & ADMIN PANELS — noticeable rest border + glowing hover lift ============ */
+@property --akx1 { syntax: "<percentage>"; inherits: false; initial-value: 14%; }
+@property --aky1 { syntax: "<percentage>"; inherits: false; initial-value: 12%; }
+@property --akx2 { syntax: "<percentage>"; inherits: false; initial-value: 86%; }
+@property --aky2 { syntax: "<percentage>"; inherits: false; initial-value: 88%; }
+
+@keyframes adminKpiGlowA {
+  0%   { --akx1: 10%; --aky1: 10%; }
+  28%  { --akx1: 88%; --aky1: 16%; }
+  56%  { --akx1: 90%; --aky1: 90%; }
+  82%  { --akx1: 12%; --aky1: 82%; }
+  100% { --akx1: 10%; --aky1: 10%; }
+}
+
+@keyframes adminKpiGlowB {
+  0%   { --akx2: 88%; --aky2: 90%; }
+  34%  { --akx2: 14%; --aky2: 46%; }
+  68%  { --akx2: 72%; --aky2: 8%;  }
+  100% { --akx2: 88%; --aky2: 90%; }
+}
+
 .neon-card {
   position: relative;
   border-radius: 18px;
   overflow: hidden;
-  background: rgba(15, 15, 24, 0.72);
-  border: 1px solid rgba(139, 92, 246, 0.14);
+  background: rgba(15, 15, 24, 0.8);
+  border: 2px solid rgba(196, 181, 253, 0.78);
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.05) inset,
-    0 20px 40px -18px rgba(0, 0, 0, 0.7);
+    0 1px 0 rgba(255, 255, 255, 0.16) inset,
+    0 0 20px -4px rgba(167, 139, 250, 0.38),
+    0 18px 38px -16px rgba(0, 0, 0, 0.78);
   backdrop-filter: blur(12px);
   isolation: isolate;
+  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.24s ease,
+    box-shadow 0.24s ease;
 }
+
+.neon-card::after,
+.admin-panel-border::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2.2px;
+  pointer-events: none;
+  z-index: 30;
+  opacity: 0;
+  background:
+    radial-gradient(ellipse 42% 52% at var(--akx1) var(--aky1), #ffffff 0%, #c084fc 30%, transparent 68%),
+    radial-gradient(ellipse 46% 56% at var(--akx2) var(--aky2), #38bdf8 0%, #8b5cf6 34%, transparent 68%),
+    linear-gradient(135deg, #e9d5ff 0%, #8b5cf6 45%, #38bdf8 78%, #c084fc 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation:
+    adminKpiGlowA 7.5s ease-in-out infinite,
+    adminKpiGlowB 11.5s ease-in-out infinite;
+  transition: opacity 0.24s ease;
+}
+
+.neon-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(216, 180, 254, 0.92);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.22) inset,
+    0 0 30px -2px rgba(168, 85, 247, 0.65),
+    0 0 54px -6px rgba(56, 189, 248, 0.38),
+    inset 0 0 20px rgba(139, 92, 246, 0.18),
+    0 24px 48px -16px rgba(0, 0, 0, 0.88);
+}
+
+.neon-card:hover::after,
+.admin-panel-border:hover::after {
+  opacity: 1;
+}
+
 .neon-card > * { position: relative; z-index: 2; }
+
+/* ============ ADMIN KPI CARDS — NOTICEABLE COLORED BORDERS + INTENSE HOVER GLOW ============ */
+.admin-kpi-glow {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  background-clip: padding-box, border-box, border-box, border-box;
+  background-origin: padding-box, border-box, border-box, border-box;
+  background-image:
+    linear-gradient(155deg, rgba(19, 19, 32, 0.94) 0%, rgba(11, 11, 20, 0.98) 100%),
+    radial-gradient(ellipse 60% 54% at var(--akx1) var(--aky1), #ffffff 0%, var(--kpi-glow, #a78bfa) 38%, transparent 68%),
+    radial-gradient(ellipse 62% 56% at var(--akx2) var(--aky2), var(--kpi-glow, #a78bfa) 0%, rgba(255, 255, 255, 0.4) 34%, transparent 70%),
+    linear-gradient(135deg, var(--kpi-border-dim, rgba(196, 181, 253, 0.9)), var(--kpi-glow, #a78bfa), var(--kpi-border-dim, rgba(196, 181, 253, 0.9)));
+  box-shadow:
+    0 0 24px -2px var(--kpi-shadow, rgba(167, 139, 250, 0.62)),
+    0 16px 36px -16px rgba(0, 0, 0, 0.85),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(12px);
+  isolation: isolate;
+  animation:
+    adminKpiGlowA 9.5s ease-in-out infinite,
+    adminKpiGlowB 14.5s ease-in-out infinite;
+  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.24s ease;
+}
+
+.admin-kpi-glow:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 0 36px 2px var(--kpi-shadow, rgba(167, 139, 250, 0.78)),
+    0 0 14px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 20px var(--kpi-inset, rgba(167, 139, 250, 0.22)),
+    0 24px 46px -14px rgba(0, 0, 0, 0.92);
+}
+
+.admin-kpi-glow > * { position: relative; z-index: 2; }
+
+.admin-panel-border {
+  position: relative;
+  overflow: hidden;
+  border: 2px solid rgba(196, 181, 253, 0.78) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.16) inset,
+    0 0 20px -4px rgba(167, 139, 250, 0.38),
+    0 18px 38px -16px rgba(0, 0, 0, 0.78) !important;
+  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.24s ease,
+    box-shadow 0.24s ease;
+}
+.admin-panel-border:hover {
+  transform: translateY(-4px);
+  border-color: rgba(216, 180, 254, 0.95) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.22) inset,
+    0 0 30px -2px rgba(168, 85, 247, 0.65),
+    0 0 54px -6px rgba(56, 189, 248, 0.38),
+    inset 0 0 20px rgba(139, 92, 246, 0.18),
+    0 24px 48px -16px rgba(0, 0, 0, 0.88) !important;
+}
 
 .neon-card.glow-pulse { animation: neonPulse 5s ease-in-out infinite; }
 @keyframes neonPulse {

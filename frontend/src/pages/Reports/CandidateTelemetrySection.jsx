@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import CandidateReportModal from "./CandidateReportModal";
 
 // ============================================================================
@@ -338,7 +338,6 @@ function NeuralHorizonWaveGraph({ candidates = [], onSelectCandidate }) {
 // ============================================================================
 export default function CandidateTelemetrySection({
   candidates = [],
-  loading = false,
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
@@ -666,6 +665,7 @@ export default function CandidateTelemetrySection({
 
       {/* POPUP INDIVIDUAL CANDIDATE REPORT MODAL */}
       <CandidateReportModal
+        key={inspectedCandidate?.id || inspectedCandidate?.user_id || inspectedCandidate?.name || "none"}
         student={inspectedCandidate}
         cohortSize={uniqueCandidates.length}
         onClose={() => setInspectedCandidate(null)}

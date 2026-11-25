@@ -733,34 +733,33 @@ const CreatePrograms = () => {
   };
 
   return (
-    <MainLayout>
-      <div className="space-y-8">
+    <MainLayout dark>
+      <div className="-m-4 sm:-m-6 p-5 sm:p-7 min-h-[calc(100vh-4rem)] bg-[#04050A] text-slate-100 font-sans space-y-8 relative selection:bg-purple-500 selection:text-white">
         {/* Header */}
-        <div className="rounded-2xl bg-white p-8 shadow-sm border border-slate-100">
+        <div className="rounded-3xl bg-[#060414] p-8 border-[2.5px] border-[#B026FF] shadow-[0_0_32px_rgba(176,38,255,0.35),inset_0_0_20px_rgba(176,38,255,0.08)]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-slate-100 p-2.5">
-                <PlayCircle className="text-slate-600" size={24} />
+              <div className="rounded-xl bg-purple-950/70 border border-purple-400/40 p-2.5 text-purple-300 shadow-sm">
+                <PlayCircle size={26} />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-slate-900">
+                <h1 className="text-2xl font-black text-white tracking-tight drop-shadow-[0_2px_12px_rgba(255,255,255,0.2)]">
                   Create Program
                 </h1>
-                <p className="text-sm text-slate-500 leading-relaxed">
-                  Create and configure a new learning program with custom
-                  settings, rewards, and access controls.
+                <p className="text-xs sm:text-sm text-slate-300 font-semibold leading-relaxed mt-0.5">
+                  Create and configure a new learning program with custom settings, rewards, and access controls.
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-xs text-gray-400">
+            <div className="flex items-center gap-2 text-xs text-purple-300 font-bold">
               {isAutoSaving ? (
-                <span className="flex items-center gap-1">
-                  <Loader2 className="w-3 h-3 animate-spin" />
+                <span className="flex items-center gap-1.5 bg-purple-950/80 px-3 py-1.5 rounded-full border border-purple-500/40">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   Saving draft...
                 </span>
               ) : lastSaved ? (
-                <span className="flex items-center gap-1">
-                  <Save className="w-3 h-3" />
+                <span className="flex items-center gap-1.5 bg-purple-950/80 px-3 py-1.5 rounded-full border border-purple-500/40">
+                  <Save className="w-3.5 h-3.5" />
                   Last saved: {lastSaved}
                 </span>
               ) : null}
@@ -769,24 +768,23 @@ const CreatePrograms = () => {
         </div>
 
         {/* Program Info */}
-        <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-100">
+        <div className="rounded-3xl bg-[#080C1A] p-6 border-[2.5px] border-[#00F5FF] shadow-[0_0_32px_rgba(0,245,255,0.35),inset_0_0_20px_rgba(0,245,255,0.08)]">
           <div className="flex items-center gap-3 mb-6">
-            <div className="rounded-lg bg-slate-100 p-2">
-              <FileQuestion className="text-slate-600" size={20} />
+            <div className="rounded-xl bg-cyan-950/70 border border-cyan-400/40 p-2 text-cyan-300 shadow-sm">
+              <FileQuestion size={20} />
             </div>
-            <h2 className="text-lg font-bold text-slate-900">
+            <h2 className="text-lg font-black text-white">
               Program Information
             </h2>
           </div>
 
-          <p className="mb-6 text-xs text-slate-500">
-            Fields marked with <span className="text-red-500">*</span> are
-            required.
+          <p className="mb-6 text-xs text-slate-400 font-semibold">
+            Fields marked with <span className="text-rose-400">*</span> are required.
           </p>
 
           <div className="grid md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
-              <label className="block mb-2 font-medium text-slate-700 text-sm">
+              <label className="block mb-2 font-bold text-slate-200 text-xs uppercase tracking-wider">
                 Program Name
                 <RequiredMark />
               </label>
@@ -794,26 +792,26 @@ const CreatePrograms = () => {
                 value={programName}
                 onChange={(e) => setProgramName(e.target.value)}
                 required
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-900 placeholder:text-slate-400 transition-all duration-150 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 outline-none"
+                className="w-full rounded-xl border-2 border-slate-700 bg-[#050814] p-3 text-sm text-white placeholder:text-slate-500 transition-all focus:border-[#00F5FF] outline-none"
                 placeholder="Enter program name"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block mb-2 font-medium text-slate-700 text-sm">
+              <label className="block mb-2 font-bold text-slate-200 text-xs uppercase tracking-wider">
                 Description
               </label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={5}
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-900 placeholder:text-slate-400 transition-all duration-150 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 outline-none resize-none"
+                className="w-full rounded-xl border-2 border-slate-700 bg-[#050814] p-3 text-sm text-white placeholder:text-slate-500 transition-all focus:border-[#E5C170] outline-none resize-none"
                 placeholder="Enter description"
               />
             </div>
 
             <div>
-              <label className="block mb-2 font-medium text-slate-700 text-sm">
+              <label className="block mb-2 font-bold text-slate-200 text-xs uppercase tracking-wider">
                 Program Type
                 <RequiredMark />
               </label>
@@ -821,38 +819,38 @@ const CreatePrograms = () => {
                 value={programType}
                 onChange={(e) => setProgramType(e.target.value)}
                 required
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-900 transition-all duration-150 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 outline-none"
+                className="w-full rounded-xl border-2 border-slate-700 bg-[#050814] p-3 text-sm text-white transition-all focus:border-[#E5C170] outline-none"
               >
-                <option>Mandatory</option>
-                <option>Optional</option>
+                <option className="bg-[#080C1A] text-white">Mandatory</option>
+                <option className="bg-[#080C1A] text-white">Optional</option>
               </select>
             </div>
 
             <div>
-              <label className="block mb-2 font-medium text-slate-700 text-sm">
+              <label className="block mb-2 font-bold text-slate-200 text-xs uppercase tracking-wider">
                 Duration
               </label>
               <input
                 value={duration}
                 onChange={(e) => setDuration(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-900 placeholder:text-slate-400 transition-all duration-150 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 outline-none"
+                className="w-full rounded-xl border-2 border-slate-700 bg-[#050814] p-3 text-sm text-white placeholder:text-slate-500 transition-all focus:border-[#E5C170] outline-none"
                 placeholder="Example: 2 Hours"
               />
             </div>
 
             <div>
-              <label className="block mb-2 font-medium text-slate-700 text-sm">
+              <label className="block mb-2 font-bold text-slate-200 text-xs uppercase tracking-wider">
                 Language
               </label>
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-900 transition-all duration-150 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 outline-none"
+                className="w-full rounded-xl border-2 border-slate-700 bg-[#050814] p-3 text-sm text-white transition-all focus:border-[#E5C170] outline-none"
               >
-                <option>English</option>
-                <option>Hindi</option>
-                <option>Marathi</option>
-                <option>Multiple</option>
+                <option className="bg-[#080C1A] text-white">English</option>
+                <option className="bg-[#080C1A] text-white">Hindi</option>
+                <option className="bg-[#080C1A] text-white">Marathi</option>
+                <option className="bg-[#080C1A] text-white">Multiple</option>
               </select>
             </div>
 
@@ -865,13 +863,13 @@ const CreatePrograms = () => {
                   {categories.map((cat, index) => (
                     <div
                       key={index}
-                      className="flex items-center gap-1 bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-sm"
+                      className="flex items-center gap-1.5 bg-indigo-950/80 text-indigo-300 border border-indigo-500/50 px-3 py-1 rounded-full text-xs font-bold shadow-sm"
                     >
                       <span>{cat}</span>
                       <button
                         type="button"
                         onClick={() => handleRemoveCategory(cat)}
-                        className="hover:text-indigo-900"
+                        className="hover:text-rose-400 transition"
                       >
                         <X size={14} />
                       </button>
@@ -882,26 +880,26 @@ const CreatePrograms = () => {
                   value={categoryInput}
                   onChange={(e) => setCategoryInput(e.target.value)}
                   onKeyDown={handleAddCategory}
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-900 placeholder:text-slate-400 transition-all duration-150 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 outline-none"
+                  className="w-full rounded-xl border-2 border-slate-700 bg-[#050814] p-3 text-sm text-white placeholder:text-slate-500 transition-all focus:border-[#E5C170] outline-none"
                   placeholder="Type category and press Enter (e.g., Recruitment, Sales)"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block mb-2 font-medium text-slate-700 text-sm">
+              <label className="block mb-2 font-bold text-slate-200 text-xs uppercase tracking-wider">
                 Program Completion Curos
               </label>
               <input
                 value={programCuros}
                 onChange={(e) => setProgramCuros(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-900 placeholder:text-slate-400 transition-all duration-150 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 outline-none"
+                className="w-full rounded-xl border-2 border-slate-700 bg-[#050814] p-3 text-sm text-white placeholder:text-slate-500 transition-all focus:border-[#E5C170] outline-none"
                 placeholder="Enter Curos"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block mb-2 font-medium text-slate-700 text-sm">
+              <label className="block mb-2 font-bold text-slate-200 text-xs uppercase tracking-wider">
                 Tags
               </label>
               <div className="space-y-2">
@@ -909,13 +907,13 @@ const CreatePrograms = () => {
                   {tags.map((tag, index) => (
                     <div
                       key={index}
-                      className="flex items-center gap-1 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm"
+                      className="flex items-center gap-1.5 bg-emerald-950/80 text-emerald-300 border border-emerald-500/50 px-3 py-1 rounded-full text-xs font-bold shadow-sm"
                     >
                       <span>{tag}</span>
                       <button
                         type="button"
                         onClick={() => handleRemoveTag(tag)}
-                        className="hover:text-green-900"
+                        className="hover:text-rose-400 transition"
                       >
                         <X size={14} />
                       </button>
@@ -926,27 +924,27 @@ const CreatePrograms = () => {
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyDown={handleAddTag}
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-900 placeholder:text-slate-400 transition-all duration-150 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 outline-none"
+                  className="w-full rounded-xl border-2 border-slate-700 bg-[#050814] p-3 text-sm text-white placeholder:text-slate-500 transition-all focus:border-[#E5C170] outline-none"
                   placeholder="Type tag and press Enter (e.g., Sales, Leadership)"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block mb-2 font-medium text-slate-700 text-sm">
+              <label className="block mb-2 font-bold text-slate-200 text-xs uppercase tracking-wider">
                 Status
               </label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-900 transition-all duration-150 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 outline-none"
+                className="w-full rounded-xl border-2 border-slate-700 bg-[#050814] p-3 text-sm text-white transition-all focus:border-[#E5C170] outline-none"
               >
-                <option>Draft</option>
+                <option className="bg-[#080C1A] text-white">Draft</option>
               </select>
             </div>
 
             <div className="md:col-span-2">
-              <label className="block mb-2 font-medium text-slate-700 text-sm">
+              <label className="block mb-2 font-bold text-slate-200 text-xs uppercase tracking-wider">
                 Program Thumbnail
               </label>
               <div className="relative">
@@ -954,18 +952,18 @@ const CreatePrograms = () => {
                   type="file"
                   accept="image/*"
                   onChange={handleThumbnailUpload}
-                  className="w-full rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-900 transition-all duration-150 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 outline-none cursor-pointer hover:border-indigo-300 opacity-0 absolute inset-0 z-10"
+                  className="w-full rounded-xl border-2 border-dashed border-slate-700 bg-[#050814] p-4 text-sm text-white transition-all focus:border-[#E5C170] outline-none cursor-pointer opacity-0 absolute inset-0 z-10"
                 />
-                <div className="w-full rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 p-4 flex items-center justify-center min-h-[56px]">
+                <div className="w-full rounded-xl border-2 border-dashed border-cyan-400/50 bg-[#050814] p-4 flex items-center justify-center min-h-[56px] hover:border-cyan-300 transition">
                   {isUploading ? (
                     <Loader2
-                      className="text-indigo-500 animate-spin"
+                      className="text-cyan-400 animate-spin"
                       size={20}
                     />
                   ) : (
-                    <div className="flex items-center gap-2 text-slate-400">
-                      <Upload size={20} />
-                      <span className="text-sm">
+                    <div className="flex items-center gap-2 text-cyan-300 font-bold text-xs">
+                      <Upload size={18} />
+                      <span>
                         Click or drag to upload thumbnail
                       </span>
                     </div>
@@ -974,13 +972,13 @@ const CreatePrograms = () => {
               </div>
               {thumbnailUrl && (
                 <div className="mt-3">
-                  <p className="text-xs text-slate-500 mb-2">
+                  <p className="text-xs text-slate-400 mb-2 font-bold">
                     Thumbnail Preview:
                   </p>
                   <img
                     src={thumbnailUrl}
                     alt="Thumbnail preview"
-                    className="w-32 h-32 object-cover rounded-lg border border-slate-200"
+                    className="w-32 h-32 object-cover rounded-xl border-2 border-slate-700 shadow-md"
                   />
                 </div>
               )}
@@ -989,17 +987,17 @@ const CreatePrograms = () => {
         </div>
 
         {/* Access Control */}
-        <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-100">
+        <div className="rounded-3xl bg-[#080C1A] p-6 border-[2.5px] border-[#FFE600] shadow-[0_0_32px_rgba(255,230,0,0.35),inset_0_0_20px_rgba(255,230,0,0.08)]">
           <div className="flex items-center gap-3 mb-6">
-            <div className="rounded-lg bg-slate-100 p-2">
-              <Lock className="text-slate-600" size={20} />
+            <div className="rounded-xl bg-amber-950/70 border border-amber-400/40 p-2 text-amber-300 shadow-sm">
+              <Lock size={20} />
             </div>
-            <h2 className="text-lg font-bold text-slate-900">Access Control</h2>
+            <h2 className="text-lg font-black text-white">Access Control</h2>
           </div>
 
           <div className="grid md:grid-cols-2 gap-5">
             <div>
-              <label className="block mb-2 font-medium text-slate-700 text-sm">
+              <label className="block mb-2 font-bold text-slate-200 text-xs uppercase tracking-wider">
                 Unlock Type
                 <RequiredMark />
               </label>
@@ -1007,15 +1005,15 @@ const CreatePrograms = () => {
                 value={unlockType}
                 onChange={(e) => setUnlockType(e.target.value)}
                 required
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-900 transition-all duration-150 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 outline-none"
+                className="w-full rounded-xl border-2 border-slate-700 bg-[#050814] p-3 text-sm text-white transition-all focus:border-[#E5C170] outline-none"
               >
-                <option>Immediate</option>
-                <option>After Days</option>
+                <option className="bg-[#080C1A] text-white">Immediate</option>
+                <option className="bg-[#080C1A] text-white">After Days</option>
               </select>
             </div>
 
             <div>
-              <label className="block mb-2 font-medium text-slate-700 text-sm">
+              <label className="block mb-2 font-bold text-slate-200 text-xs uppercase tracking-wider">
                 Unlock After Days
                 {unlockType === "After Days" && <RequiredMark />}
               </label>
@@ -1025,7 +1023,7 @@ const CreatePrograms = () => {
                 value={unlockDays}
                 onChange={(e) => setUnlockDays(e.target.value)}
                 required={unlockType === "After Days"}
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-900 placeholder:text-slate-400 transition-all duration-150 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 outline-none"
+                className="w-full rounded-xl border-2 border-slate-700 bg-[#050814] p-3 text-sm text-white placeholder:text-slate-500 transition-all focus:border-[#E5C170] outline-none"
                 placeholder={
                   unlockType === "After Days" ? "Enter number of days" : "N/A"
                 }
@@ -1035,37 +1033,37 @@ const CreatePrograms = () => {
         </div>
 
         {/* Retention Quiz Configuration */}
-        <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-100">
+        <div className="rounded-3xl bg-[#080C1A] p-6 border-[2.5px] border-[#10F5A0] shadow-[0_0_32px_rgba(16,245,160,0.35),inset_0_0_20px_rgba(16,245,160,0.08)]">
           <div className="flex items-center gap-3 mb-6">
-            <div className="rounded-lg bg-slate-100 p-2">
-              <Target className="text-slate-600" size={20} />
+            <div className="rounded-xl bg-emerald-950/70 border border-emerald-400/40 p-2 text-emerald-300 shadow-sm">
+              <Target size={20} />
             </div>
-            <h2 className="text-lg font-bold text-slate-900">
+            <h2 className="text-lg font-black text-white">
               Retention Quiz Configuration
             </h2>
           </div>
 
           <div className="grid md:grid-cols-3 gap-5">
             <div>
-              <label className="block mb-2 font-medium text-slate-700 text-sm">
+              <label className="block mb-2 font-bold text-slate-200 text-xs uppercase tracking-wider">
                 Retention Quiz Curos
               </label>
               <input
                 value={retentionQuizCuros}
                 onChange={(e) => setRetentionQuizCuros(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-900 placeholder:text-slate-400 transition-all duration-150 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 outline-none"
+                className="w-full rounded-xl border-2 border-slate-700 bg-[#050814] p-3 text-sm text-white placeholder:text-slate-500 transition-all focus:border-[#E5C170] outline-none"
                 placeholder="Enter Curos"
               />
             </div>
             <div className="md:col-span-3 mt-3">
-              <label className="block mb-2 font-medium text-slate-700 text-sm">
+              <label className="block mb-2 font-bold text-slate-200 text-xs uppercase tracking-wider">
                 Retention Quiz Questions
               </label>
               <div className="flex items-center gap-3 flex-wrap">
                 <button
                   type="button"
                   onClick={openRetentionQuizModal}
-                  className="rounded-xl border border-blue-600 px-4 py-2 text-sm font-bold transition text-blue-600 hover:bg-blue-50"
+                  className="rounded-xl border-2 border-emerald-400/60 bg-emerald-950/40 px-4 py-2 text-sm font-bold transition text-emerald-300 hover:bg-emerald-900/50 hover:border-emerald-300 cursor-pointer shadow-sm"
                 >
                   Manage Retention Quiz Questions
                 </button>
@@ -1073,16 +1071,16 @@ const CreatePrograms = () => {
                   type="button"
                   onClick={() => setShowRetentionPreview(true)}
                   disabled={retentionSavedQuestions.length === 0}
-                  className={`rounded-xl border px-4 py-2 text-sm font-bold transition flex items-center gap-2 ${
+                  className={`rounded-xl border-2 px-4 py-2 text-sm font-bold transition flex items-center gap-2 cursor-pointer ${
                     retentionSavedQuestions.length > 0
-                      ? "border-green-600 text-green-600 hover:bg-green-50"
-                      : "border-gray-300 text-gray-400 cursor-not-allowed"
+                      ? "border-emerald-400/60 bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/50"
+                      : "border-slate-700 text-slate-500 cursor-not-allowed bg-slate-900/30"
                   }`}
                 >
                   <Eye size={16} />
                   Preview Questions
                 </button>
-                <div className="text-sm text-slate-500">
+                <div className="text-sm font-bold text-slate-400">
                   {retentionSavedQuestions.length} saved question(s)
                 </div>
               </div>
@@ -1091,12 +1089,12 @@ const CreatePrograms = () => {
         </div>
 
         {/* Application Check Configuration */}
-        <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-100">
+        <div className="rounded-3xl bg-[#080C1A] p-6 border-[2.5px] border-[#F43F5E] shadow-[0_0_32px_rgba(244,63,94,0.35),inset_0_0_20px_rgba(244,63,94,0.08)]">
           <div className="flex items-center gap-3 mb-6">
-            <div className="rounded-lg bg-slate-100 p-2">
-              <Calendar className="text-slate-600" size={20} />
+            <div className="rounded-xl bg-rose-950/70 border border-rose-400/40 p-2 text-rose-300 shadow-sm">
+              <Calendar size={20} />
             </div>
-            <h2 className="text-lg font-bold text-slate-900">
+            <h2 className="text-lg font-black text-white">
               Application Check Configuration
             </h2>
           </div>
@@ -1133,17 +1131,17 @@ const CreatePrograms = () => {
                     openAppCheckEditor(card.key);
                   }
                 }}
-                className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center transition cursor-pointer hover:border-blue-400 hover:bg-blue-50/40"
+                className="rounded-2xl border-2 border-slate-700/80 bg-[#050814] p-5 text-center transition cursor-pointer hover:border-rose-400 hover:shadow-[0_0_20px_rgba(244,63,94,0.3)]"
               >
-                <div className="rounded-full bg-slate-200 w-12 h-12 flex items-center justify-center mx-auto mb-3">
-                  <CheckCircle className="text-slate-600" size={24} />
+                <div className="rounded-full bg-rose-950/60 border border-rose-500/40 w-12 h-12 flex items-center justify-center mx-auto mb-3 text-rose-400">
+                  <CheckCircle size={24} />
                 </div>
-                <h3 className="font-semibold mb-1 text-slate-900">
+                <h3 className="font-black text-white mb-1">
                   {card.label}
                 </h3>
-                <p className="text-xs text-slate-500">{card.description}</p>
+                <p className="text-xs text-slate-400 font-semibold">{card.description}</p>
                 <div className="mt-3 mb-2">
-                  <label className="block mb-1 font-medium text-slate-700 text-xs">
+                  <label className="block mb-1 font-bold text-slate-300 text-xs uppercase tracking-wider">
                     Curos
                   </label>
                   <input
@@ -1157,22 +1155,22 @@ const CreatePrograms = () => {
                       }));
                     }}
                     onClick={(e) => e.stopPropagation()}
-                    className="w-full rounded-lg border border-slate-200 bg-white p-2 text-sm text-slate-900 placeholder:text-slate-400 transition-all duration-150 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 outline-none"
+                    className="w-full rounded-xl border-2 border-slate-700 bg-[#080C1A] p-2 text-sm text-white placeholder:text-slate-500 transition-all focus:border-[#F43F5E] outline-none"
                     placeholder="Enter Curos"
                   />
                 </div>
-                <div className="flex items-center justify-center gap-2">
+                <div className="flex items-center justify-center gap-2 mt-3">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       openAppCheckEditor(card.key);
                     }}
-                    className="rounded-xl border border-blue-600 px-3 py-1.5 text-sm font-bold transition text-blue-600 hover:bg-blue-50"
+                    className="rounded-xl border-2 border-rose-400/60 bg-rose-950/40 px-3.5 py-1.5 text-xs font-black transition text-rose-300 hover:bg-rose-900/50 hover:border-rose-300 cursor-pointer shadow-sm"
                   >
                     Manage
                   </button>
-                  <div className="text-xs text-slate-500">
+                  <div className="text-xs font-bold text-slate-400">
                     {card.saved} saved
                   </div>
                 </div>
@@ -1183,26 +1181,25 @@ const CreatePrograms = () => {
 
         {/* Retention Quiz Modal */}
         {showRetentionQuestionModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs">
-            <div className="w-[750px] rounded-3xl bg-white p-6 shadow-2xl max-h-[90vh] overflow-y-auto border">
-              <h2 className="mb-1 text-2xl font-bold text-gray-900">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+            <div className="w-[750px] max-w-[95vw] rounded-3xl bg-[#080C1A] p-6 shadow-2xl max-h-[90vh] overflow-y-auto border-2 border-[#10F5A0] text-white">
+              <h2 className="mb-1 text-2xl font-black text-white">
                 Construct Evaluation Questions
               </h2>
-              <p className="text-xs text-gray-400 mb-4 font-medium">
-                Dynamically append multiple quiz questions with fluid individual
-                choose options templates.
+              <p className="text-xs text-slate-400 mb-4 font-semibold">
+                Dynamically append multiple quiz questions with fluid individual choose options templates.
               </p>
               <div className="space-y-6">
                 {retentionQuizQuestionsForm.map((question, qIndex) => (
                   <div
                     key={qIndex}
-                    className="p-5 border border-gray-200 bg-gray-50/50 rounded-2xl relative space-y-4"
+                    className="p-5 border-2 border-slate-700/80 bg-[#050814] rounded-2xl relative space-y-4"
                   >
                     {retentionQuizQuestionsForm.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeRetentionQuestionFromForm(qIndex)}
-                        className="absolute top-4 right-4 text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition"
+                        className="absolute top-4 right-4 text-rose-400 hover:text-white hover:bg-rose-500/20 p-1.5 rounded-lg transition"
                         title="Remove Question block"
                       >
                         <Trash2 size={16} />
@@ -1211,7 +1208,7 @@ const CreatePrograms = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <div className="md:col-span-3">
-                        <label className="text-xs font-bold text-gray-700 block mb-1">
+                        <label className="text-xs font-bold text-slate-300 block mb-1 uppercase tracking-wider">
                           Question {qIndex + 1} Prompt *
                         </label>
                         <textarea
@@ -1225,11 +1222,11 @@ const CreatePrograms = () => {
                           }
                           placeholder="Type your main question text here..."
                           rows={2}
-                          className="w-full rounded-xl border border-gray-300 p-3 text-sm bg-white outline-none focus:border-blue-500"
+                          className="w-full rounded-xl border-2 border-slate-700 p-3 text-sm bg-[#080C1A] text-white outline-none focus:border-emerald-400 placeholder:text-slate-500"
                         />
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-gray-700 block mb-1">
+                        <label className="text-xs font-bold text-slate-300 block mb-1 uppercase tracking-wider">
                           Marks *
                         </label>
                         <input
@@ -1244,14 +1241,14 @@ const CreatePrograms = () => {
                             )
                           }
                           placeholder="Marks"
-                          className="w-full rounded-xl border border-gray-300 p-3 text-sm bg-white outline-none focus:border-blue-500"
+                          className="w-full rounded-xl border-2 border-slate-700 p-3 text-sm bg-[#080C1A] text-white outline-none focus:border-emerald-400"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-gray-500 block uppercase tracking-wider">
-                        Dynamic Options Options
+                      <label className="text-xs font-bold text-slate-400 block uppercase tracking-wider">
+                        Dynamic Options
                       </label>
                       {question.options.map((option, oIndex) => (
                         <div key={oIndex} className="flex items-center gap-3">
@@ -1266,7 +1263,7 @@ const CreatePrograms = () => {
                                 e.target.checked,
                               )
                             }
-                            className="h-4 w-4 text-green-600 rounded cursor-pointer"
+                            className="h-4 w-4 text-emerald-500 rounded cursor-pointer accent-emerald-500"
                             title="Mark Option as Correct Answer"
                           />
                           <input
@@ -1281,7 +1278,7 @@ const CreatePrograms = () => {
                               )
                             }
                             placeholder={`Option ${oIndex + 1}`}
-                            className="flex-1 rounded-xl border border-gray-300 px-3 py-2 text-sm bg-white outline-none focus:border-blue-400"
+                            className="flex-1 rounded-xl border-2 border-slate-700 px-3 py-2 text-sm bg-[#080C1A] text-white outline-none focus:border-emerald-400 placeholder:text-slate-500"
                           />
                           {question.options.length > 2 && (
                             <button
@@ -1292,7 +1289,7 @@ const CreatePrograms = () => {
                                   oIndex,
                                 )
                               }
-                              className="text-gray-400 hover:text-red-500 transition"
+                              className="text-slate-400 hover:text-rose-400 transition"
                               title="Minus Option Field"
                             >
                               <Trash2 size={14} />
@@ -1303,15 +1300,15 @@ const CreatePrograms = () => {
                       <button
                         type="button"
                         onClick={() => addRetentionOptionToQuestion(qIndex)}
-                        className="text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition inline-flex items-center gap-1 mt-1"
+                        className="text-xs font-bold text-emerald-300 bg-emerald-950/60 hover:bg-emerald-900/70 border border-emerald-500/40 px-3 py-1.5 rounded-lg transition inline-flex items-center gap-1 mt-1 cursor-pointer"
                       >
                         + Add Option
                       </button>
                     </div>
 
                     <div>
-                      <label className="text-xs font-bold text-gray-600 block mb-1">
-                        Feedback/Explanation Text
+                      <label className="text-xs font-bold text-slate-400 block mb-1 uppercase tracking-wider">
+                        Feedback / Explanation Text
                       </label>
                       <textarea
                         value={question.explanation}
@@ -1324,30 +1321,30 @@ const CreatePrograms = () => {
                         }
                         placeholder="Add custom explanation/feedback text shown after incorrect answers..."
                         rows={2}
-                        className="w-full rounded-xl border border-gray-300 p-3 text-sm bg-white outline-none focus:border-blue-500"
+                        className="w-full rounded-xl border-2 border-slate-700 p-3 text-sm bg-[#080C1A] text-white outline-none focus:border-emerald-400 placeholder:text-slate-500"
                       />
                     </div>
                   </div>
                 ))}
 
-                <div className="flex justify-between items-center pt-4 border-t">
+                <div className="flex justify-between items-center pt-4 border-t border-slate-800">
                   <button
                     type="button"
                     onClick={addRetentionQuestionToForm}
-                    className="rounded-xl border border-blue-600 text-blue-600 px-4 py-2 text-sm font-bold hover:bg-blue-50 transition"
+                    className="rounded-xl border-2 border-emerald-400/60 text-emerald-300 px-4 py-2 text-sm font-bold hover:bg-emerald-900/40 transition cursor-pointer"
                   >
                     + Add Next Question Block
                   </button>
                   <div className="flex gap-2">
                     <button
                       onClick={() => setShowRetentionQuestionModal(false)}
-                      className="rounded-xl border px-4 py-2 text-sm font-medium hover:bg-gray-50"
+                      className="rounded-xl border-2 border-slate-700 px-4 py-2 text-sm font-bold text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={saveRetentionQuestions}
-                      className="rounded-xl bg-[#10B981] px-5 py-2 text-white text-sm font-bold shadow-sm hover:opacity-95"
+                      className="rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 px-5 py-2 text-white text-sm font-black shadow-md hover:from-emerald-500 hover:to-emerald-400 cursor-pointer"
                     >
                       {`Inject Form Questions (${retentionQuizQuestionsForm.length})`}
                     </button>
@@ -1360,21 +1357,21 @@ const CreatePrograms = () => {
 
         {/* Retention Quiz Preview Modal */}
         {showRetentionPreview && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="w-[800px] max-w-[95vw] rounded-3xl bg-white p-6 shadow-2xl max-h-[90vh] overflow-y-auto border">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+            <div className="w-[800px] max-w-[95vw] rounded-3xl bg-[#080C1A] p-6 shadow-2xl max-h-[90vh] overflow-y-auto border-2 border-[#10F5A0] text-white">
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">
+                  <h2 className="text-2xl font-black text-white">
                     Retention Quiz Preview
                   </h2>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-slate-400 font-semibold">
                     {retentionSavedQuestions.length} questions configured
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowRetentionPreview(false)}
-                  className="rounded-lg border border-gray-200 p-2 text-gray-500 hover:bg-gray-50"
+                  className="rounded-xl border-2 border-slate-700 p-2 text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
                 >
                   <X size={18} />
                 </button>
@@ -1384,32 +1381,32 @@ const CreatePrograms = () => {
                 {retentionSavedQuestions.map((q, index) => (
                   <div
                     key={index}
-                    className="p-4 border rounded-xl bg-gray-50 space-y-3"
+                    className="p-4 border-2 border-slate-700/80 rounded-xl bg-[#050814] space-y-3"
                   >
                     <div className="flex items-start justify-between">
-                      <h3 className="font-semibold text-gray-900">
+                      <h3 className="font-bold text-white text-base">
                         {index + 1}. {q.questionText}
                       </h3>
-                      <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                      <span className="text-xs font-bold bg-purple-950/80 text-purple-300 border border-purple-500/50 px-2.5 py-1 rounded-full">
                         {q.marks} marks
                       </span>
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       {q.options.map((opt, oIdx) => (
                         <div
                           key={oIdx}
-                          className={`p-2 rounded-lg border text-sm ${opt.isCorrect ? "border-green-500 bg-green-50 text-green-700" : "border-gray-200 bg-white text-gray-700"}`}
+                          className={`p-2.5 rounded-xl border-2 text-sm font-semibold ${opt.isCorrect ? "border-emerald-500 bg-emerald-950/60 text-emerald-300" : "border-slate-700 bg-[#080C1A] text-slate-300"}`}
                         >
                           {String.fromCharCode(65 + oIdx)}. {opt.text}
                           {opt.isCorrect && (
-                            <span className="ml-2 text-green-600">✓</span>
+                            <span className="ml-2 text-emerald-400 font-bold">✓</span>
                           )}
                         </div>
                       ))}
                     </div>
                     {q.explanation && (
-                      <div className="text-xs text-gray-500 bg-gray-100 p-2 rounded-lg">
-                        <span className="font-semibold">Explanation:</span>{" "}
+                      <div className="text-xs text-slate-300 bg-purple-950/40 border border-purple-500/40 p-2.5 rounded-xl">
+                        <span className="font-bold text-purple-300">Explanation:</span>{" "}
                         {q.explanation}
                       </div>
                     )}
@@ -1417,10 +1414,10 @@ const CreatePrograms = () => {
                 ))}
               </div>
 
-              <div className="flex justify-end mt-6 pt-4 border-t">
+              <div className="flex justify-end mt-6 pt-4 border-t border-slate-800">
                 <button
                   onClick={() => setShowRetentionPreview(false)}
-                  className="px-6 py-2 rounded-xl bg-[#1E1B4B] text-white font-semibold"
+                  className="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold transition cursor-pointer"
                 >
                   Close Preview
                 </button>
@@ -1431,24 +1428,24 @@ const CreatePrograms = () => {
 
         {/* Application Check Modals */}
         {activeAppCheckKey && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs">
-            <div className="w-[920px] max-w-[95vw] rounded-3xl bg-white p-6 shadow-2xl max-h-[90vh] overflow-y-auto border">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+            <div className="w-[920px] max-w-[95vw] rounded-3xl bg-[#080C1A] p-6 shadow-2xl max-h-[90vh] overflow-y-auto border-2 border-[#F43F5E] text-white">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h2 className="mb-1 text-2xl font-bold text-gray-900">
+                  <h2 className="mb-1 text-2xl font-black text-white">
                     {activeAppCheckKey === "a1"
                       ? "Application Check 1"
                       : activeAppCheckKey === "a2"
                         ? "Application Check 2"
                         : "Application Check 3"}
                   </h2>
-                  <p className="text-xs text-gray-400 font-medium">
+                  <p className="text-xs text-slate-400 font-semibold">
                     Create open-ended questions for this application milestone.
                   </p>
                 </div>
                 <button
                   onClick={() => closeAppCheckEditor(activeAppCheckKey)}
-                  className="text-gray-400 hover:text-gray-700"
+                  className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800 transition cursor-pointer"
                 >
                   <X />
                 </button>
@@ -1491,7 +1488,7 @@ const CreatePrograms = () => {
           <button
             onClick={handleCreateProgram}
             disabled={isUploading}
-            className="rounded-lg bg-[#10B981] px-6 py-3 font-semibold text-white hover:bg-[#059669] transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-50 shadow-md shadow-[#10B981]/20"
+            className="rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-500 px-7 py-3.5 font-black text-white hover:from-emerald-500 hover:to-emerald-400 transition-all disabled:cursor-not-allowed disabled:opacity-50 shadow-[0_4px_16px_rgba(16,185,129,0.4)] border border-emerald-400/40 cursor-pointer text-sm"
           >
             {isUploading ? "Uploading Thumbnail..." : "Create Program"}
           </button>

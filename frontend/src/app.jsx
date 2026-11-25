@@ -5,6 +5,7 @@ import ProgramsPage from "./pages/programs/programsPage";
 import CreatePrograms from "./pages/programs/createPrograms";
 import EditPrograms from "./pages/programs/editPrograms";
 import ProgramDetails from "./pages/programs/programDetails";
+import ProgramDetail from "./pages/programs/ProgramDetail";
 import ApplicationCheckSubmissions from "./pages/programs/ApplicationCheckSubmissions.jsx";
 import CandidateAttrition from "./pages/admin/candidateAttrition";
 import UserManagementPage from "./pages/admin/UserAccessControl";
@@ -186,6 +187,7 @@ function App() {
         />
 
         <Route path="/programs/edit/:id" element={<EditPrograms />} />
+        <Route path="/programs/:id/edit" element={<EditPrograms />} />
 
         <Route
           path="/application-check-submissions"
@@ -209,7 +211,7 @@ function App() {
           path="/programs/:id"
           element={
             <ProtectedRoute>
-              <ProgramDetails />
+              <ProgramDetail />
             </ProtectedRoute>
           }
         />

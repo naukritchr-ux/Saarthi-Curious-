@@ -1,14 +1,31 @@
-
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, aliased
 from database import get_db
 from models import User, Program
 from schemas import UpdateProgramCurosRequest
 from sqlalchemy import func
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/curo", tags=["Curo Management"])
 
 Subordinate = aliased(User)
+
+
+class CreateProgramCuroRequest(BaseModel):
+    name: str
+    curos: int = 50
+    description: Optional[str] = None
+
+
+class AdjustUserCurosRequest(BaseModel):
+    user_id: int
+    delta: int
+
+
+class BoostZeroBalanceRequest(BaseModel):
+    amount: int = 25
+
 
 @router.get("/programs")
 def get_program_curos(db: Session = Depends(get_db)):
@@ -18,12 +35,39 @@ def get_program_curos(db: Session = Depends(get_db)):
         {
             "id": program.id,
             "name": program.name,
-            "curos": program.curos or 0
+            "curos": program.curos or 0,
+            "description": program.description or ""
         }
         for program in programs
     ]
 
+
+@router.post("/programs")
+def create_program_curo(
+    request: CreateProgramCuroRequest,
+    db: Session = Depends(get_db)
+):
+    """Add a new program with curo configuration"""
+    new_prog = Program(
+        name=request.name,
+        curos=request.curos,
+        description=request.description or "",
+        type="Self Paced",
+        status="Published"
+    )
+    db.add(new_prog)
+    db.commit()
+    db.refresh(new_prog)
+    return {
+        "id": new_prog.id,
+        "name": new_prog.name,
+        "curos": new_prog.curos,
+        "description": new_prog.description
+    }
+
+
 @router.put("/programs/{program_id}")
+@router.patch("/programs/{program_id}")
 def update_program_curo(
     program_id: int,
     request: UpdateProgramCurosRequest,
@@ -78,6 +122,51 @@ def get_user_curo(user_id: int, db: Session = Depends(get_db)):
         "full_name": user.full_name,
         "curos": user.curos or 0,
         "role_id": user.role_id
+    }
+
+
+@router.post("/adjust")
+def adjust_user_curos(
+    request: AdjustUserCurosRequest,
+    db: Session = Depends(get_db)
+):
+    """Adjust a user's curo balance (grant or deduct)"""
+    user = db.query(User).filter(User.user_id == request.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.curos = max(0, (user.curos or 0) + request.delta)
+    db.commit()
+    db.refresh(user)
+    
+    return {
+        "user_id": user.user_id,
+        "full_name": user.full_name,
+        "curos": user.curos,
+        "delta": request.delta
+    }
+
+
+@router.post("/boost-zero-balance")
+def boost_zero_balance(
+    request: BoostZeroBalanceRequest,
+    db: Session = Depends(get_db)
+):
+    """Grant starter Curos to all inactive accounts with 0 balance"""
+    users = db.query(User).filter(
+        ~User.role_id.in_([1, 2]),
+        (User.curos == 0) | (User.curos.is_(None))
+    ).all()
+    
+    count = len(users)
+    for u in users:
+        u.curos = (u.curos or 0) + request.amount
+    
+    db.commit()
+    
+    return {
+        "boosted_count": count,
+        "amount_per_user": request.amount
     }
 
 

@@ -1,4 +1,5 @@
-﻿import { useEffect, useMemo, useState } from "react";
+/* eslint-disable no-unused-vars, react-hooks/set-state-in-effect */
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { appendActorParams } from "../../utils/auditHelper";
 import api from "../../utils/axios";
@@ -179,25 +180,26 @@ const UserManagementPage = () => {
     if (data) {
       const formattedUsers = data.map((user) => ({
         id: user.user_id,
-        name: user.full_name,
+        name: user.full_name || user.name || "User",
         email: user.email,
-        location: user.city,
-        Reporting_Manager: user.reporting_manager,
+        location: user.city || user.location || "N/A",
+        Reporting_Manager: user.reporting_manager || user.Reporting_Manager || "-",
         Team_Leader_id: user.Team_Leader_id,
-        role: getRoleName(user.role_id),
+        role: user.role || getRoleName(user.role_id),
         last_login: user.last_login,
         activity: user.is_active ? "Active" : "Inactive",
         is_active: user.is_active,
         role_id: user.role_id,
         date_of_joining: user.date_of_joining,
-        franchise_partner: user.role_id === 5 ? user.reporting_manager : null,
+        franchise_partner: user.franchise_partner || (user.role_id === 5 ? user.reporting_manager : null),
         phone: user.phone || "N/A",
-        manager: user.manager || "Self-managed",
+        manager: user.manager || user.reporting_manager || "Self-managed",
         children: user.children || [],
+        curos: user.curos || 0,
       }));
 
-      // Sort users by role order
-      const roleOrder = { 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 6, 1: 7 };
+      // Sort users by role order (Master Admin 1, Admin 2, Team Leader 3, Franchise Partner 4, Franchise Employee 5, Franchise Developer 6, Head Office Staff 7)
+      const roleOrder = { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7 };
       const sortedUsers = formattedUsers.sort((a, b) => {
         const orderA = roleOrder[a.role_id] || 99;
         const orderB = roleOrder[b.role_id] || 99;
@@ -272,37 +274,43 @@ const UserManagementPage = () => {
     let baseStats = [];
 
     if ([1, 2].includes(currentRoleId)) {
-      // Admin/Master Admin: Show all stats
+      // Admin/Master Admin: Show all stats across real workforce
       baseStats = [
         {
           label: "Total Users",
-          value: users.filter((user) => ![1, 2].includes(user.role_id)).length,
+          value: users.length,
           accent: "from-[#693C83] to-[#8B5CF6]",
           icon: Users,
         },
         {
-          label: "Total Franchise Employees",
-          value: users.filter((user) => user.role_id === 5).length,
-          accent: "from-[#10B981] to-[#34D399]",
-          icon: UserCheck,
+          label: "Team Leaders",
+          value: users.filter((user) => user.role_id === 3).length,
+          accent: "from-[#6366F1] to-[#818CF8]",
+          icon: ShieldCheck,
         },
         {
-          label: "Total Franchise Partners",
+          label: "Franchise Partners",
           value: users.filter((user) => user.role_id === 4).length,
           accent: "from-[#F59E0B] to-[#FBBF24]",
           icon: BriefcaseBusiness,
         },
         {
-          label: "Total Franchise Developers",
+          label: "Franchise Employees",
+          value: users.filter((user) => user.role_id === 5).length,
+          accent: "from-[#10B981] to-[#34D399]",
+          icon: UserCheck,
+        },
+        {
+          label: "Franchise Developers",
           value: users.filter((user) => user.role_id === 6).length,
-          accent: "from-[#1E1B4B] to-[#312E81]",
+          accent: "from-[#06B6D4] to-[#22D3EE]",
           icon: ShieldCheck,
         },
         {
-          label: "Total Head Office Staff",
+          label: "Head Office Staff",
           value: users.filter((user) => user.role_id === 7).length,
-          accent: "from-[#1E1B4B] to-[#312E81]",
-          icon: ShieldCheck,
+          accent: "from-[#8B5CF6] to-[#A78BFA]",
+          icon: Users,
         },
       ];
     } else if (currentRoleId === 3 || currentRoleId === 6) {
@@ -446,19 +454,32 @@ const UserManagementPage = () => {
     }
   };
 
-  const handleAction = (type, user) => {
+  const handleAction = async (type, user) => {
     if (type === "markInactive") {
-      setUsers((prev) =>
-        prev.map((item) =>
-          item.id === user.id
-            ? { ...item, status: "Inactive", activity: "Inactive" }
-            : item,
-        ),
-      );
+      try {
+        const isCurrentlyActive = user.is_active;
+        const endpoint = isCurrentlyActive
+          ? `/users/${user.id}/deactivate`
+          : `/users/${user.id}/activate`;
+        await api.put(appendActorParams(endpoint));
+        refetch();
+      } catch (err) {
+        console.error("Error updating user status:", err);
+        alert(err.response?.data?.detail || "Failed to update user status");
+      }
       return;
     }
     if (type === "delete") {
-      setUsers((prev) => prev.filter((item) => item.id !== user.id));
+      if (!window.confirm(`Are you sure you want to delete ${user.name}? This action cannot be undone.`)) {
+        return;
+      }
+      try {
+        await api.delete(appendActorParams(`/users/${user.id}`));
+        refetch();
+      } catch (err) {
+        console.error("Error deleting user:", err);
+        alert(err.response?.data?.detail || "Failed to delete user");
+      }
       return;
     }
     if (type === "info") setSelectedUser(user);

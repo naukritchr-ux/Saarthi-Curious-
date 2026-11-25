@@ -33,7 +33,7 @@ const AdminQuickAccess = () => {
             style={{
               padding: "20px 16px",
               borderRadius: 18,
-              border: `1px solid ${q.c}55`,
+              border: `1.8px solid ${q.c}bb`,
               background: `linear-gradient(140deg, ${q.c}ee, ${q.c}44)`,
               color: "#fff",
               fontSize: 12,
@@ -44,16 +44,18 @@ const AdminQuickAccess = () => {
               justifyContent: "center",
               gap: 8,
               cursor: "pointer",
-              transition: "transform 180ms ease, box-shadow 180ms ease",
+              transition: "transform 200ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 200ms ease, border-color 200ms ease",
               boxShadow: `0 6px 16px ${q.c}33, inset 0 2px 4px rgba(255,255,255,0.18), inset 0 -3px 6px rgba(0,0,0,0.35)`,
               minHeight: 88,
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.boxShadow = `0 12px 24px ${q.c}55, inset 0 2px 4px rgba(255,255,255,0.25), inset 0 -3px 6px rgba(0,0,0,0.35)`;
+              e.currentTarget.style.transform = "translateY(-3px)";
+              e.currentTarget.style.borderColor = "#ffffffcc";
+              e.currentTarget.style.boxShadow = `0 0 24px ${q.c}99, 0 12px 26px ${q.c}66, inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -3px 6px rgba(0,0,0,0.35)`;
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.borderColor = `${q.c}bb`;
               e.currentTarget.style.boxShadow = `0 6px 16px ${q.c}33, inset 0 2px 4px rgba(255,255,255,0.18), inset 0 -3px 6px rgba(0,0,0,0.35)`;
             }}
           >

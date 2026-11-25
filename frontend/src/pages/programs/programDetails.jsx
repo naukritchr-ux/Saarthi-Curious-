@@ -80,8 +80,8 @@ const SortableModuleItem = ({
       <div
         className={`flex items-center justify-between rounded-xl p-3.5 transition-all duration-200 cursor-pointer ${
           selectedModule?.id === module.id
-            ? "bg-[#1E1B4B] text-white shadow-lg shadow-[#1E1B4B]/20"
-            : "bg-[#F8F5FC] text-gray-800 hover:bg-[#E8E4F0] border-2 border-transparent hover:border-[#1E1B4B]/20"
+            ? "bg-gradient-to-r from-[#2A0E4A] to-[#1E0B38] text-white border-2 border-[#D946EF] shadow-[0_0_20px_rgba(217,70,239,0.4)]"
+            : "bg-[#0D1224] text-slate-200 hover:bg-[#131A33] border-2 border-slate-700/60 hover:border-purple-400/60"
         }`}
         onClick={() => onSelect(module)}
       >
@@ -93,7 +93,7 @@ const SortableModuleItem = ({
             className={`cursor-grab active:cursor-grabbing p-1 rounded ${
               selectedModule?.id === module.id
                 ? "text-white/70 hover:text-white"
-                : "text-gray-400 hover:text-[#1E1B4B]"
+                : "text-slate-400 hover:text-purple-300"
             }`}
             title="Drag Module"
           >
@@ -104,13 +104,13 @@ const SortableModuleItem = ({
             className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 ${
               selectedModule?.id === module.id
                 ? "bg-white/20 text-white"
-                : "bg-[#1E1B4B]/10 text-[#1E1B4B]"
+                : "bg-purple-900/40 text-purple-300 border border-purple-500/30"
             }`}
           >
             {index + 1}
           </div>
 
-          <span className="font-semibold truncate">{module.title}</span>
+          <span className="font-bold truncate">{module.title}</span>
         </div>
 
         <button
@@ -121,7 +121,7 @@ const SortableModuleItem = ({
           className={`ml-2 p-1.5 rounded-lg transition-all ${
             selectedModule?.id === module.id
               ? "text-white/70 hover:text-white hover:bg-white/20"
-              : "text-gray-400 hover:text-red-500 hover:bg-red-50"
+              : "text-slate-400 hover:text-rose-400 hover:bg-rose-500/10"
           }`}
           title="Delete Module"
         >
@@ -1551,8 +1551,8 @@ const ProgramDetails = () => {
   // ============ RENDER ============
   if (loading) {
     return (
-      <MainLayout>
-        <div className="flex h-[50vh] items-center justify-center font-semibold text-gray-500">
+      <MainLayout dark>
+        <div className="flex h-[50vh] items-center justify-center font-bold text-slate-400 text-sm tracking-wider uppercase">
           Loading Program...
         </div>
       </MainLayout>
@@ -1560,329 +1560,412 @@ const ProgramDetails = () => {
   }
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
+    <MainLayout dark>
+      <div className="-m-4 sm:-m-6 p-5 sm:p-7 min-h-[calc(100vh-4rem)] bg-[#04050A] prog-page-calm-bg text-slate-100 font-sans space-y-6 overflow-x-hidden relative selection:bg-purple-500 selection:text-white">
+        <style>{`
+          @keyframes ultraCalmProgDrift {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+          }
+          @keyframes calmProgOrbA {
+            0%   { transform: translate3d(-6%, -4%, 0) scale(1); opacity: 0.16; }
+            50%  { transform: translate3d(14%, 8%, 0) scale(1.08); opacity: 0.24; }
+            100% { transform: translate3d(-6%, -4%, 0) scale(1); opacity: 0.16; }
+          }
+          @keyframes calmProgOrbB {
+            0%   { transform: translate3d(8%, 10%, 0) scale(1.06); opacity: 0.14; }
+            50%  { transform: translate3d(-10%, -6%, 0) scale(0.96); opacity: 0.22; }
+            100% { transform: translate3d(8%, 10%, 0) scale(1.06); opacity: 0.14; }
+          }
+
+          .prog-page-calm-bg {
+            position: relative;
+            isolation: isolate;
+            background: linear-gradient(
+              135deg,
+              #04050A 0%,
+              #080714 34%,
+              #050B14 67%,
+              #0A0612 100%
+            );
+            background-size: 260% 260%;
+            animation: ultraCalmProgDrift 26s ease-in-out infinite;
+          }
+
+          .prog-calm-orb-a {
+            position: fixed;
+            width: 580px;
+            height: 580px;
+            top: -6%;
+            left: 5%;
+            pointer-events: none;
+            z-index: 0;
+            background: radial-gradient(
+              circle,
+              rgba(168, 85, 247, 0.32) 0%,
+              rgba(56, 189, 248, 0.14) 45%,
+              transparent 72%
+            );
+            filter: blur(96px);
+            animation: calmProgOrbA 28s ease-in-out infinite;
+          }
+
+          .prog-calm-orb-b {
+            position: fixed;
+            width: 540px;
+            height: 540px;
+            bottom: -8%;
+            right: 4%;
+            pointer-events: none;
+            z-index: 0;
+            background: radial-gradient(
+              circle,
+              rgba(16, 185, 129, 0.24) 0%,
+              rgba(217, 70, 239, 0.14) 45%,
+              transparent 72%
+            );
+            filter: blur(98px);
+            animation: calmProgOrbB 32s ease-in-out infinite;
+          }
+        `}</style>
+
+        {/* Ambient Roaming Background Orbs */}
+        <div className="prog-calm-orb-a" />
+        <div className="prog-calm-orb-b" />
+
         {/* Header */}
-        <div className="rounded-3xl bg-white p-6 shadow">
-          <div className="flex items-start justify-between gap-4">
+        <div className="rounded-3xl p-6 sm:p-7 bg-[#060414] border-[2.5px] border-[#B026FF] shadow-[0_0_36px_rgba(176,38,255,0.45),inset_0_0_24px_rgba(176,38,255,0.14)] relative z-10 flex items-start justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <button
+              type="button"
+              onClick={() => navigate("/programs")}
+              className="w-12 h-12 rounded-2xl bg-[#02050E] border-2 border-[#00F5FF] text-[#00F5FF] hover:bg-[#00F5FF] hover:text-slate-950 flex items-center justify-center transition cursor-pointer shrink-0 shadow-[0_0_18px_rgba(0,245,255,0.4)] mt-0.5"
+              title="Back to Programs"
+            >
+              <BookOpen size={18} className="stroke-[2.5]" />
+            </button>
+
             <div>
-              <h1 className="text-3xl font-bold text-[#1E1B4B]">
+              <span className="text-[10px] font-black uppercase tracking-[0.22em] text-[#C084FC] block drop-shadow-[0_0_8px_rgba(192,132,252,0.6)]">
+                PROGRAM CURRICULUM
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight mt-0.5 drop-shadow-[0_2px_12px_rgba(255,255,255,0.2)]">
                 {programData?.name || "Program Details"}
               </h1>
 
-              <p className="mt-2 text-gray-500">
+              <p className="mt-1 text-xs sm:text-sm text-slate-300 font-semibold max-w-3xl leading-relaxed">
                 {programData?.description || "No description available."}
               </p>
             </div>
+          </div>
 
-            <div className="flex items-center gap-3 shrink-0">
-              {programData?.status === "Draft" && (
-                <span className="rounded-full bg-amber-100 px-3 py-1.5 text-sm font-semibold text-amber-700">
-                  Draft
-                </span>
-              )}
+          <div className="flex items-center gap-3 shrink-0">
+            {programData?.status === "Draft" && (
+              <span className="rounded-full bg-amber-950/90 text-amber-300 border-2 border-amber-400 px-3.5 py-1.5 text-xs font-black uppercase tracking-wider shadow-md">
+                Draft
+              </span>
+            )}
 
-              {programData?.status === "Published" && (
-                <span className="rounded-full bg-emerald-100 px-3 py-1.5 text-sm font-semibold text-emerald-700">
-                  Published
-                </span>
-              )}
+            {programData?.status === "Published" && (
+              <span className="rounded-full bg-emerald-950/90 text-emerald-300 border-2 border-emerald-400 px-3.5 py-1.5 text-xs font-black uppercase tracking-wider shadow-md">
+                Published
+              </span>
+            )}
 
-              {programData?.status === "Draft" && (
-                <button
-                  type="button"
-                  onClick={handlePublishProgram}
-                  disabled={isPublishing}
-                  className="rounded-xl bg-[#10B981] px-5 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-[#0fA773] disabled:cursor-not-allowed disabled:opacity-50 transition-all flex items-center gap-2"
-                >
-                  {isPublishing ? (
-                    <>
-                      <RefreshCw className="animate-spin" size={16} />
-                      Publishing...
-                    </>
-                  ) : (
-                    <>
-                      <UploadCloud size={16} />
-                      Publish Program
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
+            {programData?.status === "Draft" && (
+              <button
+                type="button"
+                onClick={handlePublishProgram}
+                disabled={isPublishing}
+                className="rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 px-5 py-3 text-sm font-bold text-white shadow-[0_4px_16px_rgba(16,185,129,0.4)] border border-emerald-400/40 disabled:cursor-not-allowed disabled:opacity-50 transition-all flex items-center gap-2 cursor-pointer"
+              >
+                {isPublishing ? (
+                  <>
+                    <RefreshCw className="animate-spin" size={16} />
+                    Publishing...
+                  </>
+                ) : (
+                  <>
+                    <UploadCloud size={16} />
+                    Publish Program
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
 
         {/* Main Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10">
           {/* Left Sidebar */}
-          <div className="lg:col-span-3 rounded-3xl bg-white p-5 shadow-lg border border-gray-100">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-[#1E1B4B]">Modules</h3>
-              <span className="text-xs font-medium bg-[#F8F5FC] text-[#1E1B4B] px-2.5 py-1 rounded-full">
-                {modules.length}
-              </span>
-            </div>
+          <div className="lg:col-span-4 rounded-3xl bg-[#080C1A] p-5 sm:p-6 border-[2.5px] border-[#00F5FF] shadow-[0_0_32px_rgba(0,245,255,0.35),inset_0_0_20px_rgba(0,245,255,0.08)] flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-black text-white">Modules</h3>
+                <span className="text-xs font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-400/50 px-3 py-1 rounded-full shadow-sm">
+                  {modules.length} Modules
+                </span>
+              </div>
 
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                addModule();
-              }}
-              disabled={savingModule}
-              className="mb-5 w-full rounded-xl bg-gradient-to-r from-[#10B981] to-[#059669] py-3 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-[#10B981]/20 hover:shadow-xl hover:shadow-[#10B981]/30 flex items-center justify-center gap-2"
-            >
-              {savingModule ? (
-                <>
-                  <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                  Adding Module...
-                </>
-              ) : (
-                <>
-                  <Plus size={18} />
-                  Add Module
-                </>
-              )}
-            </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  addModule();
+                }}
+                disabled={savingModule}
+                className="mb-5 w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-500 py-3.5 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[0_4px_16px_rgba(16,185,129,0.35)] hover:shadow-[0_4px_20px_rgba(16,185,129,0.5)] border border-emerald-400/40 flex items-center justify-center gap-2 cursor-pointer text-sm"
+              >
+                {savingModule ? (
+                  <>
+                    <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                    Adding Module...
+                  </>
+                ) : (
+                  <>
+                    <Plus size={18} className="stroke-[2.5]" />
+                    Add Module
+                  </>
+                )}
+              </button>
 
-            <div className="space-y-2 overflow-y-auto max-h-[60vh] lg:max-h-[70vh] pr-1 custom-scrollbar">
-              {modules.length === 0 ? (
-                <div className="text-center py-8 px-4">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <Layers className="text-gray-400" size={24} />
+              <div className="space-y-2.5 overflow-y-auto max-h-[60vh] lg:max-h-[65vh] pr-1 custom-scrollbar">
+                {modules.length === 0 ? (
+                  <div className="text-center py-8 px-4 bg-slate-900/40 border border-slate-700/50 rounded-2xl">
+                    <div className="w-14 h-14 bg-slate-800/80 border border-slate-700 rounded-2xl flex items-center justify-center mx-auto mb-3 text-slate-400">
+                      <Layers size={24} />
+                    </div>
+                    <p className="text-sm text-slate-300 font-bold">
+                      No modules yet
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Create your first module to get started
+                    </p>
                   </div>
-                  <p className="text-sm text-gray-500 font-medium">
-                    No modules yet
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Create your first module to get started
-                  </p>
-                </div>
-              ) : (
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleModuleDragEnd}
-                >
-                  <SortableContext
-                    items={modules.map((module) => module.id)}
-                    strategy={verticalListSortingStrategy}
+                ) : (
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleModuleDragEnd}
                   >
-                    {modules.map((module, index) => (
-                      <SortableModuleItem
-                        key={module.id}
-                        module={module}
-                        index={index}
-                        selectedModule={selectedModule}
-                        onDelete={deleteModule}
-                        onSelect={(module) => {
-                          setSelectedModule(module);
-                          selectedModuleRef.current = module;
-                          setEditModuleTitle(module.title);
-                          setEditModuleDescription(module.description || "");
-                          setEditModuleCuros(module.curos || 0);
-                          setHasUnsavedChanges(false);
-                          setSelectedContent(null);
-                          setViewingNote(null);
-                        }}
-                      >
-                        <div className="ml-4 mt-2 space-y-1.5 pl-3 border-l-2 border-[#1E1B4B]/20">
-                          {/* Videos */}
-                          {module.videos?.map((video) => (
-                            <div
-                              key={video.id}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setPlayingVideo(video);
-                                setSelectedContent({
-                                  type: "video",
-                                  data: video,
-                                });
-                                setViewingNote(null);
-                              }}
-                              className="cursor-pointer flex items-center gap-2 rounded-lg bg-white p-2.5 hover:bg-gray-50 border border-gray-100 hover:border-[#1E1B4B]/30 transition-all group"
-                            >
-                              {video.thumbnail_url ? (
-                                <img
-                                  src={video.thumbnail_url}
-                                  alt=""
-                                  className="h-10 w-16 rounded object-cover"
-                                />
-                              ) : (
-                                <div className="h-10 w-16 rounded bg-gray-100 flex items-center justify-center">
-                                  <PlayCircle
-                                    className="text-gray-400"
-                                    size={20}
+                    <SortableContext
+                      items={modules.map((module) => module.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {modules.map((module, index) => (
+                        <SortableModuleItem
+                          key={module.id}
+                          module={module}
+                          index={index}
+                          selectedModule={selectedModule}
+                          onDelete={deleteModule}
+                          onSelect={(module) => {
+                            setSelectedModule(module);
+                            selectedModuleRef.current = module;
+                            setEditModuleTitle(module.title);
+                            setEditModuleDescription(module.description || "");
+                            setEditModuleCuros(module.curos || 0);
+                            setHasUnsavedChanges(false);
+                            setSelectedContent(null);
+                            setViewingNote(null);
+                          }}
+                        >
+                          <div className="ml-4 mt-2 space-y-2 pl-3 border-l-2 border-[#D946EF]/50">
+                            {/* Videos */}
+                            {module.videos?.map((video) => (
+                              <div
+                                key={video.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPlayingVideo(video);
+                                  setSelectedContent({
+                                    type: "video",
+                                    data: video,
+                                  });
+                                  setViewingNote(null);
+                                }}
+                                className="cursor-pointer flex items-center gap-2.5 rounded-xl bg-[#0A0E1F] p-2.5 hover:bg-[#141B38] border border-slate-700/80 hover:border-purple-400/80 transition-all group shadow-sm"
+                              >
+                                {video.thumbnail_url ? (
+                                  <img
+                                    src={video.thumbnail_url}
+                                    alt=""
+                                    className="h-10 w-16 rounded-lg object-cover"
+                                  />
+                                ) : (
+                                  <div className="h-10 w-16 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400">
+                                    <PlayCircle size={20} />
+                                  </div>
+                                )}
+
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-bold text-sm truncate text-white group-hover:text-purple-300">
+                                    {video.title}
+                                  </p>
+                                  <p className="text-xs text-slate-400">
+                                    Video Lesson
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+
+                            {/* Written Lessons */}
+                            {module.written_lessons?.map((lesson) => (
+                              <div
+                                key={lesson.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedContent({
+                                    type: "writtenLesson",
+                                    data: lesson,
+                                  });
+                                  setViewingNote(null);
+                                }}
+                                className="cursor-pointer flex items-center gap-2.5 rounded-xl bg-[#0A0E1F] p-2.5 hover:bg-[#141B38] border border-slate-700/80 hover:border-purple-400/80 transition-all group shadow-sm"
+                              >
+                                <div className="h-10 w-10 rounded-lg bg-blue-950/80 border border-blue-500/40 flex items-center justify-center shrink-0">
+                                  <BookOpen className="text-blue-400" size={18} />
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-bold text-sm truncate text-white group-hover:text-purple-300">
+                                    {lesson.title}
+                                  </p>
+                                  <p className="text-xs text-slate-400">
+                                    Written Lesson
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+
+                            {/* Quizzes */}
+                            {module.quizzes?.map((quiz) => (
+                              <div
+                                key={quiz.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedContent({
+                                    type: "quiz",
+                                    data: quiz,
+                                  });
+                                  setViewingNote(null);
+                                }}
+                                className="cursor-pointer flex items-center gap-2.5 rounded-xl bg-[#0A0E1F] p-2.5 hover:bg-[#141B38] border border-slate-700/80 hover:border-purple-400/80 transition-all group shadow-sm"
+                              >
+                                <div className="h-10 w-10 rounded-lg bg-purple-950/80 border border-purple-500/40 flex items-center justify-center shrink-0">
+                                  <ClipboardCheck
+                                    className="text-purple-400"
+                                    size={18}
                                   />
                                 </div>
-                              )}
 
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm truncate text-gray-800 group-hover:text-[#1E1B4B]">
-                                  {video.title}
-                                </p>
-                                <p className="text-xs text-gray-400">
-                                  Video Lesson
-                                </p>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-bold text-sm truncate text-white group-hover:text-purple-300">
+                                    {quiz.title}
+                                  </p>
+                                  <p className="text-xs text-slate-400">
+                                    Quiz Assessment
+                                  </p>
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            ))}
 
-                          {/* Written Lessons */}
-                          {module.written_lessons?.map((lesson) => (
-                            <div
-                              key={lesson.id}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedContent({
-                                  type: "writtenLesson",
-                                  data: lesson,
-                                });
-                                setViewingNote(null);
-                              }}
-                              className="cursor-pointer flex items-center gap-2 rounded-lg bg-white p-2.5 hover:bg-gray-50 border border-gray-100 hover:border-[#1E1B4B]/30 transition-all group"
-                            >
-                              <div className="h-10 w-10 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-                                <BookOpen className="text-blue-500" size={18} />
+                            {/* Surveys */}
+                            {module.surveys?.map((survey) => (
+                              <div
+                                key={survey.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedContent({
+                                    type: "survey",
+                                    data: survey,
+                                  });
+
+                                  const formattedQuestions = (
+                                    survey.questions || []
+                                  ).map((q) => ({
+                                    question: q.question || q.question_text || "",
+                                    type: q.question_type || "Multiple Choice",
+                                    required: q.is_required || false,
+                                    options: (q.options || []).map(
+                                      (o) => o.option_text || o,
+                                    ),
+                                  }));
+
+                                  setSurveyQuestions(formattedQuestions);
+                                  setViewingNote(null);
+                                }}
+                                className="cursor-pointer flex items-center gap-2.5 rounded-xl bg-[#0A0E1F] p-2.5 hover:bg-[#141B38] border border-slate-700/80 hover:border-purple-400/80 transition-all group shadow-sm"
+                              >
+                                <div className="h-10 w-10 rounded-lg bg-emerald-950/80 border border-emerald-500/40 flex items-center justify-center shrink-0">
+                                  <FileQuestion
+                                    className="text-emerald-400"
+                                    size={18}
+                                  />
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-bold text-sm truncate text-white group-hover:text-purple-300">
+                                    {survey.title}
+                                  </p>
+                                  <p className="text-xs text-slate-400">
+                                    Survey Block
+                                  </p>
+                                </div>
                               </div>
+                            ))}
 
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm truncate text-gray-800 group-hover:text-[#1E1B4B]">
-                                  {lesson.title}
-                                </p>
-                                <p className="text-xs text-gray-400">
-                                  Written Lesson
-                                </p>
+                            {/* Assignments */}
+                            {module.assignments?.map((assignment) => (
+                              <div
+                                key={assignment.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedContent({
+                                    type: "assignment",
+                                    data: assignment,
+                                  });
+                                  setViewingNote(null);
+                                }}
+                                className="cursor-pointer flex items-center gap-2.5 rounded-xl bg-[#0A0E1F] p-2.5 hover:bg-[#141B38] border border-slate-700/80 hover:border-purple-400/80 transition-all group shadow-sm"
+                              >
+                                <div className="h-10 w-10 rounded-lg bg-amber-950/80 border border-amber-500/40 flex items-center justify-center shrink-0">
+                                  <ClipboardCheck
+                                    className="text-amber-400"
+                                    size={18}
+                                  />
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-bold text-sm truncate text-white group-hover:text-purple-300">
+                                    {assignment.title}
+                                  </p>
+                                  <p className="text-xs text-slate-400">
+                                    Assignment
+                                  </p>
+                                </div>
                               </div>
-                            </div>
-                          ))}
-
-                          {/* Quizzes */}
-                          {module.quizzes?.map((quiz) => (
-                            <div
-                              key={quiz.id}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedContent({
-                                  type: "quiz",
-                                  data: quiz,
-                                });
-                                setViewingNote(null);
-                              }}
-                              className="cursor-pointer flex items-center gap-2 rounded-lg bg-white p-2.5 hover:bg-gray-50 border border-gray-100 hover:border-[#1E1B4B]/30 transition-all group"
-                            >
-                              <div className="h-10 w-10 rounded-lg bg-purple-50 flex items-center justify-center shrink-0">
-                                <ClipboardCheck
-                                  className="text-purple-500"
-                                  size={18}
-                                />
-                              </div>
-
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm truncate text-gray-800 group-hover:text-[#1E1B4B]">
-                                  {quiz.title}
-                                </p>
-                                <p className="text-xs text-gray-400">
-                                  Quiz Assessment
-                                </p>
-                              </div>
-                            </div>
-                          ))}
-
-                          {/* Surveys */}
-                          {module.surveys?.map((survey) => (
-                            <div
-                              key={survey.id}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedContent({
-                                  type: "survey",
-                                  data: survey,
-                                });
-
-                                const formattedQuestions = (
-                                  survey.questions || []
-                                ).map((q) => ({
-                                  question: q.question || q.question_text || "",
-                                  type: q.question_type || "Multiple Choice",
-                                  required: q.is_required || false,
-                                  options: (q.options || []).map(
-                                    (o) => o.option_text || o,
-                                  ),
-                                }));
-
-                                setSurveyQuestions(formattedQuestions);
-                                setViewingNote(null);
-                              }}
-                              className="cursor-pointer flex items-center gap-2 rounded-lg bg-white p-2.5 hover:bg-gray-50 border border-gray-100 hover:border-[#1E1B4B]/30 transition-all group"
-                            >
-                              <div className="h-10 w-10 rounded-lg bg-green-50 flex items-center justify-center shrink-0">
-                                <FileQuestion
-                                  className="text-green-500"
-                                  size={18}
-                                />
-                              </div>
-
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm truncate text-gray-800 group-hover:text-[#1E1B4B]">
-                                  {survey.title}
-                                </p>
-                                <p className="text-xs text-gray-400">
-                                  Survey Block
-                                </p>
-                              </div>
-                            </div>
-                          ))}
-
-                          {/* Assignments */}
-                          {module.assignments?.map((assignment) => (
-                            <div
-                              key={assignment.id}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedContent({
-                                  type: "assignment",
-                                  data: assignment,
-                                });
-                                setViewingNote(null);
-                              }}
-                              className="cursor-pointer flex items-center gap-2 rounded-lg bg-white p-2.5 hover:bg-gray-50 border border-gray-100 hover:border-[#1E1B4B]/30 transition-all group"
-                            >
-                              <div className="h-10 w-10 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
-                                <ClipboardCheck
-                                  className="text-amber-500"
-                                  size={18}
-                                />
-                              </div>
-
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm truncate text-gray-800 group-hover:text-[#1E1B4B]">
-                                  {assignment.title}
-                                </p>
-                                <p className="text-xs text-gray-400">
-                                  Assignment
-                                </p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </SortableModuleItem>
-                    ))}
-                  </SortableContext>
-                </DndContext>
-              )}
+                            ))}
+                          </div>
+                        </SortableModuleItem>
+                      ))}
+                    </SortableContext>
+                  </DndContext>
+                )}
+              </div>
             </div>
 
             {/* Program Validation Cards */}
-            <div className="mt-5 rounded-2xl border border-gray-100 bg-[#F8F5FC]/70 p-4">
-              <div className="mb-4 flex items-center gap-2">
-                <div className="rounded-lg bg-[#1E1B4B]/10 p-2">
-                  <Settings className="text-[#1E1B4B]" size={16} />
+            <div className="mt-5 rounded-2xl border-2 border-slate-700/80 bg-[#050814] p-4">
+              <div className="mb-4 flex items-center gap-2.5">
+                <div className="rounded-xl bg-purple-900/30 border border-purple-500/40 p-2 text-purple-300 shadow-sm">
+                  <Settings size={16} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-[#1E1B4B]">
+                  <h3 className="text-sm font-black text-white">
                     Program Validation
                   </h3>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-slate-400">
                     Program-level configuration cards
                   </p>
                 </div>
@@ -1892,27 +1975,27 @@ const ProgramDetails = () => {
                 {validationCards.map((card) => (
                   <div
                     key={card.title}
-                    className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm"
+                    className="rounded-xl border border-slate-700/80 bg-[#0A0E1F] p-3.5 shadow-sm hover:border-[#00F5FF]/60 transition-colors"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <h4 className="text-sm font-semibold text-gray-800">
+                        <h4 className="text-sm font-bold text-white">
                           {card.title}
                         </h4>
-                        <p className="mt-1 text-xs text-gray-500">
+                        <p className="mt-1 text-xs text-slate-400 leading-snug">
                           {card.description}
                         </p>
                       </div>
                       <button
                         type="button"
                         onClick={card.onClick}
-                        className="rounded-lg border border-[#1E1B4B]/20 bg-[#F8F5FC] px-3 py-1.5 text-xs font-semibold text-[#1E1B4B] transition hover:bg-[#E8E4F0]"
+                        className="rounded-xl border border-purple-400/50 bg-purple-600/30 px-3 py-1.5 text-xs font-bold text-purple-200 transition hover:bg-purple-600/50 cursor-pointer shrink-0 shadow-sm"
                       >
                         Create/Edit
                       </button>
                     </div>
 
-                    <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
+                    <div className="mt-3 flex items-center justify-between text-xs font-medium text-slate-400 pt-2 border-t border-slate-800">
                       <span>Questions Saved: {card.count}</span>
                     </div>
                   </div>
@@ -1923,21 +2006,21 @@ const ProgramDetails = () => {
 
           {/* Retention Quiz Modal */}
           {showRetentionQuizModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-              <div className="w-[920px] max-w-[95vw] rounded-3xl bg-white p-6 shadow-2xl max-h-[90vh] overflow-y-auto border">
-                <div className="flex items-start justify-between gap-4 mb-4">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md">
+              <div className="w-[920px] max-w-[95vw] rounded-3xl bg-[#080C1A] p-6 sm:p-8 shadow-[0_0_50px_rgba(176,38,255,0.4)] max-h-[90vh] overflow-y-auto border-2 border-[#B026FF] text-white custom-scrollbar">
+                <div className="flex items-start justify-between gap-4 mb-4 pb-4 border-b border-slate-800">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">
+                    <h2 className="text-2xl font-black text-white tracking-tight">
                       {retentionQuizTitle}
                     </h2>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-slate-400 mt-1">
                       {retentionQuizDescription}
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setShowRetentionQuizModal(false)}
-                    className="rounded-lg border border-gray-200 p-2 text-gray-500 hover:bg-gray-50"
+                    className="rounded-xl border border-slate-700 bg-slate-900/90 p-2 text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
                   >
                     <X size={18} />
                   </button>
@@ -1959,6 +2042,7 @@ const ProgramDetails = () => {
                   emptyStateTitle="This retention quiz currently contains zero questions."
                   emptyStateButton="Add First Question"
                   saving={savingValidation}
+                  dark={true}
                 />
               </div>
             </div>
@@ -1966,14 +2050,14 @@ const ProgramDetails = () => {
 
           {/* Application Check Modal */}
           {showApplicationCheckModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-              <div className="w-[920px] max-w-[95vw] rounded-3xl bg-white p-6 shadow-2xl max-h-[90vh] overflow-y-auto border">
-                <div className="flex items-start justify-between gap-4 mb-4">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md">
+              <div className="w-[920px] max-w-[95vw] rounded-3xl bg-[#080C1A] p-6 sm:p-8 shadow-[0_0_50px_rgba(0,245,255,0.4)] max-h-[90vh] overflow-y-auto border-2 border-[#00F5FF] text-white custom-scrollbar">
+                <div className="flex items-start justify-between gap-4 mb-4 pb-4 border-b border-slate-800">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">
+                    <h2 className="text-2xl font-black text-white tracking-tight">
                       {applicationCheckTitle}
                     </h2>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-slate-400 mt-1">
                       {applicationCheckDescription}
                     </p>
                   </div>
@@ -1983,7 +2067,7 @@ const ProgramDetails = () => {
                       setShowApplicationCheckModal(false);
                       setActiveApplicationCheckKey(null);
                     }}
-                    className="rounded-lg border border-gray-200 p-2 text-gray-500 hover:bg-gray-50"
+                    className="rounded-xl border border-slate-700 bg-slate-900/90 p-2 text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
                   >
                     <X size={18} />
                   </button>
@@ -2008,27 +2092,28 @@ const ProgramDetails = () => {
                   emptyStateButton="Add First Question"
                   isAppCheck={true}
                   saving={savingValidation}
+                  dark={true}
                 />
               </div>
             </div>
           )}
 
-          {/* Right Content Area - FIXED INPUTS */}
+          {/* Right Content Area - NOTICEABLE 2.5px GOLD BORDER ON OPAQUE DEEP VOID */}
           <div
-            className="lg:col-span-9 rounded-3xl bg-white p-6 shadow-lg border border-gray-100"
+            className="lg:col-span-8 rounded-3xl bg-[#080C1A] p-6 sm:p-7 border-[2.5px] border-[#FFE600] shadow-[0_0_36px_rgba(255,230,0,0.35),inset_0_0_20px_rgba(255,230,0,0.08)] relative z-10 text-white"
             onMouseDown={(e) => {
               // Prevent click from bubbling up to sidebar
               e.stopPropagation();
             }}
           >
             {selectedContent ? (
-              <div className="mb-6 rounded-2xl border bg-white p-6">
+              <div className="mb-6 rounded-2xl border-2 border-slate-700/80 bg-[#050814] p-6 text-white shadow-inner">
                 <button
                   onClick={() => {
                     setSelectedContent(null);
                     setViewingNote(null);
                   }}
-                  className="mb-4 rounded-lg border px-4 py-2 text-sm font-medium hover:bg-gray-50 text-gray-600 transition"
+                  className="mb-4 rounded-xl border-2 border-slate-700 bg-slate-900/90 px-4 py-2 text-sm font-bold hover:bg-slate-800 hover:border-purple-400 text-purple-300 transition flex items-center gap-2 cursor-pointer shadow-sm"
                 >
                   &larr; Back To Module Overview
                 </button>
@@ -2036,22 +2121,22 @@ const ProgramDetails = () => {
                 {/* Video Content */}
                 {selectedContent.type === "video" && (
                   <>
-                    <h2 className="mb-4 text-2xl font-bold">
+                    <h2 className="mb-4 text-2xl font-black text-white">
                       🎥 {selectedContent?.data?.title}
                     </h2>
 
                     {viewingNote ? (
-                      <div className="mb-6 rounded-2xl border p-4 bg-gray-50 relative shadow-md">
+                      <div className="mb-6 rounded-2xl border-2 border-purple-500/40 p-4 bg-[#0A0E1F] relative shadow-lg">
                         <div className="flex justify-between items-center mb-2">
-                          <p className="text-sm font-bold text-gray-800">
+                          <p className="text-sm font-bold text-slate-200">
                             📄 Viewing File:{" "}
-                            <span className="text-[#1E1B4B]">
+                            <span className="text-purple-300">
                               {viewingNote.title}
                             </span>
                           </p>
                           <button
                             onClick={() => setViewingNote(null)}
-                            className="bg-red-500 hover:bg-red-600 text-white rounded-lg px-3 py-1 text-xs font-semibold"
+                            className="bg-rose-600 hover:bg-rose-500 text-white rounded-lg px-3 py-1 text-xs font-bold transition cursor-pointer"
                           >
                             Close Document Viewer
                           </button>
@@ -2061,10 +2146,10 @@ const ProgramDetails = () => {
                           width="100%"
                           height="550px"
                           title="Portal Inline PDF Engine"
-                          className="rounded-xl border bg-white shadow-inner"
+                          className="rounded-xl border border-slate-700 bg-[#0A0E1F] shadow-inner"
                         />
                         {viewingNote.description && (
-                          <p className="mt-2 text-xs text-gray-500 bg-white p-2 rounded-lg border italic">
+                          <p className="mt-2 text-xs text-slate-400 bg-[#050814] p-2.5 rounded-lg border border-slate-800 italic">
                             Info: {viewingNote.description}
                           </p>
                         )}
@@ -2076,32 +2161,32 @@ const ProgramDetails = () => {
                         src={`https://www.youtube.com/embed/${extractYoutubeId(selectedContent?.data?.youtube_url)}`}
                         title="Video Content Panel"
                         allowFullScreen
-                        className="rounded-xl shadow"
+                        className="rounded-xl shadow-lg border border-slate-800"
                       />
                     )}
 
-                    <p className="mt-4 text-gray-600 font-semibold">
+                    <p className="mt-4 text-slate-300 font-bold">
                       Description:
                     </p>
-                    <p className="text-gray-500 text-sm">
+                    <p className="text-slate-400 text-sm leading-relaxed mt-1">
                       {selectedContent?.data?.description ||
                         "No short description provided."}
                     </p>
 
                     {selectedContent?.data?.explanation_text && (
-                      <div className="mt-4 p-4 rounded-xl bg-blue-50/50 border border-blue-100">
-                        <h4 className="text-sm font-bold text-blue-900 mb-1">
+                      <div className="mt-4 p-4 rounded-xl bg-purple-950/40 border border-purple-500/40 text-purple-200 shadow-sm">
+                        <h4 className="text-sm font-bold text-purple-300 mb-1">
                           Lesson Explanation Notes:
                         </h4>
-                        <p className="text-sm text-blue-800 leading-relaxed whitespace-pre-wrap">
+                        <p className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">
                           {selectedContent?.data?.explanation_text}
                         </p>
                       </div>
                     )}
 
-                    <div className="mt-6 border-t pt-4">
+                    <div className="mt-6 border-t border-slate-800 pt-4">
                       <div className="flex justify-between items-center mb-3">
-                        <h4 className="text-md font-bold text-[#1E1B4B]">
+                        <h4 className="text-md font-bold text-white">
                           Attached Lecture Documents & PDF Notes
                         </h4>
                         <button
@@ -2112,7 +2197,7 @@ const ProgramDetails = () => {
                             });
                             setShowNotesModal(true);
                           }}
-                          className="bg-[#10B981] text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-2xs"
+                          className="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-md cursor-pointer transition"
                         >
                           + Add Note Material
                         </button>
@@ -2123,29 +2208,29 @@ const ProgramDetails = () => {
                           selectedContent?.data?.documents.map((n) => (
                             <div
                               key={n.id}
-                              className="p-3 border rounded-xl bg-gray-50 flex flex-col justify-between shadow-xs relative"
+                              className="p-3.5 border border-slate-700/80 rounded-xl bg-[#0A0E1F] flex flex-col justify-between shadow-sm relative hover:border-purple-500/50 transition"
                             >
                               <button
                                 onClick={() => deleteDocument(n.id)}
-                                className="absolute top-2 right-2 text-gray-400 hover:text-red-500 p-1 rounded-lg"
+                                className="absolute top-2 right-2 text-slate-400 hover:text-rose-400 p-1 rounded-lg transition"
                                 title="Delete Document"
                               >
                                 <Trash2 size={14} />
                               </button>
                               <div className="pr-6">
-                                <span className="text-sm font-bold text-gray-800 block">
+                                <span className="text-sm font-bold text-white block">
                                   📚 {n.title}
                                 </span>
                                 {n.description && (
-                                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                                  <p className="text-xs text-slate-400 mt-0.5 line-clamp-2">
                                     {n.description}
                                   </p>
                                 )}
                               </div>
-                              <div className="flex gap-2 mt-3 pt-2 border-t border-gray-200/60">
+                              <div className="flex gap-2 mt-3 pt-2 border-t border-slate-800">
                                 <button
                                   onClick={() => setViewingNote(n)}
-                                  className="text-xs flex-1 bg-[#1E1B4B] text-white py-1.5 rounded-md font-medium text-center hover:opacity-90 shadow-2xs"
+                                  className="text-xs flex-1 bg-purple-600 hover:bg-purple-500 text-white py-1.5 rounded-lg font-bold text-center transition cursor-pointer shadow-sm"
                                 >
                                   View on Portal
                                 </button>
@@ -2153,7 +2238,7 @@ const ProgramDetails = () => {
                                   href={n.file_url}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="text-xs flex-1 bg-gray-200 text-gray-700 py-1.5 rounded-md font-medium text-center hover:bg-gray-300"
+                                  className="text-xs flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 py-1.5 rounded-lg font-bold text-center border border-slate-700 transition"
                                 >
                                   Open Link &rarr;
                                 </a>
@@ -2161,7 +2246,7 @@ const ProgramDetails = () => {
                             </div>
                           ))
                         ) : (
-                          <p className="text-xs text-gray-400 italic col-span-2">
+                          <p className="text-xs text-slate-500 italic col-span-2">
                             No document sheets attached to this lesson block.
                           </p>
                         )}
@@ -2174,12 +2259,12 @@ const ProgramDetails = () => {
                 {selectedContent.type === "writtenLesson" && (
                   <div className="space-y-4">
                     {viewingNote ? (
-                      <div className="mb-6 rounded-2xl border p-4 bg-gray-50 shadow-md">
+                      <div className="mb-6 rounded-2xl border-2 border-purple-500/40 p-4 bg-[#0A0E1F] shadow-lg">
                         <div className="flex justify-between mb-3">
-                          <p className="font-bold">📄 {viewingNote.title}</p>
+                          <p className="font-bold text-white">📄 {viewingNote.title}</p>
                           <button
                             onClick={() => setViewingNote(null)}
-                            className="bg-red-500 text-white px-3 py-1 rounded-lg"
+                            className="bg-rose-600 hover:bg-rose-500 text-white px-3 py-1 rounded-lg font-bold text-xs transition"
                           >
                             Close Viewer
                           </button>
@@ -2189,13 +2274,13 @@ const ProgramDetails = () => {
                           width="100%"
                           height="650"
                           title="Written Lesson Document View"
-                          className="rounded-xl border"
+                          className="rounded-xl border border-slate-700 bg-[#0A0E1F]"
                         />
                       </div>
                     ) : (
                       <>
-                        <div className="flex justify-between items-center border-b pb-4">
-                          <h2 className="text-2xl font-bold">
+                        <div className="flex justify-between items-center border-b border-slate-800 pb-4">
+                          <h2 className="text-2xl font-black text-white">
                             📖 {selectedContent?.data?.title}
                           </h2>
                           {selectedContent?.data?.pdf_url && (
@@ -2208,7 +2293,7 @@ const ProgramDetails = () => {
                                     description: "",
                                   })
                                 }
-                                className="text-xs bg-[#1E1B4B] text-white px-4 py-2 rounded-xl font-semibold text-center hover:opacity-90"
+                                className="text-xs bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-xl font-bold text-center transition cursor-pointer shadow-sm"
                               >
                                 View on Portal
                               </button>
@@ -2220,14 +2305,14 @@ const ProgramDetails = () => {
                                     "noopener,noreferrer",
                                   )
                                 }
-                                className="text-xs bg-gray-200 text-gray-700 px-4 py-2 rounded-xl font-semibold text-center hover:bg-gray-300"
+                                className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-xl font-bold text-center border border-slate-700 transition cursor-pointer"
                               >
                                 Open PDF Link
                               </button>
                             </div>
                           )}
                         </div>
-                        <div className="p-5 bg-gray-50/60 border rounded-2xl text-gray-800 text-sm leading-relaxed whitespace-pre-wrap">
+                        <div className="p-5 bg-[#050814] border-2 border-slate-700/80 rounded-2xl text-slate-200 text-sm leading-relaxed whitespace-pre-wrap">
                           {selectedContent?.data?.content}
                         </div>
                       </>
@@ -2238,23 +2323,20 @@ const ProgramDetails = () => {
                 {/* Quiz Content */}
                 {selectedContent.type === "quiz" && (
                   <>
-                    <div className="flex justify-between items-start border-b pb-4">
+                    <div className="flex justify-between items-start border-b border-slate-800 pb-4">
                       <div>
-                        <h2 className="text-2xl font-bold">
+                        <h2 className="text-2xl font-black text-white">
                           ❓ {selectedContent?.data?.title}
                         </h2>
 
-                        <p className="mt-1 text-sm text-gray-500">
+                        <p className="mt-1 text-sm text-slate-400">
                           {selectedContent?.data?.description ||
                             "No description loaded."}
                         </p>
 
-                        <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 px-3 py-2">
-                          <span className="text-sm font-semibold text-green-700">
-                            Passing Percentage:
-                          </span>
-
-                          <span className="text-sm font-bold text-green-800">
+                        <div className="mt-3 inline-flex items-center gap-2 rounded-xl bg-emerald-950/80 border border-emerald-500/50 px-3 py-2 text-emerald-300 font-bold text-sm shadow-sm">
+                          <span>Passing Percentage:</span>
+                          <span className="text-emerald-200">
                             {selectedContent?.data?.passing_percentage ?? 0}%
                           </span>
                         </div>
@@ -2265,7 +2347,7 @@ const ProgramDetails = () => {
                           onClick={() =>
                             mapQuizResults(selectedContent.data.id)
                           }
-                          className="rounded-lg bg-green-600 hover:bg-green-700 px-4 py-2 text-white font-semibold text-sm"
+                          className="rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-2 text-white font-bold text-sm shadow-md transition cursor-pointer"
                         >
                           View Results
                         </button>
@@ -2275,14 +2357,14 @@ const ProgramDetails = () => {
                             setSelectedQuiz(selectedContent.data);
                             setShowQuestionModal(true);
                           }}
-                          className="rounded-lg bg-blue-600 hover:bg-blue-700 px-4 py-2 text-white font-semibold text-sm"
+                          className="rounded-xl bg-purple-600 hover:bg-purple-500 px-4 py-2 text-white font-bold text-sm shadow-md transition cursor-pointer"
                         >
                           + Add/Edit Questions Form
                         </button>
                       </div>
                     </div>
                     <div className="mt-6 space-y-4">
-                      <h3 className="text-lg font-bold text-[#1E1B4B]">
+                      <h3 className="text-lg font-bold text-white">
                         Saved Evaluation Questions
                       </h3>
                       {selectedContent?.data?.questions &&
@@ -2290,32 +2372,36 @@ const ProgramDetails = () => {
                         selectedContent?.data?.questions.map((q, index) => (
                           <div
                             key={q.id || index}
-                            className="rounded-xl border p-5 bg-gray-50/60 shadow-xs space-y-3"
+                            className="rounded-xl border-2 border-slate-700/80 p-5 bg-[#0A0E1F] shadow-sm space-y-3"
                           >
                             <div className="flex items-center justify-between">
-                              <h4 className="font-bold text-gray-900">
+                              <h4 className="font-bold text-white">
                                 Q{index + 1}. {q.question}
                               </h4>
 
-                              <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-lg text-sm font-bold">
+                              <span className="bg-purple-950/80 text-purple-300 border border-purple-500/40 px-3 py-1 rounded-lg text-sm font-bold">
                                 {q.marks} Marks
                               </span>
                             </div>
-                            <div className="grid grid-cols-2 gap-3 text-sm text-gray-700">
+                            <div className="grid grid-cols-2 gap-3 text-sm text-slate-300">
                               {q.options?.map((opt, oIdx) => (
                                 <p
                                   key={oIdx}
-                                  className={`p-2.5 rounded-xl border bg-white ${opt.isCorrect ? "border-green-500 bg-green-50/50 text-green-800 font-bold shadow-2xs" : ""}`}
+                                  className={`p-2.5 rounded-xl border ${
+                                    opt.isCorrect
+                                      ? "border-emerald-500 bg-emerald-950/60 text-emerald-200 font-bold shadow-sm"
+                                      : "border-slate-700 bg-[#050814] text-slate-300"
+                                  }`}
                                 >
-                                  <strong>Option {oIdx + 1}:</strong> {opt.text}
+                                  <strong className="text-white">Option {oIdx + 1}:</strong> {opt.text}
                                 </p>
                               ))}
                             </div>
-                            <div className="bg-amber-50/60 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-900">
+                            <div className="bg-amber-950/40 border border-amber-500/40 rounded-xl p-3.5 text-xs text-amber-200">
                               <span className="font-bold">
                                 Explanation Note:
                               </span>
-                              <p className="mt-1 whitespace-pre-wrap italic text-amber-800">
+                              <p className="mt-1 whitespace-pre-wrap italic text-amber-300">
                                 {q.explanation ||
                                   "No explanation text added for this question block."}
                               </p>
@@ -2323,7 +2409,7 @@ const ProgramDetails = () => {
                           </div>
                         ))
                       ) : (
-                        <p className="text-xs text-gray-400 italic">
+                        <p className="text-xs text-slate-500 italic">
                           No evaluation questions have been added to this quiz
                           configurations pool yet.
                         </p>
@@ -2368,12 +2454,13 @@ const ProgramDetails = () => {
                       emptyStateButton="Populate First Form Field Node"
                       showHeader={true}
                       showFooterActions={false}
+                      dark={true}
                       headerActions={
                         <div className="flex flex-wrap gap-2 shrink-0">
                           <button
                             onClick={commitLiveSurveyToModulePool}
                             disabled={savingSurvey}
-                            className="rounded-xl bg-[#10B981] hover:bg-[#0fA773] px-4 py-2 text-white text-xs font-bold shadow-sm transition disabled:opacity-50"
+                            className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 px-4 py-2 text-white text-xs font-bold shadow-sm transition disabled:opacity-50 cursor-pointer"
                           >
                             {savingSurvey ? "Saving..." : "Save Survey"}
                           </button>
@@ -2382,7 +2469,7 @@ const ProgramDetails = () => {
                             onClick={() =>
                               inlineDeleteSurveyItem(selectedContent.data.id)
                             }
-                            className="rounded-xl border border-red-200 bg-white text-red-500 hover:bg-red-50 p-2 text-xs font-semibold transition"
+                            className="rounded-xl border border-rose-500/50 bg-rose-950/40 text-rose-300 hover:bg-rose-900/60 p-2 text-xs font-semibold transition cursor-pointer"
                             title="Delete Survey Form Configuration"
                           >
                             <Trash2 size={15} />
@@ -2396,17 +2483,16 @@ const ProgramDetails = () => {
                 {/* Assignment Content */}
                 {selectedContent.type === "assignment" && (
                   <div className="space-y-6">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-100 pb-5 gap-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-800 pb-5 gap-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 border border-amber-200 shadow-xs">
+                        <div className="w-12 h-12 rounded-xl bg-amber-950/80 flex items-center justify-center text-amber-400 border border-amber-500/40 shadow-sm">
                           <ClipboardCheck size={24} />
                         </div>
                         <div>
-                          <span className="text-xs font-bold text-amber-600 uppercase tracking-widest bg-amber-50 border border-amber-100 rounded-full px-2.5 py-0.5">
-                            {" "}
+                          <span className="text-xs font-bold text-amber-300 uppercase tracking-widest bg-amber-950/80 border border-amber-500/50 rounded-full px-2.5 py-0.5">
                             Saarthi Assignment
                           </span>
-                          <h2 className="text-2xl font-bold text-gray-900 mt-1">
+                          <h2 className="text-2xl font-black text-white mt-1">
                             {selectedContent?.data?.title}
                           </h2>
                         </div>
@@ -2416,7 +2502,7 @@ const ProgramDetails = () => {
                           onClick={() =>
                             handleEditAssignmentClick(selectedContent.data)
                           }
-                          className="flex-1 sm:flex-none px-4 py-2 border border-gray-200 rounded-xl font-semibold text-sm text-gray-700 bg-white shadow-xs hover:bg-gray-50 transition flex items-center justify-center gap-1.5"
+                          className="flex-1 sm:flex-none px-4 py-2 border border-slate-700 rounded-xl font-bold text-sm text-slate-200 bg-slate-900 hover:bg-slate-800 transition flex items-center justify-center gap-1.5 cursor-pointer"
                         >
                           <Settings size={15} /> Edit
                         </button>
@@ -2424,7 +2510,7 @@ const ProgramDetails = () => {
                           onClick={() =>
                             deleteAssignment(selectedContent.data.id)
                           }
-                          className="flex-1 sm:flex-none px-4 py-2 border border-transparent rounded-xl font-semibold text-sm text-white bg-red-600 shadow-sm hover:bg-red-700 transition flex items-center justify-center gap-1.5"
+                          className="flex-1 sm:flex-none px-4 py-2 border border-transparent rounded-xl font-bold text-sm text-white bg-rose-600 hover:bg-rose-500 transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
                         >
                           <Trash2 size={15} /> Delete
                         </button>
@@ -2433,33 +2519,33 @@ const ProgramDetails = () => {
 
                     {/* Quick Stats Grid Overview */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="bg-white border border-gray-100 shadow-xs rounded-2xl p-4 flex flex-col justify-between">
-                        <span className="text-xs font-bold text-gray-400 uppercase">
+                      <div className="bg-[#0A0E1F] border border-slate-700/80 shadow-sm rounded-2xl p-4 flex flex-col justify-between">
+                        <span className="text-xs font-bold text-slate-400 uppercase">
                           Max Score
                         </span>
-                        <span className="text-xl font-black text-[#1E1B4B] mt-1">
+                        <span className="text-xl font-black text-purple-300 mt-1">
                           {selectedContent?.data?.max_marks}{" "}
-                          <span className="text-xs font-normal text-gray-400">
+                          <span className="text-xs font-normal text-slate-500">
                             marks
                           </span>
                         </span>
                       </div>
-                      <div className="bg-white border border-gray-100 shadow-xs rounded-2xl p-4 flex flex-col justify-between">
-                        <span className="text-xs font-bold text-gray-400 uppercase">
+                      <div className="bg-[#0A0E1F] border border-slate-700/80 shadow-sm rounded-2xl p-4 flex flex-col justify-between">
+                        <span className="text-xs font-bold text-slate-400 uppercase">
                           Passing Bench
                         </span>
-                        <span className="text-xl font-black text-emerald-600 mt-1">
+                        <span className="text-xl font-black text-emerald-400 mt-1">
                           {selectedContent?.data?.passing_marks}{" "}
-                          <span className="text-xs font-normal text-gray-400">
+                          <span className="text-xs font-normal text-slate-500">
                             marks
                           </span>
                         </span>
                       </div>
-                      <div className="bg-white border border-gray-100 shadow-xs rounded-2xl p-4 flex flex-col justify-between">
-                        <span className="text-xs font-bold text-gray-400 uppercase">
+                      <div className="bg-[#0A0E1F] border border-slate-700/80 shadow-sm rounded-2xl p-4 flex flex-col justify-between">
+                        <span className="text-xs font-bold text-slate-400 uppercase">
                           Format
                         </span>
-                        <span className="text-sm font-bold text-gray-700 mt-2 capitalize">
+                        <span className="text-sm font-bold text-cyan-300 mt-2 capitalize">
                           {selectedContent?.data?.submission_type === "file"
                             ? "📁 File Submission"
                             : selectedContent?.data?.submission_type === "text"
@@ -2467,11 +2553,11 @@ const ProgramDetails = () => {
                               : "💡 Hybrid Format"}
                         </span>
                       </div>
-                      <div className="bg-white border border-gray-100 shadow-xs rounded-2xl p-4 flex flex-col justify-between">
-                        <span className="text-xs font-bold text-gray-400 uppercase">
+                      <div className="bg-[#0A0E1F] border border-slate-700/80 shadow-sm rounded-2xl p-4 flex flex-col justify-between">
+                        <span className="text-xs font-bold text-slate-400 uppercase">
                           Target Due
                         </span>
-                        <span className="text-xs font-bold text-amber-600 mt-2 flex items-center gap-1 truncate">
+                        <span className="text-xs font-bold text-amber-300 mt-2 flex items-center gap-1 truncate">
                           <Clock size={13} />{" "}
                           {selectedContent?.data?.deadline
                             ? new Date(
@@ -2484,30 +2570,30 @@ const ProgramDetails = () => {
 
                     {/* Context Cards */}
                     <div className="space-y-4">
-                      <div className="bg-white border border-gray-100 shadow-sm rounded-2xl p-5 space-y-2">
-                        <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <div className="bg-[#0A0E1F] border border-slate-700/80 shadow-sm rounded-2xl p-5 space-y-2">
+                        <h4 className="text-xs font-black text-amber-400/90 uppercase tracking-wider flex items-center gap-1.5">
                           <Info size={14} /> Assignment Summary
                         </h4>
-                        <p className="text-sm text-gray-666 leading-relaxed whitespace-pre-wrap">
+                        <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
                           {selectedContent?.data?.description ||
                             "No description summary context provided."}
                         </p>
                       </div>
 
-                      <div className="bg-white border border-gray-100 shadow-sm rounded-2xl p-5 space-y-2">
-                        <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <div className="bg-[#0A0E1F] border border-slate-700/80 shadow-sm rounded-2xl p-5 space-y-2">
+                        <h4 className="text-xs font-black text-amber-400/90 uppercase tracking-wider flex items-center gap-1.5">
                           <BookOpen size={14} /> Detailed Instruction Deck
                         </h4>
-                        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                        <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
                           {selectedContent?.data?.instructions ||
                             "No custom evaluation task workflows established yet."}
                         </p>
                       </div>
 
                       {/* Expanded Compliance Information Box */}
-                      <div className="bg-gray-50 border border-gray-100 rounded-2xl p-5 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-gray-500">
+                      <div className="bg-[#050814] border border-slate-800 rounded-2xl p-5 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-400">
                         <div className="space-y-1.5">
-                          <span className="font-bold text-gray-700 block">
+                          <span className="font-bold text-white block">
                             System Rules Checklist
                           </span>
                           <p className="flex items-center gap-2">
@@ -2524,17 +2610,17 @@ const ProgramDetails = () => {
                           </p>
                         </div>
                         <div className="space-y-1.5">
-                          <span className="font-bold text-gray-700 block">
+                          <span className="font-bold text-white block">
                             Upload Constraints
                           </span>
                           <p>
                             • Maximum Allowed Package Payload Size:{" "}
-                            <span className="font-bold text-gray-700">
+                            <span className="font-bold text-purple-300">
                               {selectedContent?.data?.max_file_size || 50} MB
                             </span>
                           </p>
                           {selectedContent?.data?.allow_late_submission && (
-                            <p className="text-amber-700 font-medium">
+                            <p className="text-amber-300 font-medium">
                               • Active Delay Reduction Deduction Penalty:{" "}
                               <span className="font-bold">
                                 {selectedContent?.data?.late_penalty} Marks
@@ -2548,20 +2634,20 @@ const ProgramDetails = () => {
                 )}
               </div>
             ) : (
-              // No Content Selected - Show Module Editor with FIXED INPUTS
+              // No Content Selected - Show Module Editor with ENHANCED DARK INPUTS
               <>
-                <div className="border-b pb-5 mb-6">
+                <div className="border-b border-slate-800 pb-5 mb-6">
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#1E1B4B] to-[#3D3680] flex items-center justify-center shadow-lg shadow-[#1E1B4B]/20">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-900 to-indigo-900 border border-purple-400/40 flex items-center justify-center shadow-lg shadow-purple-900/30">
                       <Layers className="text-white" size={24} />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-bold text-[#1E1B4B]">
+                      <h2 className="text-2xl font-black text-white">
                         {selectedModule
                           ? selectedModule.title
                           : "No Module Selected"}
                       </h2>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-slate-400">
                         Attach course items here
                       </p>
                     </div>
@@ -2571,7 +2657,7 @@ const ProgramDetails = () => {
                 <div className="space-y-4">
                   <div className="space-y-4" ref={editorContainerRef}>
                     <div className="relative">
-                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
+                      <label className="text-xs font-bold text-amber-400/90 uppercase tracking-wider block mb-1.5">
                         Module Name
                       </label>
                       <input
@@ -2581,18 +2667,18 @@ const ProgramDetails = () => {
                           setEditModuleTitle(e.target.value);
                           setHasUnsavedChanges(true);
                         }}
-                        className="w-full rounded-xl border-2 border-gray-200 p-4 bg-white font-semibold text-lg outline-none focus:border-[#1E1B4B] focus:ring-4 focus:ring-[#1E1B4B]/10 transition-all disabled:bg-gray-50 disabled:text-gray-400"
+                        className="w-full rounded-xl border-2 border-slate-700/80 p-4 bg-[#050814] font-semibold text-lg text-white outline-none focus:border-[#FFE600] focus:ring-4 focus:ring-[#FFE600]/15 transition-all placeholder-slate-500 disabled:bg-slate-900/60 disabled:text-slate-600 shadow-inner"
                         placeholder="Enter module name..."
                       />
                       {hasUnsavedChanges && (
-                        <span className="absolute right-3 top-9 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full border border-amber-200">
+                        <span className="absolute right-3 top-9 text-xs font-bold text-amber-300 bg-amber-950/80 px-2.5 py-1 rounded-full border border-amber-500/50 shadow-sm">
                           Unsaved changes
                         </span>
                       )}
                     </div>
 
                     <div>
-                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
+                      <label className="text-xs font-bold text-amber-400/90 uppercase tracking-wider block mb-1.5">
                         Module Description
                       </label>
                       <textarea
@@ -2602,14 +2688,14 @@ const ProgramDetails = () => {
                           setEditModuleDescription(e.target.value);
                           setHasUnsavedChanges(true);
                         }}
-                        className="w-full rounded-xl border-2 border-gray-200 p-4 bg-white outline-none focus:border-[#1E1B4B] focus:ring-4 focus:ring-[#1E1B4B]/10 transition-all resize-none disabled:bg-gray-50 disabled:text-gray-400"
+                        className="w-full rounded-xl border-2 border-slate-700/80 p-4 bg-[#050814] text-white outline-none focus:border-[#FFE600] focus:ring-4 focus:ring-[#FFE600]/15 transition-all resize-none placeholder-slate-500 disabled:bg-slate-900/60 disabled:text-slate-600 shadow-inner"
                         rows={3}
                         placeholder="Provide a general summary/description for this module..."
                       />
                     </div>
 
                     <div>
-                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
+                      <label className="text-xs font-bold text-amber-400/90 uppercase tracking-wider block mb-1.5">
                         Module Completion Curos
                       </label>
                       <input
@@ -2621,13 +2707,13 @@ const ProgramDetails = () => {
                           setEditModuleCuros(e.target.value);
                           setHasUnsavedChanges(true);
                         }}
-                        className="w-full rounded-xl border-2 border-gray-200 p-4 bg-white font-semibold text-lg outline-none focus:border-[#1E1B4B] focus:ring-4 focus:ring-[#1E1B4B]/10 transition-all disabled:bg-gray-50 disabled:text-gray-400"
+                        className="w-full rounded-xl border-2 border-slate-700/80 p-4 bg-[#050814] font-semibold text-lg text-white outline-none focus:border-[#FFE600] focus:ring-4 focus:ring-[#FFE600]/15 transition-all placeholder-slate-500 disabled:bg-slate-900/60 disabled:text-slate-600 shadow-inner"
                         placeholder="Enter curos awarded for module completion"
                       />
                     </div>
 
                     {selectedModule && (
-                      <div className="flex justify-end gap-3">
+                      <div className="flex justify-end gap-3 pt-2">
                         <button
                           onClick={() => {
                             if (selectedModule) {
@@ -2640,14 +2726,14 @@ const ProgramDetails = () => {
                             }
                           }}
                           disabled={!hasUnsavedChanges || savingModule}
-                          className="rounded-xl border-2 border-gray-200 px-5 py-2.5 text-gray-600 text-sm font-medium hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                          className="rounded-xl border-2 border-slate-700 bg-slate-900/80 px-5 py-2.5 text-slate-300 text-sm font-bold hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
                         >
                           Cancel
                         </button>
                         <button
                           onClick={updateModuleDetails}
                           disabled={savingModule}
-                          className="rounded-xl bg-[#1E1B4B] px-6 py-2.5 text-white text-sm font-medium hover:bg-[#2D256B] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-[#1E1B4B]/20 flex items-center gap-2"
+                          className="rounded-xl bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-700 hover:from-purple-500 hover:to-indigo-600 px-6 py-2.5 text-white text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[0_0_20px_rgba(168,85,247,0.4)] border border-purple-400/40 flex items-center gap-2 cursor-pointer"
                         >
                           {savingModule ? (
                             <>
@@ -2666,7 +2752,7 @@ const ProgramDetails = () => {
 
                     <button
                       onClick={() => setShowContentTypes(!showContentTypes)}
-                      className="mt-4 rounded-xl border-2 border-dashed border-[#10B981] px-5 py-4 text-[#10B981] font-semibold w-full hover:bg-[#10B981]/5 transition-all flex items-center justify-center gap-2 group"
+                      className="mt-5 rounded-xl border-2 border-dashed border-[#10F5A0] px-5 py-4 text-[#10F5A0] bg-[#10F5A0]/10 hover:bg-[#10F5A0]/20 font-black text-sm w-full transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(16,245,160,0.2)] cursor-pointer group"
                     >
                       {showContentTypes && (
                         <>
@@ -2678,7 +2764,7 @@ const ProgramDetails = () => {
                         <>
                           <Plus
                             size={18}
-                            className="group-hover:rotate-90 transition-transform"
+                            className="group-hover:rotate-90 transition-transform stroke-[2.5]"
                           />
                           Add Core Content Items To Module
                         </>
@@ -2686,21 +2772,20 @@ const ProgramDetails = () => {
                     </button>
 
                     {showContentTypes && (
-                      <div className="mt-4 grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 bg-gradient-to-br from-gray-50 to-white p-5 rounded-2xl border border-gray-200">
-                        {/* Content type buttons remain the same */}
+                      <div className="mt-4 grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 bg-[#050814] p-5 rounded-2xl border-2 border-slate-800 shadow-inner">
                         <button
                           onClick={() => setShowVideoModal(true)}
-                          className="group bg-white rounded-xl border-2 border-gray-100 p-4 shadow-sm hover:border-[#10B981] hover:shadow-md transition-all text-left"
+                          className="group bg-[#0A0E1F] rounded-xl border-2 border-slate-700/80 p-4 shadow-sm hover:border-red-400 hover:bg-[#121936] transition-all text-left cursor-pointer"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-colors">
-                              <PlayCircle className="text-red-500" size={20} />
+                            <div className="w-10 h-10 rounded-lg bg-red-950/80 border border-red-500/40 flex items-center justify-center group-hover:bg-red-900/60 transition-colors">
+                              <PlayCircle className="text-red-400" size={20} />
                             </div>
                             <div>
-                              <p className="font-semibold text-sm text-gray-800">
+                              <p className="font-bold text-sm text-white">
                                 Video Lesson
                               </p>
-                              <p className="text-xs text-gray-400">
+                              <p className="text-xs text-slate-400">
                                 YouTube content
                               </p>
                             </div>
@@ -2708,17 +2793,17 @@ const ProgramDetails = () => {
                         </button>
                         <button
                           onClick={() => setShowWrittenLessonModal(true)}
-                          className="group bg-white rounded-xl border-2 border-gray-100 p-4 shadow-sm hover:border-[#10B981] hover:shadow-md transition-all text-left"
+                          className="group bg-[#0A0E1F] rounded-xl border-2 border-slate-700/80 p-4 shadow-sm hover:border-blue-400 hover:bg-[#121936] transition-all text-left cursor-pointer"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
-                              <BookOpen className="text-blue-500" size={20} />
+                            <div className="w-10 h-10 rounded-lg bg-blue-950/80 border border-blue-500/40 flex items-center justify-center group-hover:bg-blue-900/60 transition-colors">
+                              <BookOpen className="text-blue-400" size={20} />
                             </div>
                             <div>
-                              <p className="font-semibold text-sm text-gray-800">
+                              <p className="font-bold text-sm text-white">
                                 Written Lesson
                               </p>
-                              <p className="text-xs text-gray-400">
+                              <p className="text-xs text-slate-400">
                                 Text & PDF content
                               </p>
                             </div>
@@ -2726,20 +2811,20 @@ const ProgramDetails = () => {
                         </button>
                         <button
                           onClick={() => setShowQuizModal(true)}
-                          className="group bg-white rounded-xl border-2 border-gray-100 p-4 shadow-sm hover:border-[#10B981] hover:shadow-md transition-all text-left"
+                          className="group bg-[#0A0E1F] rounded-xl border-2 border-slate-700/80 p-4 shadow-sm hover:border-purple-400 hover:bg-[#121936] transition-all text-left cursor-pointer"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center group-hover:bg-purple-100 transition-colors">
+                            <div className="w-10 h-10 rounded-lg bg-purple-950/80 border border-purple-500/40 flex items-center justify-center group-hover:bg-purple-900/60 transition-colors">
                               <ClipboardCheck
-                                className="text-purple-500"
+                                className="text-purple-400"
                                 size={20}
                               />
                             </div>
                             <div>
-                              <p className="font-semibold text-sm text-gray-800">
+                              <p className="font-bold text-sm text-white">
                                 Quiz Assessment
                               </p>
-                              <p className="text-xs text-gray-400">
+                              <p className="text-xs text-slate-400">
                                 MCQ evaluations
                               </p>
                             </div>
@@ -2747,20 +2832,20 @@ const ProgramDetails = () => {
                         </button>
                         <button
                           onClick={() => setShowSurveyChoiceModal(true)}
-                          className="group bg-white rounded-xl border-2 border-gray-100 p-4 shadow-sm hover:border-[#10B981] hover:shadow-md transition-all text-left"
+                          className="group bg-[#0A0E1F] rounded-xl border-2 border-slate-700/80 p-4 shadow-sm hover:border-emerald-400 hover:bg-[#121936] transition-all text-left cursor-pointer"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center group-hover:bg-green-100 transition-colors">
+                            <div className="w-10 h-10 rounded-lg bg-emerald-950/80 border border-emerald-500/40 flex items-center justify-center group-hover:bg-emerald-900/60 transition-colors">
                               <FileQuestion
-                                className="text-green-500"
+                                className="text-emerald-400"
                                 size={20}
                               />
                             </div>
                             <div>
-                              <p className="font-semibold text-sm text-gray-800">
+                              <p className="font-bold text-sm text-white">
                                 Survey Block
                               </p>
-                              <p className="text-xs text-gray-400">
+                              <p className="text-xs text-slate-400">
                                 Feedback forms
                               </p>
                             </div>
@@ -2771,20 +2856,20 @@ const ProgramDetails = () => {
                             resetAssignmentForm();
                             setShowAssignmentModal(true);
                           }}
-                          className="group bg-white rounded-xl border-2 border-gray-100 p-4 shadow-sm hover:border-[#10B981] hover:shadow-md transition-all text-left sm:col-span-2 lg:col-span-1"
+                          className="group bg-[#0A0E1F] rounded-xl border-2 border-slate-700/80 p-4 shadow-sm hover:border-amber-400 hover:bg-[#121936] transition-all text-left sm:col-span-2 lg:col-span-1 cursor-pointer"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
+                            <div className="w-10 h-10 rounded-lg bg-amber-950/80 border border-amber-500/40 flex items-center justify-center group-hover:bg-amber-900/60 transition-colors">
                               <ClipboardCheck
-                                className="text-amber-500"
+                                className="text-amber-400"
                                 size={20}
                               />
                             </div>
                             <div>
-                              <p className="font-semibold text-sm text-gray-800">
+                              <p className="font-bold text-sm text-white">
                                 Assignment Deck
                               </p>
-                              <p className="text-xs text-gray-400">
+                              <p className="text-xs text-slate-400">
                                 Task management
                               </p>
                             </div>
@@ -2804,14 +2889,14 @@ const ProgramDetails = () => {
 
       {/* Written Lesson Modal */}
       {showWrittenLessonModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs">
-          <div className="w-[650px] rounded-3xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
-            <h2 className="mb-4 text-2xl font-bold text-gray-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md">
+          <div className="w-[650px] max-w-[95vw] rounded-3xl bg-[#080C1A] p-6 sm:p-7 shadow-[0_0_50px_rgba(176,38,255,0.35)] max-h-[90vh] overflow-y-auto border-2 border-[#B026FF] text-white custom-scrollbar">
+            <h2 className="mb-4 text-2xl font-black text-white tracking-tight">
               Add Written Lesson
             </h2>
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-semibold text-gray-600 block mb-1">
+                <label className="text-xs font-bold text-slate-300 block mb-1">
                   Lesson Title *
                 </label>
                 <input
@@ -2820,11 +2905,11 @@ const ProgramDetails = () => {
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={(e) => e.stopPropagation()}
                   placeholder="E.g., Complete Object-Oriented Framework Overview"
-                  className="w-full rounded-xl border p-3 text-sm"
+                  className="w-full rounded-xl border-2 border-slate-700/80 p-3 text-sm bg-[#050814] text-white placeholder-slate-500 focus:border-purple-400 outline-none transition"
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-600 block mb-1">
+                <label className="text-xs font-bold text-slate-300 block mb-1">
                   Lesson Markdown / Content Details *
                 </label>
                 <textarea
@@ -2832,16 +2917,16 @@ const ProgramDetails = () => {
                   onChange={(e) => setWrittenLessonContent(e.target.value)}
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={(e) => e.stopPropagation()}
-                  rows={10}
+                  rows={8}
                   placeholder="Type or paste core written notes documentation text inside this sheet viewport..."
-                  className="w-full rounded-xl border p-3 text-sm"
+                  className="w-full rounded-xl border-2 border-slate-700/80 p-3 text-sm bg-[#050814] text-white placeholder-slate-500 focus:border-purple-400 outline-none transition resize-none"
                 />
               </div>
-              <div className="p-4 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 text-center">
+              <div className="p-4 border-2 border-dashed border-purple-500/50 rounded-xl bg-[#0A0E1F] text-center">
                 <label
                   className={`block ${uploadingNote ? "pointer-events-none opacity-60" : "cursor-pointer"}`}
                 >
-                  <span className="text-xs font-bold text-[#1E1B4B] block hover:underline">
+                  <span className="text-xs font-bold text-purple-300 block hover:underline">
                     {uploadingNote
                       ? "⏳ Uploading PDF..."
                       : "📂 Upload PDF from Device"}
@@ -2855,18 +2940,18 @@ const ProgramDetails = () => {
                   />
                 </label>
                 {writtenLessonFile && !uploadingNote && (
-                  <p className="text-xs text-green-600 mt-2 font-medium bg-green-50 rounded p-1 inline-block truncate max-w-full">
+                  <p className="text-xs text-emerald-400 mt-2 font-bold bg-emerald-950/80 border border-emerald-500/50 rounded-lg p-1.5 inline-block truncate max-w-full">
                     &check; Uploaded: {writtenLessonFile.name}
                   </p>
                 )}
               </div>
-              <div className="relative flex py-2 items-center font-bold text-xs text-gray-400">
-                <div className="flex-grow border-t border-gray-300"></div>
+              <div className="relative flex py-2 items-center font-bold text-xs text-slate-500">
+                <div className="flex-grow border-t border-slate-800"></div>
                 <span className="flex-shrink mx-4 uppercase">OR</span>
-                <div className="flex-grow border-t border-gray-300"></div>
+                <div className="flex-grow border-t border-slate-800"></div>
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-600 block mb-1">
+                <label className="text-xs font-bold text-slate-300 block mb-1">
                   Hosted PDF URL (optional)
                 </label>
                 <input
@@ -2875,11 +2960,11 @@ const ProgramDetails = () => {
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={(e) => e.stopPropagation()}
                   placeholder="https://example.com/assets/handout.pdf"
-                  className="w-full rounded-xl border p-3 text-sm"
+                  className="w-full rounded-xl border-2 border-slate-700/80 p-3 text-sm bg-[#050814] text-white placeholder-slate-500 focus:border-purple-400 outline-none transition disabled:opacity-50"
                   disabled={!!writtenLessonFile || uploadingNote}
                 />
               </div>
-              <div className="flex justify-end gap-3 mt-4">
+              <div className="flex justify-end gap-3 mt-4 pt-3 border-t border-slate-800">
                 <button
                   onClick={() => {
                     setShowWrittenLessonModal(false);
@@ -2890,7 +2975,7 @@ const ProgramDetails = () => {
                   }}
                   onMouseDown={(e) => e.stopPropagation()}
                   disabled={savingWrittenLesson || uploadingNote}
-                  className="rounded-xl border px-4 py-2 text-sm font-medium"
+                  className="rounded-xl border border-slate-700 bg-slate-900/90 text-slate-300 hover:bg-slate-800 px-4 py-2 text-sm font-bold transition cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -2898,7 +2983,7 @@ const ProgramDetails = () => {
                   onClick={saveWrittenLesson}
                   onMouseDown={(e) => e.stopPropagation()}
                   disabled={savingWrittenLesson || uploadingNote}
-                  className="rounded-xl bg-[#10B981] px-5 py-2 text-white text-sm font-medium disabled:opacity-50"
+                  className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 px-5 py-2 text-white text-sm font-bold shadow-md transition disabled:opacity-50 cursor-pointer"
                 >
                   {savingWrittenLesson
                     ? "Saving Written Lesson..."
@@ -2912,52 +2997,72 @@ const ProgramDetails = () => {
 
       {/* Video Modal */}
       {showVideoModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs">
-          <div className="w-[650px] rounded-3xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
-            <h2 className="mb-4 text-2xl font-bold text-gray-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md">
+          <div className="w-[650px] max-w-[95vw] rounded-3xl bg-[#080C1A] p-6 sm:p-7 shadow-[0_0_50px_rgba(176,38,255,0.35)] max-h-[90vh] overflow-y-auto border-2 border-[#B026FF] text-white custom-scrollbar">
+            <h2 className="mb-4 text-2xl font-black text-white tracking-tight">
               Add Video Lesson
             </h2>
             <div className="space-y-4">
-              <input
-                value={lessonTitle}
-                onChange={(e) => setLessonTitle(e.target.value)}
-                onMouseDown={(e) => e.stopPropagation()}
-                onClick={(e) => e.stopPropagation()}
-                placeholder="Video Title"
-                className="w-full rounded-xl border p-3 text-sm"
-              />
-              <textarea
-                value={lessonDescription}
-                onChange={(e) => setLessonDescription(e.target.value)}
-                onMouseDown={(e) => e.stopPropagation()}
-                onClick={(e) => e.stopPropagation()}
-                rows={2}
-                placeholder="Brief Description Subtitle"
-                className="w-full rounded-xl border p-3 text-sm"
-              />
-              <textarea
-                value={videoExplanation}
-                onChange={(e) => setVideoExplanation(e.target.value)}
-                onMouseDown={(e) => e.stopPropagation()}
-                onClick={(e) => e.stopPropagation()}
-                rows={4}
-                placeholder="Write long descriptions / explanation text sheet records for this video session..."
-                className="w-full rounded-xl border p-3 text-sm"
-              />
-              <input
-                value={youtubeLink}
-                onChange={(e) => setYoutubeLink(e.target.value)}
-                onMouseDown={(e) => e.stopPropagation()}
-                onClick={(e) => e.stopPropagation()}
-                placeholder="YouTube URL Link String"
-                className="w-full rounded-xl border p-3 text-sm"
-              />
-              <div className="flex justify-end gap-3 mt-4">
+              <div>
+                <label className="text-xs font-bold text-slate-300 block mb-1">
+                  Video Title *
+                </label>
+                <input
+                  value={lessonTitle}
+                  onChange={(e) => setLessonTitle(e.target.value)}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                  placeholder="Video Title"
+                  className="w-full rounded-xl border-2 border-slate-700/80 p-3 text-sm bg-[#050814] text-white placeholder-slate-500 focus:border-purple-400 outline-none transition"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-300 block mb-1">
+                  Brief Subtitle
+                </label>
+                <textarea
+                  value={lessonDescription}
+                  onChange={(e) => setLessonDescription(e.target.value)}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                  rows={2}
+                  placeholder="Brief Description Subtitle"
+                  className="w-full rounded-xl border-2 border-slate-700/80 p-3 text-sm bg-[#050814] text-white placeholder-slate-500 focus:border-purple-400 outline-none transition resize-none"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-300 block mb-1">
+                  Explanation Notes
+                </label>
+                <textarea
+                  value={videoExplanation}
+                  onChange={(e) => setVideoExplanation(e.target.value)}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                  rows={4}
+                  placeholder="Write long descriptions / explanation text sheet records for this video session..."
+                  className="w-full rounded-xl border-2 border-slate-700/80 p-3 text-sm bg-[#050814] text-white placeholder-slate-500 focus:border-purple-400 outline-none transition resize-none"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-300 block mb-1">
+                  YouTube URL *
+                </label>
+                <input
+                  value={youtubeLink}
+                  onChange={(e) => setYoutubeLink(e.target.value)}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  className="w-full rounded-xl border-2 border-slate-700/80 p-3 text-sm bg-[#050814] text-white placeholder-slate-500 focus:border-purple-400 outline-none transition"
+                />
+              </div>
+              <div className="flex justify-end gap-3 mt-4 pt-3 border-t border-slate-800">
                 <button
                   onClick={() => setShowVideoModal(false)}
                   onMouseDown={(e) => e.stopPropagation()}
                   disabled={savingVideo}
-                  className="rounded-xl border px-4 py-2 text-sm font-medium"
+                  className="rounded-xl border border-slate-700 bg-slate-900/90 text-slate-300 hover:bg-slate-800 px-4 py-2 text-sm font-bold transition cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -2965,7 +3070,7 @@ const ProgramDetails = () => {
                   onClick={saveVideoLesson}
                   onMouseDown={(e) => e.stopPropagation()}
                   disabled={savingVideo}
-                  className="rounded-xl bg-[#10B981] px-5 py-2 text-white text-sm font-medium disabled:opacity-50"
+                  className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 px-5 py-2 text-white text-sm font-bold shadow-md transition disabled:opacity-50 cursor-pointer"
                 >
                   {savingVideo ? "Saving Video..." : "Save Video"}
                 </button>
@@ -2977,18 +3082,18 @@ const ProgramDetails = () => {
 
       {/* Quiz Modal */}
       {showQuizModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto transition-all duration-300">
-          <div className="w-full max-w-4xl bg-white rounded-3xl shadow-2xl flex flex-col max-h-[92vh] border border-gray-100 overflow-hidden transform scale-100 animate-fadeIn">
-            <div className="bg-[#1E1B4B] text-white px-6 py-4 flex items-center justify-between shadow-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 overflow-y-auto transition-all duration-300">
+          <div className="w-full max-w-4xl bg-[#080C1A] rounded-3xl shadow-[0_0_50px_rgba(16,185,129,0.3)] flex flex-col max-h-[92vh] border-2 border-emerald-500 overflow-hidden transform scale-100 animate-fadeIn text-white">
+            <div className="bg-[#0D1226] text-white px-6 py-4 flex items-center justify-between border-b border-slate-800">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20">
-                  <ClipboardCheck className="text-emerald-400" size={22} />
+                <div className="w-10 h-10 rounded-xl bg-emerald-950/80 flex items-center justify-center border border-emerald-500/40 text-emerald-400">
+                  <ClipboardCheck size={22} />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold tracking-tight">
+                  <h2 className="text-xl font-black tracking-tight text-white">
                     Create New Assessment
                   </h2>
-                  <p className="text-xs text-indigo-200">
+                  <p className="text-xs text-slate-400">
                     Set criteria, evaluations, and enterprise result layout
                     systems.
                   </p>
@@ -3001,17 +3106,17 @@ const ProgramDetails = () => {
                   setQuizDescription("");
                   setPassingPercentage("");
                 }}
-                className="text-white/70 hover:text-white p-2 rounded-xl bg-white/5 hover:bg-white/10 transition"
+                className="text-slate-400 hover:text-white p-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 transition cursor-pointer"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-slate-50/50">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-[#050814]">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <div className="md:col-span-2 space-y-4">
                   <div>
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-1">
                       Quiz Assessment Title *
                     </label>
                     <input
@@ -3020,11 +3125,11 @@ const ProgramDetails = () => {
                       onMouseDown={(e) => e.stopPropagation()}
                       onClick={(e) => e.stopPropagation()}
                       placeholder="Example: Final Module Technical Benchmark"
-                      className="w-full rounded-xl border border-gray-200 p-3 text-sm outline-none focus:border-[#1E1B4B] focus:ring-2 focus:ring-indigo-100 bg-white font-medium text-gray-800 transition"
+                      className="w-full rounded-xl border-2 border-slate-700/80 p-3 text-sm outline-none focus:border-emerald-400 bg-[#0A0E1F] font-medium text-white transition placeholder-slate-500"
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-1">
                       Core Description Overview
                     </label>
                     <textarea
@@ -3032,16 +3137,16 @@ const ProgramDetails = () => {
                       onChange={(e) => setQuizDescription(e.target.value)}
                       onMouseDown={(e) => e.stopPropagation()}
                       onClick={(e) => e.stopPropagation()}
-                      rows={2}
+                      rows={3}
                       placeholder="Describe the assessment objectives, topics, and constraints..."
-                      className="w-full rounded-xl border border-gray-200 p-3 text-sm outline-none focus:border-[#1E1B4B] focus:ring-2 focus:ring-indigo-100 bg-white text-gray-700 transition resize-none"
+                      className="w-full rounded-xl border-2 border-slate-700/80 p-3 text-sm outline-none focus:border-emerald-400 bg-[#0A0E1F] text-slate-200 transition resize-none placeholder-slate-500"
                     />
                   </div>
                 </div>
 
-                <div className="bg-white rounded-2xl p-4 border border-gray-200 flex flex-col justify-between shadow-xs">
+                <div className="bg-[#0A0E1F] rounded-2xl p-4 border border-slate-700/80 flex flex-col justify-between shadow-xs">
                   <div>
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-1">
                       Passing Bench Criteria *
                     </label>
                     <div className="relative rounded-xl overflow-hidden shadow-2xs">
@@ -3054,21 +3159,21 @@ const ProgramDetails = () => {
                         onMouseDown={(e) => e.stopPropagation()}
                         onClick={(e) => e.stopPropagation()}
                         placeholder="70"
-                        className="w-full rounded-xl border border-gray-200 p-3 pr-12 text-sm font-bold text-gray-800 outline-none focus:border-[#1E1B4B] transition"
+                        className="w-full rounded-xl border-2 border-slate-700/80 p-3 pr-12 text-sm font-bold text-white bg-[#050814] outline-none focus:border-emerald-400 transition"
                       />
-                      <span className="absolute right-4 top-3 text-gray-400 text-sm font-bold">
+                      <span className="absolute right-4 top-3.5 text-slate-400 text-sm font-bold">
                         %
                       </span>
                     </div>
                   </div>
-                  <div className="mt-4 bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-xs text-emerald-800 flex items-start gap-2">
+                  <div className="mt-4 bg-emerald-950/60 border border-emerald-500/40 rounded-xl p-3 text-xs text-emerald-300 flex items-start gap-2">
                     <Award
-                      className="text-emerald-600 shrink-0 mt-0.5"
+                      className="text-emerald-400 shrink-0 mt-0.5"
                       size={15}
                     />
                     <p>
                       Candidates scoring below{" "}
-                      <span className="font-bold text-emerald-900">
+                      <span className="font-bold text-white">
                         {passingPercentage || "0"}%
                       </span>{" "}
                       will be flagged with a non-passing evaluation status.
@@ -3078,7 +3183,7 @@ const ProgramDetails = () => {
               </div>
             </div>
 
-            <div className="bg-white border-t border-gray-200 px-6 py-4 flex items-center justify-end gap-3 shrink-0 shadow-lg">
+            <div className="bg-[#0D1226] border-t border-slate-800 px-6 py-4 flex items-center justify-end gap-3 shrink-0 shadow-lg">
               <button
                 type="button"
                 onClick={() => {
@@ -3089,7 +3194,7 @@ const ProgramDetails = () => {
                 }}
                 onMouseDown={(e) => e.stopPropagation()}
                 disabled={savingQuiz}
-                className="rounded-xl border border-gray-200 px-5 py-2.5 text-sm font-semibold text-gray-600 bg-white hover:bg-gray-50 transition"
+                className="rounded-xl border border-slate-700 px-5 py-2.5 text-sm font-semibold text-slate-300 bg-slate-900/90 hover:bg-slate-800 transition cursor-pointer"
               >
                 Cancel
               </button>
@@ -3098,7 +3203,7 @@ const ProgramDetails = () => {
                 onClick={saveQuiz}
                 onMouseDown={(e) => e.stopPropagation()}
                 disabled={savingQuiz}
-                className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 px-6 py-2.5 text-white text-sm font-bold shadow-md shadow-emerald-500/10 active:scale-98 transition-all flex items-center gap-2 disabled:opacity-50"
+                className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 px-6 py-2.5 text-white text-sm font-bold shadow-md shadow-emerald-500/20 active:scale-98 transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
               >
                 {savingQuiz ? (
                   <>
@@ -3118,12 +3223,12 @@ const ProgramDetails = () => {
 
       {/* Quiz Questions Modal */}
       {showQuestionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs">
-          <div className="w-[750px] rounded-3xl bg-white p-6 shadow-2xl max-h-[90vh] overflow-y-auto border">
-            <h2 className="mb-1 text-2xl font-bold text-gray-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md">
+          <div className="w-[750px] max-w-[95vw] rounded-3xl bg-[#080C1A] p-6 shadow-[0_0_50px_rgba(16,185,129,0.3)] max-h-[90vh] overflow-y-auto border-2 border-emerald-500 text-white custom-scrollbar">
+            <h2 className="mb-1 text-2xl font-black text-white tracking-tight">
               Construct Evaluation Questions
             </h2>
-            <p className="text-xs text-gray-400 mb-4 font-medium">
+            <p className="text-xs text-slate-400 mb-4 font-medium">
               Dynamically append multiple quiz questions with fluid individual
               choose options templates.
             </p>
@@ -3131,14 +3236,14 @@ const ProgramDetails = () => {
               {quizQuestionsForm.map((question, qIndex) => (
                 <div
                   key={qIndex}
-                  className="p-5 border border-gray-200 bg-gray-50/50 rounded-2xl relative space-y-4"
+                  className="p-5 border-2 border-slate-700/80 bg-[#0A0E1F] rounded-2xl relative space-y-4 shadow-sm"
                 >
                   {quizQuestionsForm.length > 1 && (
                     <button
                       type="button"
                       onClick={() => removeQuestionFromForm(qIndex)}
                       onMouseDown={(e) => e.stopPropagation()}
-                      className="absolute top-4 right-4 text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition"
+                      className="absolute top-4 right-4 text-slate-400 hover:text-rose-400 p-1.5 rounded-lg transition cursor-pointer"
                       title="Remove Question block"
                     >
                       <Trash2 size={16} />
@@ -3146,7 +3251,7 @@ const ProgramDetails = () => {
                   )}
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="md:col-span-3">
-                      <label className="text-xs font-bold text-gray-700 block mb-1">
+                      <label className="text-xs font-bold text-slate-300 block mb-1">
                         Question {qIndex + 1} Prompt *
                       </label>
 
@@ -3163,12 +3268,12 @@ const ProgramDetails = () => {
                         onClick={(e) => e.stopPropagation()}
                         placeholder="Type your main question text here..."
                         rows={2}
-                        className="w-full rounded-xl border border-gray-300 p-3 text-sm bg-white outline-none focus:border-blue-500"
+                        className="w-full rounded-xl border border-slate-700 p-3 text-sm bg-[#050814] text-white outline-none focus:border-emerald-400"
                       />
                     </div>
 
                     <div>
-                      <label className="text-xs font-bold text-gray-700 block mb-1">
+                      <label className="text-xs font-bold text-slate-300 block mb-1">
                         Marks *
                       </label>
 
@@ -3186,12 +3291,12 @@ const ProgramDetails = () => {
                         onMouseDown={(e) => e.stopPropagation()}
                         onClick={(e) => e.stopPropagation()}
                         placeholder="Marks"
-                        className="w-full rounded-xl border border-gray-300 p-3 text-sm bg-white outline-none focus:border-blue-500"
+                        className="w-full rounded-xl border border-slate-700 p-3 text-sm bg-[#050814] text-white outline-none focus:border-emerald-400"
                       />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-500 block uppercase tracking-wider">
+                    <label className="text-xs font-bold text-slate-400 block uppercase tracking-wider">
                       Dynamic Options
                     </label>
                     {question.options.map((option, oIndex) => (
@@ -3209,7 +3314,7 @@ const ProgramDetails = () => {
                           }
                           onMouseDown={(e) => e.stopPropagation()}
                           onClick={(e) => e.stopPropagation()}
-                          className="h-4 w-4 text-green-600 rounded cursor-pointer"
+                          className="h-4 w-4 text-emerald-500 rounded cursor-pointer accent-emerald-500"
                           title="Mark Option as Correct Answer"
                         />
                         <input
@@ -3226,7 +3331,7 @@ const ProgramDetails = () => {
                           onMouseDown={(e) => e.stopPropagation()}
                           onClick={(e) => e.stopPropagation()}
                           placeholder={`Option ${oIndex + 1}`}
-                          className="flex-1 rounded-xl border border-gray-300 px-3 py-2 text-sm bg-white outline-none focus:border-blue-400"
+                          className="flex-1 rounded-xl border border-slate-700 px-3 py-2 text-sm bg-[#050814] text-white outline-none focus:border-emerald-400"
                         />
                         {question.options.length > 2 && (
                           <button
@@ -3235,7 +3340,7 @@ const ProgramDetails = () => {
                               removeOptionFromQuestion(qIndex, oIndex)
                             }
                             onMouseDown={(e) => e.stopPropagation()}
-                            className="text-gray-400 hover:text-red-500 transition"
+                            className="text-slate-400 hover:text-rose-400 transition cursor-pointer"
                             title="Minus Option Field"
                           >
                             <Trash2 size={14} />
@@ -3247,13 +3352,13 @@ const ProgramDetails = () => {
                       type="button"
                       onClick={() => addOptionToQuestion(qIndex)}
                       onMouseDown={(e) => e.stopPropagation()}
-                      className="text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition inline-flex items-center gap-1 mt-1"
+                      className="text-xs font-bold text-emerald-300 bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 px-3 py-1.5 rounded-lg transition inline-flex items-center gap-1 mt-1 cursor-pointer"
                     >
                       + Add Option
                     </button>
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-gray-600 block mb-1">
+                    <label className="text-xs font-bold text-slate-300 block mb-1">
                       Feedback/Explanation Text
                     </label>
                     <textarea
@@ -3269,17 +3374,17 @@ const ProgramDetails = () => {
                       onClick={(e) => e.stopPropagation()}
                       placeholder="Add custom explanation/feedback text shown after incorrect answers..."
                       rows={2}
-                      className="w-full rounded-xl border border-gray-300 p-3 text-sm bg-white outline-none focus:border-blue-500"
+                      className="w-full rounded-xl border border-slate-700 p-3 text-sm bg-[#050814] text-white outline-none focus:border-emerald-400"
                     />
                   </div>
                 </div>
               ))}
-              <div className="flex justify-between items-center pt-4 border-t">
+              <div className="flex justify-between items-center pt-4 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={addQuestionToForm}
                   onMouseDown={(e) => e.stopPropagation()}
-                  className="rounded-xl border border-blue-600 text-blue-600 px-4 py-2 text-sm font-bold hover:bg-blue-50 transition"
+                  className="rounded-xl border border-purple-500/50 bg-purple-950/40 text-purple-300 px-4 py-2 text-sm font-bold hover:bg-purple-900/60 transition cursor-pointer"
                 >
                   + Add Next Question Block
                 </button>
@@ -3288,7 +3393,7 @@ const ProgramDetails = () => {
                     onClick={() => setShowQuestionModal(false)}
                     onMouseDown={(e) => e.stopPropagation()}
                     disabled={savingQuestions}
-                    className="rounded-xl border px-4 py-2 text-sm font-medium hover:bg-gray-50"
+                    className="rounded-xl border border-slate-700 bg-slate-900/90 text-slate-300 hover:bg-slate-800 px-4 py-2 text-sm font-bold cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -3296,7 +3401,7 @@ const ProgramDetails = () => {
                     onClick={saveQuestion}
                     onMouseDown={(e) => e.stopPropagation()}
                     disabled={savingQuestions}
-                    className="rounded-xl bg-[#10B981] px-5 py-2 text-white text-sm font-bold shadow-sm hover:opacity-95 disabled:opacity-50"
+                    className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-2 text-white text-sm font-bold shadow-md hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 cursor-pointer"
                   >
                     {savingQuestions
                       ? "Injecting Form Questions..."
@@ -3311,18 +3416,18 @@ const ProgramDetails = () => {
 
       {/* Notes Modal */}
       {showNotesModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs">
-          <div className="w-[550px] rounded-2xl bg-white p-6 shadow-2xl border">
-            <h3 className="text-xl font-bold mb-1 text-gray-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md">
+          <div className="w-[550px] max-w-[95vw] rounded-3xl bg-[#080C1A] p-6 shadow-[0_0_50px_rgba(16,185,129,0.3)] border-2 border-emerald-500 text-white">
+            <h3 className="text-xl font-black mb-1 text-white tracking-tight">
               Attach Lesson Document/PDF
             </h3>
-            <p className="text-xs text-gray-400 mb-4">
+            <p className="text-xs text-slate-400 mb-4">
               Upload docs directly or attach an online document web link to
               preview it instantly on the portal player frame.
             </p>
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-semibold text-gray-600 block mb-1">
+                <label className="text-xs font-bold text-slate-300 block mb-1">
                   Document/Notes Title *
                 </label>
                 <input
@@ -3331,11 +3436,11 @@ const ProgramDetails = () => {
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={(e) => e.stopPropagation()}
                   placeholder="E.g., Complete SQL Notes PDF"
-                  className="w-full rounded-xl border p-3 text-sm"
+                  className="w-full rounded-xl border-2 border-slate-700/80 p-3 text-sm bg-[#050814] text-white placeholder-slate-500 focus:border-emerald-400 outline-none"
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-600 block mb-1">
+                <label className="text-xs font-bold text-slate-300 block mb-1">
                   Short Description Subtitle
                 </label>
                 <textarea
@@ -3345,14 +3450,14 @@ const ProgramDetails = () => {
                   onClick={(e) => e.stopPropagation()}
                   placeholder="Brief summary of what this note covers..."
                   rows={2}
-                  className="w-full rounded-xl border p-3 text-sm"
+                  className="w-full rounded-xl border-2 border-slate-700/80 p-3 text-sm bg-[#050814] text-white placeholder-slate-500 focus:border-emerald-400 outline-none resize-none"
                 />
               </div>
-              <div className="p-4 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 text-center">
+              <div className="p-4 border-2 border-dashed border-emerald-500/50 rounded-xl bg-[#0A0E1F] text-center">
                 <label
                   className={`block ${uploadingNote ? "pointer-events-none opacity-60" : "cursor-pointer"}`}
                 >
-                  <span className="text-xs font-bold text-[#1E1B4B] block hover:underline">
+                  <span className="text-xs font-bold text-emerald-300 block hover:underline">
                     {uploadingNote
                       ? "⏳ Uploading PDF..."
                       : "📂 Click to Upload Local PDF or Document Asset"}
@@ -3366,18 +3471,18 @@ const ProgramDetails = () => {
                   />
                 </label>
                 {noteFile && !uploadingNote && (
-                  <p className="text-xs text-green-600 mt-2 font-medium bg-green-50 rounded p-1 inline-block truncate max-w-full">
+                  <p className="text-xs text-emerald-400 mt-2 font-bold bg-emerald-950/80 border border-emerald-500/50 rounded-lg p-1.5 inline-block truncate max-w-full">
                     &check; Uploaded: {noteFile.name}
                   </p>
                 )}
               </div>
-              <div className="relative flex py-2 items-center font-bold text-xs text-gray-400">
-                <div className="flex-grow border-t border-gray-300"></div>
+              <div className="relative flex py-2 items-center font-bold text-xs text-slate-500">
+                <div className="flex-grow border-t border-slate-800"></div>
                 <span className="flex-shrink mx-4 uppercase">OR</span>
-                <div className="flex-grow border-t border-gray-300"></div>
+                <div className="flex-grow border-t border-slate-800"></div>
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-600 block mb-1">
+                <label className="text-xs font-bold text-slate-300 block mb-1">
                   Online Document Web URL Link
                 </label>
                 <input
@@ -3386,12 +3491,12 @@ const ProgramDetails = () => {
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={(e) => e.stopPropagation()}
                   placeholder="https://example.com/hosted_document.pdf"
-                  className="w-full rounded-xl border p-3 text-sm"
+                  className="w-full rounded-xl border-2 border-slate-700/80 p-3 text-sm bg-[#050814] text-white placeholder-slate-500 focus:border-emerald-400 outline-none disabled:opacity-50"
                   disabled={!!noteFile || uploadingNote}
                 />
               </div>
             </div>
-            <div className="flex justify-end gap-2 mt-5">
+            <div className="flex justify-end gap-2 mt-5 pt-3 border-t border-slate-800">
               <button
                 onClick={() => {
                   setShowNotesModal(false);
@@ -3400,7 +3505,7 @@ const ProgramDetails = () => {
                   setNoteUrlLink("");
                 }}
                 onMouseDown={(e) => e.stopPropagation()}
-                className="border px-4 py-2 rounded-xl text-sm font-medium"
+                className="border border-slate-700 bg-slate-900/90 text-slate-300 hover:bg-slate-800 px-4 py-2 rounded-xl text-sm font-bold cursor-pointer"
                 disabled={uploadingNote}
               >
                 Cancel
@@ -3408,7 +3513,7 @@ const ProgramDetails = () => {
               <button
                 onClick={saveNotes}
                 onMouseDown={(e) => e.stopPropagation()}
-                className="bg-[#10B981] text-white px-5 py-2 rounded-xl text-sm font-medium shadow-sm disabled:opacity-50"
+                className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-5 py-2 rounded-xl text-sm font-bold shadow-md hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 cursor-pointer"
                 disabled={uploadingNote}
               >
                 Save & Embed Asset
@@ -3420,18 +3525,18 @@ const ProgramDetails = () => {
 
       {/* Survey Initial Configuration Modal */}
       {showSurveyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl p-8 w-[700px]">
-            <h3 className="text-xl font-bold mb-2 text-gray-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md">
+          <div className="bg-[#080C1A] rounded-3xl p-6 sm:p-8 w-[700px] max-w-[95vw] border-2 border-purple-500 shadow-[0_0_50px_rgba(168,85,247,0.35)] text-white">
+            <h3 className="text-xl font-black mb-2 text-white tracking-tight">
               Create New Survey Template
             </h3>
-            <p className="text-xs text-gray-400 mb-4 font-medium">
+            <p className="text-xs text-slate-400 mb-4 font-medium">
               Initialize the header settings of your new Google Forms styled
               module entity block.
             </p>
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-gray-600 block mb-1">
+                <label className="text-xs font-bold text-slate-300 block mb-1">
                   Survey Form Title *
                 </label>
                 <input
@@ -3441,11 +3546,11 @@ const ProgramDetails = () => {
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={(e) => e.stopPropagation()}
                   placeholder="E.g., End-of-Course Feedback Survey"
-                  className="w-full rounded-xl border border-gray-300 p-3 text-sm outline-none focus:border-purple-500"
+                  className="w-full rounded-xl border-2 border-slate-700/80 p-3 text-sm bg-[#050814] text-white placeholder-slate-500 outline-none focus:border-purple-400"
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-gray-600 block mb-1">
+                <label className="text-xs font-bold text-slate-300 block mb-1">
                   Description / Summary Instructions
                 </label>
                 <textarea
@@ -3455,10 +3560,10 @@ const ProgramDetails = () => {
                   onClick={(e) => e.stopPropagation()}
                   placeholder="Provide high-level guidelines or operational context for respondents..."
                   rows={3}
-                  className="w-full rounded-xl border border-gray-300 p-3 text-sm outline-none focus:border-purple-500 resize-none"
+                  className="w-full rounded-xl border-2 border-slate-700/80 p-3 text-sm bg-[#050814] text-white placeholder-slate-500 outline-none focus:border-purple-400 resize-none"
                 />
               </div>
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
                 <button
                   onClick={() => {
                     setShowSurveyModal(false);
@@ -3466,7 +3571,7 @@ const ProgramDetails = () => {
                     setSurveyDescription("");
                   }}
                   onMouseDown={(e) => e.stopPropagation()}
-                  className="border px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-50 transition"
+                  className="border border-slate-700 bg-slate-900/90 text-slate-300 px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 transition cursor-pointer"
                   disabled={savingSurvey}
                 >
                   Cancel
@@ -3475,7 +3580,7 @@ const ProgramDetails = () => {
                   onClick={handleCreateInitialSurvey}
                   onMouseDown={(e) => e.stopPropagation()}
                   disabled={savingSurvey}
-                  className="bg-[#10B981] hover:bg-[#0fA773] text-white px-5 py-2 rounded-xl text-sm font-bold shadow-sm transition disabled:opacity-50"
+                  className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-5 py-2 rounded-xl text-sm font-bold shadow-md transition disabled:opacity-50 cursor-pointer"
                 >
                   {savingSurvey ? "Creating..." : "Create Form Canvas"}
                 </button>
@@ -3487,15 +3592,15 @@ const ProgramDetails = () => {
 
       {/* Assignment Modal - Fix all inputs */}
       {showAssignmentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0f172a]/40 backdrop-blur-sm p-4 animate-fadeIn">
-          <div className="w-full max-w-3xl rounded-3xl bg-slate-50 shadow-2xl max-h-[92vh] flex flex-col overflow-hidden border border-slate-200">
-            <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-fadeIn">
+          <div className="w-full max-w-3xl rounded-3xl bg-[#080C1A] shadow-[0_0_50px_rgba(245,158,11,0.3)] max-h-[92vh] flex flex-col overflow-hidden border-2 border-amber-500 text-white">
+            <div className="bg-[#0D1226] border-b border-slate-800 px-6 py-4 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 border border-amber-200">
+                <div className="w-9 h-9 rounded-xl bg-amber-950/80 flex items-center justify-center text-amber-400 border border-amber-500/40">
                   <ClipboardCheck size={20} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-slate-800">
+                  <h3 className="text-lg font-black text-white">
                     {editingAssignmentId
                       ? "Edit Assignment Details"
                       : "Create New Assignment"}
@@ -3511,27 +3616,27 @@ const ProgramDetails = () => {
                   resetAssignmentForm();
                 }}
                 onMouseDown={(e) => e.stopPropagation()}
-                className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-2 rounded-xl transition"
+                className="text-slate-400 hover:text-white hover:bg-slate-800 p-2 rounded-xl border border-slate-700 transition cursor-pointer"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-[#050814]">
               {/* Section 1 - Assignment Information */}
-              <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
-                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                  <span className="text-xs font-bold text-indigo-600 bg-indigo-50 rounded px-2 py-0.5 uppercase tracking-wider">
+              <div className="bg-[#0A0E1F] rounded-2xl p-5 border border-slate-700/80 shadow-xs space-y-4">
+                <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+                  <span className="text-xs font-bold text-amber-400 bg-amber-950/80 border border-amber-500/40 rounded px-2 py-0.5 uppercase tracking-wider">
                     Section 1
                   </span>
-                  <h4 className="text-sm font-bold text-slate-700">
+                  <h4 className="text-sm font-bold text-white">
                     Assignment Information
                   </h4>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-xs font-bold text-slate-500 block mb-1">
+                    <label className="text-xs font-bold text-slate-300 block mb-1">
                       Assignment Title *
                     </label>
                     <input
@@ -3540,12 +3645,12 @@ const ProgramDetails = () => {
                       onMouseDown={(e) => e.stopPropagation()}
                       onClick={(e) => e.stopPropagation()}
                       placeholder="React Authentication System"
-                      className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all text-slate-800 placeholder-slate-400 bg-slate-50/50"
+                      className="w-full rounded-xl border border-slate-700 p-3 text-sm outline-none focus:border-amber-400 transition-all text-white placeholder-slate-500 bg-[#050814]"
                     />
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-slate-500 block mb-1">
+                    <label className="text-xs font-bold text-slate-300 block mb-1">
                       Short Description *
                     </label>
                     <input
@@ -3554,7 +3659,7 @@ const ProgramDetails = () => {
                       onMouseDown={(e) => e.stopPropagation()}
                       onClick={(e) => e.stopPropagation()}
                       placeholder="Build a secure authentication system using React."
-                      className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all text-slate-800 placeholder-slate-400 bg-slate-50/50"
+                      className="w-full rounded-xl border border-slate-700 p-3 text-sm outline-none focus:border-amber-400 transition-all text-white placeholder-slate-500 bg-[#050814]"
                     />
                     <p className="text-[11px] text-slate-400 mt-1">
                       A concise snippet introducing the primary framework
@@ -3563,7 +3668,7 @@ const ProgramDetails = () => {
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-slate-500 block mb-1">
+                    <label className="text-xs font-bold text-slate-300 block mb-1">
                       Detailed Instructions *
                     </label>
                     <textarea
@@ -3575,27 +3680,27 @@ const ProgramDetails = () => {
                       onClick={(e) => e.stopPropagation()}
                       placeholder="Complete all tasks listed below..."
                       rows={4}
-                      className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all text-slate-800 placeholder-slate-400 bg-slate-50/50 resize-none"
+                      className="w-full rounded-xl border border-slate-700 p-3 text-sm outline-none focus:border-amber-400 transition-all text-white placeholder-slate-500 bg-[#050814] resize-none"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Section 2 - Submission Settings */}
-              <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
-                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                  <span className="text-xs font-bold text-indigo-600 bg-indigo-50 rounded px-2 py-0.5 uppercase tracking-wider">
+              <div className="bg-[#0A0E1F] rounded-2xl p-5 border border-slate-700/80 shadow-xs space-y-4">
+                <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+                  <span className="text-xs font-bold text-amber-400 bg-amber-950/80 border border-amber-500/40 rounded px-2 py-0.5 uppercase tracking-wider">
                     Section 2
                   </span>
-                  <h4 className="text-sm font-bold text-slate-700">
+                  <h4 className="text-sm font-bold text-white">
                     Submission Settings
                   </h4>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-bold text-slate-500 flex items-center gap-1 mb-1">
-                      <Calendar size={14} className="text-slate-400" /> Deadline
+                    <label className="text-xs font-bold text-slate-300 flex items-center gap-1 mb-1">
+                      <Calendar size={14} className="text-amber-400" /> Deadline
                       *
                     </label>
                     <input
@@ -3604,11 +3709,11 @@ const ProgramDetails = () => {
                       onChange={(e) => setAssignmentDeadline(e.target.value)}
                       onMouseDown={(e) => e.stopPropagation()}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all text-slate-800 bg-slate-50/50"
+                      className="w-full rounded-xl border border-slate-700 p-3 text-sm outline-none focus:border-amber-400 transition-all text-white bg-[#050814]"
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-500 block mb-1">
+                    <label className="text-xs font-bold text-slate-300 block mb-1">
                       Submission Type
                     </label>
                     <select
@@ -3618,7 +3723,7 @@ const ProgramDetails = () => {
                       }
                       onMouseDown={(e) => e.stopPropagation()}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-full rounded-xl border border-slate-200 p-3 text-sm bg-slate-50/50 text-slate-800 outline-none focus:border-indigo-500 transition-all cursor-pointer"
+                      className="w-full rounded-xl border border-slate-700 p-3 text-sm bg-[#050814] text-white outline-none focus:border-amber-400 transition-all cursor-pointer"
                     >
                       <option value="file">File Upload</option>
                       <option value="text">Text Answer</option>
@@ -3632,19 +3737,19 @@ const ProgramDetails = () => {
               </div>
 
               {/* Section 3 - Evaluation Settings */}
-              <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
-                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                  <span className="text-xs font-bold text-indigo-600 bg-indigo-50 rounded px-2 py-0.5 uppercase tracking-wider">
+              <div className="bg-[#0A0E1F] rounded-2xl p-5 border border-slate-700/80 shadow-xs space-y-4">
+                <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+                  <span className="text-xs font-bold text-amber-400 bg-amber-950/80 border border-amber-500/40 rounded px-2 py-0.5 uppercase tracking-wider">
                     Section 3
                   </span>
-                  <h4 className="text-sm font-bold text-slate-700">
+                  <h4 className="text-sm font-bold text-white">
                     Evaluation Settings
                   </h4>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-bold text-slate-500 block mb-1">
+                    <label className="text-xs font-bold text-slate-300 block mb-1">
                       Maximum Marks
                     </label>
                     <input
@@ -3653,11 +3758,11 @@ const ProgramDetails = () => {
                       onChange={(e) => setAssignmentMaxMarks(e.target.value)}
                       onMouseDown={(e) => e.stopPropagation()}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all text-slate-800 bg-slate-50/50"
+                      className="w-full rounded-xl border border-slate-700 p-3 text-sm outline-none focus:border-amber-400 transition-all text-white bg-[#050814]"
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-500 block mb-1">
+                    <label className="text-xs font-bold text-slate-300 block mb-1">
                       Passing Marks
                     </label>
                     <input
@@ -3668,9 +3773,9 @@ const ProgramDetails = () => {
                       }
                       onMouseDown={(e) => e.stopPropagation()}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all text-slate-800 bg-slate-50/50"
+                      className="w-full rounded-xl border border-slate-700 p-3 text-sm outline-none focus:border-amber-400 transition-all text-white bg-[#050814]"
                     />
-                    <p className="text-[11px] text-rose-500 font-medium flex items-center gap-1 mt-1.5">
+                    <p className="text-[11px] text-rose-400 font-medium flex items-center gap-1 mt-1.5">
                       <ShieldAlert size={12} /> Students scoring below this
                       value will fail this assignment.
                     </p>
@@ -3679,19 +3784,19 @@ const ProgramDetails = () => {
               </div>
 
               {/* Section 4 - Upload Settings */}
-              <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
-                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                  <span className="text-xs font-bold text-indigo-600 bg-indigo-50 rounded px-2 py-0.5 uppercase tracking-wider">
+              <div className="bg-[#0A0E1F] rounded-2xl p-5 border border-slate-700/80 shadow-xs space-y-4">
+                <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+                  <span className="text-xs font-bold text-amber-400 bg-amber-950/80 border border-amber-500/40 rounded px-2 py-0.5 uppercase tracking-wider">
                     Section 4
                   </span>
-                  <h4 className="text-sm font-bold text-slate-700">
+                  <h4 className="text-sm font-bold text-white">
                     Upload Settings
                   </h4>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-xs font-bold text-slate-500 block mb-1">
+                    <label className="text-xs font-bold text-slate-300 block mb-1">
                       Maximum File Size (MB)
                     </label>
                     <input
@@ -3700,12 +3805,12 @@ const ProgramDetails = () => {
                       onChange={(e) => setMaxFileSize(e.target.value)}
                       onMouseDown={(e) => e.stopPropagation()}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all text-slate-800 bg-slate-50/50"
+                      className="w-full rounded-xl border border-slate-700 p-3 text-sm outline-none focus:border-amber-400 transition-all text-white bg-[#050814]"
                     />
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-slate-500 block mb-2">
+                    <label className="text-xs font-bold text-slate-300 block mb-2">
                       Allowed File Types
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -3728,10 +3833,10 @@ const ProgramDetails = () => {
                             type="button"
                             onClick={() => handleFileTypeToggle(ext)}
                             onMouseDown={(e) => e.stopPropagation()}
-                            className={`px-3 py-1.5 rounded-full border text-xs font-bold transition-all flex items-center gap-1.5 ${
+                            className={`px-3 py-1.5 rounded-full border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                               isSelected
-                                ? "bg-indigo-600 border-indigo-600 text-white shadow-xs"
-                                : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                                ? "bg-amber-500 border-amber-500 text-slate-950 shadow-xs"
+                                : "bg-[#050814] border-slate-700 text-slate-300 hover:border-slate-500 hover:bg-slate-800"
                             }`}
                           >
                             {isSelected && <Check size={12} />}
@@ -3745,21 +3850,21 @@ const ProgramDetails = () => {
               </div>
 
               {/* Section 5 - Submission Rules */}
-              <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
-                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                  <span className="text-xs font-bold text-indigo-600 bg-indigo-50 rounded px-2 py-0.5 uppercase tracking-wider">
+              <div className="bg-[#0A0E1F] rounded-2xl p-5 border border-slate-700/80 shadow-xs space-y-4">
+                <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+                  <span className="text-xs font-bold text-amber-400 bg-amber-950/80 border border-amber-500/40 rounded px-2 py-0.5 uppercase tracking-wider">
                     Section 5
                   </span>
-                  <h4 className="text-sm font-bold text-slate-700">
+                  <h4 className="text-sm font-bold text-white">
                     Submission Rules
                   </h4>
                 </div>
 
                 <div className="space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-slate-50 rounded-xl gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 bg-[#050814] rounded-xl gap-4 border border-slate-800">
                     <div className="flex items-center justify-between flex-1">
                       <div>
-                        <span className="text-xs font-bold text-slate-700 block">
+                        <span className="text-xs font-bold text-white block">
                           Allow Multiple Files
                         </span>
                         <p className="text-[11px] text-slate-400">
@@ -3772,8 +3877,8 @@ const ProgramDetails = () => {
                           setAllowMultipleFiles(!allowMultipleFiles)
                         }
                         onMouseDown={(e) => e.stopPropagation()}
-                        className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 outline-none ${
-                          allowMultipleFiles ? "bg-indigo-600" : "bg-slate-300"
+                        className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 outline-none cursor-pointer ${
+                          allowMultipleFiles ? "bg-amber-500" : "bg-slate-700"
                         }`}
                       >
                         <div
@@ -3786,11 +3891,11 @@ const ProgramDetails = () => {
                       </button>
                     </div>
 
-                    <div className="hidden sm:block h-8 w-px bg-slate-200" />
+                    <div className="hidden sm:block h-8 w-px bg-slate-800" />
 
                     <div className="flex items-center justify-between flex-1">
                       <div>
-                        <span className="text-xs font-bold text-slate-700 block">
+                        <span className="text-xs font-bold text-white block">
                           Allow Late Submission
                         </span>
                         <p className="text-[11px] text-slate-400">
@@ -3803,8 +3908,8 @@ const ProgramDetails = () => {
                           setAllowLateSubmission(!allowLateSubmission)
                         }
                         onMouseDown={(e) => e.stopPropagation()}
-                        className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 outline-none ${
-                          allowLateSubmission ? "bg-indigo-600" : "bg-slate-300"
+                        className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-200 outline-none cursor-pointer ${
+                          allowLateSubmission ? "bg-amber-500" : "bg-slate-700"
                         }`}
                       >
                         <div
@@ -3819,9 +3924,9 @@ const ProgramDetails = () => {
                   </div>
 
                   {allowLateSubmission && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border border-amber-200 bg-amber-50/40 rounded-2xl animate-fadeIn">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border border-amber-500/40 bg-amber-950/30 rounded-2xl animate-fadeIn">
                       <div>
-                        <label className="text-xs font-bold text-slate-600 block mb-1">
+                        <label className="text-xs font-bold text-amber-300 block mb-1">
                           Late Penalty
                         </label>
                         <div className="relative">
@@ -3832,12 +3937,12 @@ const ProgramDetails = () => {
                             onMouseDown={(e) => e.stopPropagation()}
                             onClick={(e) => e.stopPropagation()}
                             placeholder="10%"
-                            className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-indigo-500 bg-white text-slate-800"
+                            className="w-full rounded-xl border border-slate-700 p-3 text-sm outline-none focus:border-amber-400 bg-[#050814] text-white"
                           />
                         </div>
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-slate-600 block mb-1">
+                        <label className="text-xs font-bold text-amber-300 block mb-1">
                           Maximum Late Days
                         </label>
                         <input
@@ -3849,9 +3954,9 @@ const ProgramDetails = () => {
                           onMouseDown={(e) => e.stopPropagation()}
                           onClick={(e) => e.stopPropagation()}
                           placeholder="3"
-                          className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-indigo-500 bg-white text-slate-800"
+                          className="w-full rounded-xl border border-slate-700 p-3 text-sm outline-none focus:border-amber-400 bg-[#050814] text-white"
                         />
-                        <p className="text-[11px] text-amber-700 font-medium flex items-center gap-1 mt-1.5">
+                        <p className="text-[11px] text-amber-300 font-medium flex items-center gap-1 mt-1.5">
                           <Clock size={12} /> Students can submit for only{" "}
                           {maxLateDays} days after the deadline.
                         </p>
@@ -3862,15 +3967,15 @@ const ProgramDetails = () => {
               </div>
 
               {/* Section 6 - Attempts */}
-              <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
-                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                  <span className="text-xs font-bold text-indigo-600 bg-indigo-50 rounded px-2 py-0.5 uppercase tracking-wider">
+              <div className="bg-[#0A0E1F] rounded-2xl p-5 border border-slate-700/80 shadow-xs space-y-4">
+                <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+                  <span className="text-xs font-bold text-amber-400 bg-amber-950/80 border border-amber-500/40 rounded px-2 py-0.5 uppercase tracking-wider">
                     Section 6
                   </span>
-                  <h4 className="text-sm font-bold text-slate-700">Attempts</h4>
+                  <h4 className="text-sm font-bold text-white">Attempts</h4>
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-500 block mb-1">
+                  <label className="text-xs font-bold text-slate-300 block mb-1">
                     Attempts Allowed
                   </label>
                   <select
@@ -3878,7 +3983,7 @@ const ProgramDetails = () => {
                     onChange={(e) => setAttemptsAllowed(e.target.value)}
                     onMouseDown={(e) => e.stopPropagation()}
                     onClick={(e) => e.stopPropagation()}
-                    className="w-full rounded-xl border border-slate-200 p-3 text-sm bg-slate-50/50 text-slate-800 outline-none focus:border-indigo-500 transition-all cursor-pointer"
+                    className="w-full rounded-xl border border-slate-700 p-3 text-sm bg-[#050814] text-white outline-none focus:border-amber-400 transition-all cursor-pointer"
                   >
                     <option value="1">1 Attempt</option>
                     <option value="2">2 Attempts</option>
@@ -3889,7 +3994,7 @@ const ProgramDetails = () => {
               </div>
             </div>
 
-            <div className="bg-white border-t border-slate-200 px-6 py-4 flex items-center justify-end gap-3 shrink-0">
+            <div className="bg-[#0D1226] border-t border-slate-800 px-6 py-4 flex items-center justify-end gap-3 shrink-0">
               <button
                 type="button"
                 onClick={() => {
@@ -3897,7 +4002,7 @@ const ProgramDetails = () => {
                   resetAssignmentForm();
                 }}
                 onMouseDown={(e) => e.stopPropagation()}
-                className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 border border-transparent transition-all"
+                className="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-300 bg-slate-900 border border-slate-700 hover:bg-slate-800 transition-all cursor-pointer"
                 disabled={savingAssignment}
               >
                 Cancel
@@ -3907,7 +4012,7 @@ const ProgramDetails = () => {
                 type="button"
                 onClick={saveAssignment}
                 onMouseDown={(e) => e.stopPropagation()}
-                className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-700 bg-white border border-slate-300 shadow-xs hover:bg-slate-50 transition-all"
+                className="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-200 bg-slate-800 border border-slate-700 shadow-xs hover:bg-slate-700 transition-all cursor-pointer"
                 disabled={savingAssignment}
               >
                 Save Draft
@@ -3917,7 +4022,7 @@ const ProgramDetails = () => {
                 type="button"
                 onClick={saveAssignment}
                 onMouseDown={(e) => e.stopPropagation()}
-                className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 shadow-md shadow-emerald-500/20 active:scale-98 transition-all flex items-center gap-1.5"
+                className="px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-md shadow-emerald-500/20 active:scale-98 transition-all flex items-center gap-1.5 cursor-pointer"
                 disabled={savingAssignment}
               >
                 {savingAssignment ? (
@@ -3938,21 +4043,21 @@ const ProgramDetails = () => {
 
       {/* Survey Choice Modal */}
       {showSurveyChoiceModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-3xl p-8 w-[700px]">
-            <h2 className="text-2xl font-bold mb-6">Create Survey</h2>
-            <div className="grid grid-cols-2 gap-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md">
+          <div className="bg-[#080C1A] rounded-3xl p-6 sm:p-8 w-[700px] max-w-[95vw] border-2 border-purple-500 shadow-[0_0_50px_rgba(168,85,247,0.35)] text-white">
+            <h2 className="text-2xl font-black mb-6 text-white tracking-tight">Create Survey</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div
                 onClick={() => {
                   setShowSurveyChoiceModal(false);
                   setShowSurveyModal(true);
                 }}
                 onMouseDown={(e) => e.stopPropagation()}
-                className="cursor-pointer border rounded-2xl p-6 hover:border-blue-600"
+                className="cursor-pointer border-2 border-slate-700 bg-[#0A0E1F] rounded-2xl p-6 hover:border-blue-400 hover:bg-[#121936] transition"
               >
-                <h3 className="font-bold text-lg">Create Blank Survey</h3>
-                <p className="text-sm text-gray-500 mt-2">
-                  Start with an empty survey.
+                <h3 className="font-bold text-lg text-white">Create Blank Survey</h3>
+                <p className="text-sm text-slate-400 mt-2">
+                  Start with an empty survey canvas.
                 </p>
               </div>
 
@@ -3962,20 +4067,20 @@ const ProgramDetails = () => {
                   setShowSurveyGallery(true);
                 }}
                 onMouseDown={(e) => e.stopPropagation()}
-                className="cursor-pointer border rounded-2xl p-6 hover:border-green-600"
+                className="cursor-pointer border-2 border-slate-700 bg-[#0A0E1F] rounded-2xl p-6 hover:border-emerald-400 hover:bg-[#121936] transition"
               >
-                <h3 className="font-bold text-lg">Reuse Existing Survey</h3>
-                <p className="text-sm text-gray-500 mt-2">
-                  Browse all previously created surveys.
+                <h3 className="font-bold text-lg text-white">Reuse Existing Survey</h3>
+                <p className="text-sm text-slate-400 mt-2">
+                  Browse all previously created surveys from library.
                 </p>
               </div>
             </div>
 
-            <div className="flex justify-end mt-6">
+            <div className="flex justify-end mt-6 pt-3 border-t border-slate-800">
               <button
                 onClick={() => setShowSurveyChoiceModal(false)}
                 onMouseDown={(e) => e.stopPropagation()}
-                className="px-4 py-2 border rounded-xl"
+                className="px-4 py-2 border border-slate-700 bg-slate-900 text-slate-300 rounded-xl text-sm font-bold hover:bg-slate-800 transition cursor-pointer"
               >
                 Cancel
               </button>
@@ -3994,54 +4099,54 @@ const ProgramDetails = () => {
 
       {/* Quiz Results Modal */}
       {showResultModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl w-[90%] max-w-5xl max-h-[85vh] overflow-y-auto p-6">
-            <div className="flex justify-between items-center mb-5">
-              <h2 className="text-2xl font-bold">Quiz Results</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md">
+          <div className="bg-[#080C1A] rounded-2xl shadow-2xl w-[90%] max-w-5xl max-h-[85vh] overflow-y-auto p-6 border-2 border-cyan-500 text-white custom-scrollbar">
+            <div className="flex justify-between items-center mb-5 pb-3 border-b border-slate-800">
+              <h2 className="text-2xl font-black text-white">Quiz Results</h2>
               <button
                 onClick={() => setShowResultModal(false)}
                 onMouseDown={(e) => e.stopPropagation()}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg"
+                className="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-xl text-sm font-bold transition cursor-pointer"
               >
                 Close
               </button>
             </div>
 
             {loadingResults ? (
-              <div className="text-center py-8">Loading...</div>
+              <div className="text-center py-8 text-slate-400 font-bold">Loading...</div>
             ) : (
-              <table className="w-full border border-gray-300">
-                <thead className="bg-gray-100">
+              <table className="w-full border border-slate-800 rounded-xl overflow-hidden">
+                <thead className="bg-[#0D1226] text-white border-b border-slate-700">
                   <tr>
-                    <th className="border p-2">Attempt</th>
-                    <th className="border p-2">Candidate</th>
-                    <th className="border p-2">Score</th>
-                    <th className="border p-2">Percentage</th>
-                    <th className="border p-2">Result</th>
+                    <th className="p-3 text-left">Attempt</th>
+                    <th className="p-3 text-left">Candidate</th>
+                    <th className="p-3 text-center">Score</th>
+                    <th className="p-3 text-center">Percentage</th>
+                    <th className="p-3 text-center">Result</th>
                   </tr>
                 </thead>
 
                 <tbody>
                   {quizResults?.results?.length > 0 ? (
                     quizResults.results.map((result) => (
-                      <tr key={result.attempt_id}>
-                        <td className="border p-2 text-center">
+                      <tr key={result.attempt_id} className="border-b border-slate-800 hover:bg-[#0E152E] transition">
+                        <td className="p-3 text-left font-medium">
                           {result.attempt_number}
                         </td>
-                        <td className="border p-2">{result.candidate_name}</td>
-                        <td className="border p-2 text-center">
+                        <td className="p-3 font-bold text-white">{result.candidate_name}</td>
+                        <td className="p-3 text-center font-bold text-purple-300">
                           {result.score} / {result.total_marks}
                         </td>
-                        <td className="border p-2 text-center">
+                        <td className="p-3 text-center font-bold">
                           {result.percentage}%
                         </td>
-                        <td className="border p-2 text-center">
+                        <td className="p-3 text-center font-bold">
                           {result.passed ? (
-                            <span className="text-green-600 font-semibold">
+                            <span className="text-emerald-400 bg-emerald-950/80 px-2.5 py-1 rounded-full border border-emerald-500/40 text-xs">
                               Passed
                             </span>
                           ) : (
-                            <span className="text-red-600 font-semibold">
+                            <span className="text-rose-400 bg-rose-950/80 px-2.5 py-1 rounded-full border border-rose-500/40 text-xs">
                               Failed
                             </span>
                           )}
@@ -4050,7 +4155,7 @@ const ProgramDetails = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="5" className="text-center p-6 text-gray-500">
+                      <td colSpan="5" className="text-center p-6 text-slate-500 italic">
                         No quiz attempts found.
                       </td>
                     </tr>
@@ -4065,25 +4170,25 @@ const ProgramDetails = () => {
       {/* Preview Template Modal */}
       {previewTemplateUrl && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 animate-fadeIn"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-fadeIn"
           onClick={() => setPreviewTemplateUrl(null)}
         >
           <div
-            className="bg-white rounded-3xl p-4 shadow-2xl w-full max-w-2xl transform scale-100 transition-all relative border border-slate-100"
+            className="bg-[#080C1A] rounded-3xl p-5 shadow-2xl w-full max-w-2xl transform scale-100 transition-all relative border-2 border-purple-500 text-white"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               type="button"
               onClick={() => setPreviewTemplateUrl(null)}
-              className="absolute top-4 right-4 bg-slate-900 text-white hover:bg-slate-800 p-2 rounded-xl transition shadow-md z-10"
+              className="absolute top-4 right-4 bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 p-2 rounded-xl transition shadow-md z-10 border border-slate-700 cursor-pointer"
             >
               <X size={16} />
             </button>
-            <div className="rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 max-h-[70vh] flex items-center justify-center shadow-inner">
+            <div className="rounded-2xl overflow-hidden border border-slate-800 bg-[#050814] max-h-[70vh] flex items-center justify-center shadow-inner">
               {previewTemplateUrl === "placeholder" ? (
                 <div className="text-center py-20 px-6">
                   <span className="text-6xl block mb-2">📊</span>
-                  <h3 className="text-lg font-bold text-slate-800">
+                  <h3 className="text-lg font-black text-white">
                     Dynamic UI Preview Window
                   </h3>
                   <p className="text-xs text-slate-400 mt-1">
@@ -4103,7 +4208,7 @@ const ProgramDetails = () => {
               <span className="flex items-center gap-1">
                 <Info size={13} /> Press ESC or click outside to close viewport
               </span>
-              <span className="bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-md">
+              <span className="bg-purple-950/80 border border-purple-500/40 text-purple-300 font-bold px-2 py-0.5 rounded-md">
                 LMS Core Previewer
               </span>
             </div>

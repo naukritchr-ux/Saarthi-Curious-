@@ -4,6 +4,7 @@ import {
   Video, 
   MapPin, 
   Bell, 
+  Clock,
   Calendar as CalendarIcon, 
   AlignLeft, 
   Users, 

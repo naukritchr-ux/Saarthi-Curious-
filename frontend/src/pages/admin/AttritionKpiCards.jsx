@@ -1,3 +1,4 @@
+import { Users, Flame, AlertTriangle, ShieldCheck } from "lucide-react";
 import "./AttritionKpiCards.css";
 
 export default function AttritionKpiCards({
@@ -5,7 +6,7 @@ export default function AttritionKpiCards({
   highCount = 20,
   mediumCount = 2,
   lowCount = 1,
-  activeFilter = "all", // 'all' | 'high' | 'medium' | 'low'
+  activeFilter = "all",
   onFilterChange = () => {},
   isLight = false,
 }) {
@@ -14,200 +15,125 @@ export default function AttritionKpiCards({
   const cards = [
     {
       id: "all",
-      metal: "violet",
       label: "TOTAL RESPONSES",
       value: `${totalCount} ${totalCount === 1 ? "User" : "Users"}`,
-      subtitle: "", // Removed color/cluster name as requested
-      percent: 88, // Or 100 for full roster bar
-      icon: (
-        /* 3D Lavender/Violet Users Cluster */
-        <svg viewBox="0 0 36 36" fill="none">
-          <defs>
-            <linearGradient id="uBack" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#e9d5ff" />
-              <stop offset="100%" stopColor="#9333ea" />
-            </linearGradient>
-            <linearGradient id="uFront" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#ffffff" />
-              <stop offset="55%" stopColor="#d8b4fe" />
-              <stop offset="100%" stopColor="#7e22ce" />
-            </linearGradient>
-          </defs>
-          {/* Left & Right Rear Users */}
-          <circle cx="10.5" cy="14.5" r="3.6" fill="url(#uBack)" />
-          <path d="M4.5 25.5c0-3.1 2.7-5.5 6-5.5s6 2.4 6 5.5v1H4.5v-1z" fill="url(#uBack)" opacity="0.9" />
-          <circle cx="25.5" cy="14.5" r="3.6" fill="url(#uBack)" />
-          <path d="M19.5 25.5c0-3.1 2.7-5.5 6-5.5s6 2.4 6 5.5v1h-12v-1z" fill="url(#uBack)" opacity="0.9" />
-          {/* Center Foreground User */}
-          <circle cx="18" cy="12.5" r="4.6" fill="url(#uFront)" />
-          <path d="M10 27c0-4.1 3.6-7.2 8-7.2s8 3.1 8 7.2v1.2H10V27z" fill="url(#uFront)" />
-        </svg>
-      ),
+      subtitle: "All Monitored Candidates",
+      percent: 100,
+      cardCls: "neon-kpi-purple",
+      valCls: "text-[#F5D0FE]",
+      iconBox:
+        "bg-purple-500/20 text-purple-200 border border-purple-300/60 shadow-[0_0_10px_rgba(176,38,255,0.35)]",
+      barCls:
+        "bg-gradient-to-r from-[#A855F7] via-[#E879F9] to-[#67E8F9] shadow-[0_0_8px_rgba(192,132,252,0.55)]",
+      delay: "0s",
+      icon: <Users className="w-4 h-4 stroke-[2.2]" />,
     },
     {
       id: "high",
-      metal: "crimson",
       label: "HIGH RISK (≥70)",
       value: `${highCount} ${highCount === 1 ? "User" : "Users"}`,
-      subtitle: "", // Removed color/cluster name as requested
+      subtitle: `${Math.round((highCount / safeTotal) * 100)}% Severe Velocity`,
       percent: Math.max(14, Math.min(100, Math.round((highCount / safeTotal) * 100))),
-      icon: (
-        /* 3D Multi-Layered Flame */
-        <svg viewBox="0 0 36 36" fill="none">
-          <defs>
-            <linearGradient id="fireOuter" x1="18" y1="4" x2="18" y2="32" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#fb923c" />
-              <stop offset="55%" stopColor="#ef4444" />
-              <stop offset="100%" stopColor="#991b1b" />
-            </linearGradient>
-            <linearGradient id="fireInner" x1="18" y1="12" x2="18" y2="31" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#fef08a" />
-              <stop offset="65%" stopColor="#facc15" />
-              <stop offset="100%" stopColor="#ea580c" />
-            </linearGradient>
-          </defs>
-          <path
-            d="M18.8 4.5c.4 4.3-2.6 6.9-4.1 9.8-1.6 3.1-.8 5.8 1.2 6.8-.9-2.2.1-4.5 2.2-5.9-.2 2.7 1.7 4.4 2.9 6.6 1.5 2.8.4 6.8-3.1 8.4 5.9.5 10.6-4.1 10.6-10.1 0-5.4-3.7-9.6-5.7-11.8-.5 1.7-1.6 2.7-2.6 3-.2-2.6-.4-4.9-1.4-6.8z"
-            fill="url(#fireOuter)"
-          />
-          <path
-            d="M14.2 11.2c-3.9 3.2-6.7 7.4-6.7 11.7 0 5.5 4.5 9.6 10.5 9.6 6 0 10.5-4.1 10.5-9.6 0-4.7-3.1-8.9-6.6-12.1.3 2.6-.9 4.5-2.4 5.4.4-3.4-1.5-6.7-3.7-9-.1 2.1-.7 3.2-1.6 4z"
-            fill="url(#fireOuter)"
-          />
-          <path
-            d="M18.1 15.8c-2.3 2.3-4.6 5.1-4.6 8.4 0 3.4 2.5 5.8 5.2 5.8 3.1 0 5.3-2.4 5.3-5.6 0-2.8-1.9-5.2-3.6-7.2-.2 1.5-1.1 2.5-2.1 2.9.4-1.5.3-3-.2-4.3z"
-            fill="url(#fireInner)"
-          />
-        </svg>
-      ),
+      cardCls: "neon-kpi-flame",
+      valCls: "text-[#FDA4AF]",
+      iconBox:
+        "bg-rose-500/20 text-rose-200 border border-rose-300/60 shadow-[0_0_10px_rgba(244,63,94,0.35)]",
+      barCls:
+        "bg-gradient-to-r from-[#E11D48] via-[#FB7185] to-[#FDE68A] shadow-[0_0_8px_rgba(251,113,133,0.55)]",
+      delay: "-1.4s",
+      icon: <Flame className="w-4 h-4 stroke-[2.2]" />,
     },
     {
       id: "medium",
-      metal: "bronze",
-      label: "MEDIUM RISK",
+      label: "MEDIUM RISK (40-69)",
       value: `${mediumCount} ${mediumCount === 1 ? "User" : "Users"}`,
-      subtitle: "", // Removed color/cluster name as requested
+      subtitle: `${Math.round((mediumCount / safeTotal) * 100)}% Watchlist Cohort`,
       percent: Math.max(14, Math.min(100, Math.round((mediumCount / safeTotal) * 100))),
-      icon: (
-        /* 3D Sculpted Gold Trophy / Watch Emblem */
-        <svg viewBox="0 0 36 36" fill="none">
-          <defs>
-            <linearGradient id="goldCup" x1="10" y1="6" x2="26" y2="28" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#fef9c3" />
-              <stop offset="38%" stopColor="#facc15" />
-              <stop offset="80%" stopColor="#ca8a04" />
-              <stop offset="100%" stopColor="#854d0e" />
-            </linearGradient>
-          </defs>
-          {/* Handles */}
-          <path
-            d="M11 9.5H7.8c-.7 0-1.3.6-1.3 1.3 0 4.2 2.4 7.2 5.7 7.8M25 9.5h3.2c.7 0 1.3.6 1.3 1.3 0 4.2-2.4 7.2-5.7 7.8"
-            stroke="url(#goldCup)"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-          />
-          {/* Cup Body */}
-          <path d="M11 7.5h14v7.8c0 4.2-3.1 7.5-7 7.5s-7-3.3-7-7.5V7.5z" fill="url(#goldCup)" />
-          {/* Stem & Pedestal */}
-          <rect x="16.3" y="22.2" width="3.4" height="4.8" rx="1" fill="url(#goldCup)" />
-          <rect x="12" y="26.8" width="12" height="3" rx="1.5" fill="url(#goldCup)" />
-        </svg>
-      ),
+      cardCls: "neon-kpi-gold",
+      valCls: "text-[#FEF08A]",
+      iconBox:
+        "bg-amber-500/20 text-amber-200 border border-amber-300/60 shadow-[0_0_10px_rgba(245,158,11,0.35)]",
+      barCls:
+        "bg-gradient-to-r from-[#D97706] via-[#FACC15] to-[#FEF9C3] shadow-[0_0_8px_rgba(250,204,21,0.5)]",
+      delay: "-2.8s",
+      icon: <AlertTriangle className="w-4 h-4 stroke-[2.2]" />,
     },
     {
       id: "low",
-      metal: "cyan",
       label: "LOW RISK (<40)",
       value: `${lowCount} ${lowCount === 1 ? "User" : "Users"}`,
-      subtitle: "", // Removed color/cluster name as requested
+      subtitle: `${Math.round((lowCount / safeTotal) * 100)}% Stable Retention`,
       percent: Math.max(14, Math.min(100, Math.round((lowCount / safeTotal) * 100))),
-      icon: (
-        /* 3D Glowing Cryo-Crystal / Retention Shield */
-        <svg viewBox="0 0 36 36" fill="none">
-          <defs>
-            <linearGradient id="iceCrystal" x1="8" y1="6" x2="28" y2="30" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#ffffff" />
-              <stop offset="45%" stopColor="#67e8f9" />
-              <stop offset="100%" stopColor="#0284c7" />
-            </linearGradient>
-          </defs>
-          <g stroke="url(#iceCrystal)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="5.5" x2="18" y2="30.5" />
-            <line x1="7.2" y1="11.8" x2="28.8" y2="24.2" />
-            <line x1="28.8" y1="11.8" x2="7.2" y2="24.2" />
-            {/* Crystal Branches */}
-            <path d="M15 8.5L18 11l3-2.5M15 27.5L18 25l3 2.5" />
-            <path d="M8.8 15.8l3.8-.6-1.3-3.6M27.2 20.2l-3.8.6 1.3 3.6" />
-            <path d="M24.7 11.6l-1.3 3.6 3.8.6M11.3 24.4l1.3-3.6-3.8-.6" />
-          </g>
-        </svg>
-      ),
+      cardCls: "neon-kpi-cyan",
+      valCls: "text-[#A5F3FC]",
+      iconBox:
+        "bg-cyan-500/20 text-cyan-200 border border-cyan-300/60 shadow-[0_0_10px_rgba(34,211,238,0.35)]",
+      barCls:
+        "bg-gradient-to-r from-[#0284C7] via-[#22D3EE] to-[#6EE7B7] shadow-[0_0_8px_rgba(34,211,238,0.55)]",
+      delay: "-4.2s",
+      icon: <ShieldCheck className="w-4 h-4 stroke-[2.2]" />,
     },
   ];
 
   return (
-    <div className="metal-kpi-grid">
-      {cards.map((card, idx) => {
+    <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-rows-2 gap-4 lg:gap-5 w-full h-full">
+      {cards.map((card) => {
         const isActive = activeFilter === card.id;
-
         return (
           <div
             key={card.id}
             onClick={() => onFilterChange(card.id)}
-            style={{ "--phase": `${idx * -1.15}s` }}
-            className={`metal-kpi-card metal-${card.metal} ${
-              isActive ? "is-selected" : ""
-            } ${isLight ? "is-light" : ""}`}
+            style={{ animationDelay: card.delay }}
+            className={`cursor-pointer rounded-2xl p-4 flex flex-col justify-between select-none h-full neon-kpi-card ${
+              card.cardCls
+            } ${isActive ? "is-selected" : ""} ${isLight ? "is-light" : ""}`}
           >
-            {/* 1. Brushed Metal Micro-Grain (Static GPU Texture - Zero Lag) */}
-            <div className="metal-brushed-surface" aria-hidden="true" />
-
-            {/* 2. Studio Corner Specular Reflections (Matches Reference Image) */}
-            <div className="metal-studio-bevel" aria-hidden="true" />
-
-            {/* 3. 120FPS Live Anisotropic Metal Shine (Smooth, Decent Rate) */}
-            <div className="metal-live-luster" aria-hidden="true" />
-            <div className="metal-live-underglow" aria-hidden="true" />
-
-            {/* 4. Machined 3D Rim Highlight */}
-            <div className="metal-chamfer-rim" aria-hidden="true" />
-
-            {/* 5. Card Content */}
-            <div className="metal-kpi-inner">
-              {/* Top Row: Beveled Squircle Icon + Label & Metric */}
-              <div className="metal-top-section">
-                <div className="metal-icon-squircle">{card.icon}</div>
-                <div className="metal-title-stack">
-                  <span className="metal-kpi-title">{card.label}</span>
-                  <span className="metal-kpi-number">{card.value}</span>
-                </div>
+            {/* Top Row: Label + Value + Icon */}
+            <div className="flex items-start justify-between gap-2.5 relative z-10">
+              <div className="min-w-0">
+                <span className="text-[10.5px] font-black uppercase tracking-[0.14em] text-slate-200 block truncate">
+                  {card.label}
+                </span>
+                <span
+                  className={`text-2xl font-black font-mono leading-tight mt-1.5 block ${card.valCls}`}
+                >
+                  {card.value}
+                </span>
               </div>
 
-              {/* Middle Row: Recessed Track + Glowing Tip Filament */}
-              <div className="metal-progress-track">
+              <div
+                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${card.iconBox}`}
+              >
+                {card.icon}
+              </div>
+            </div>
+
+            {/* Bottom Row: Progress Bar + Subtitle + Filter Pill */}
+            <div className="space-y-2.5 relative z-10 pt-3">
+              <div className="w-full h-1.5 rounded-full bg-black/60 overflow-hidden">
                 <div
-                  className="metal-progress-bar"
                   style={{ width: `${card.percent}%` }}
+                  className={`h-full rounded-full transition-all duration-500 ${card.barCls}`}
                 />
               </div>
 
-              {/* Bottom Row: 3D Brushed Silver Filter Pill (Cluster/Color names removed) */}
-              <div
-                className="metal-bottom-section"
-                style={{ justifyContent: card.subtitle ? "space-between" : "flex-end" }}
-              >
-                {card.subtitle ? (
-                  <span className="metal-kpi-sub">{card.subtitle}</span>
-                ) : null}
+              <div className="flex items-center justify-between gap-2 text-[11px] font-bold text-slate-200">
+                <span className="truncate text-slate-300 font-semibold">
+                  {card.subtitle}
+                </span>
                 <button
                   type="button"
-                  className="metal-filter-pill"
                   onClick={(e) => {
                     e.stopPropagation();
                     onFilterChange(card.id);
                   }}
+                  className={`px-2.5 py-0.5 rounded-lg text-[9.5px] font-black uppercase tracking-wider transition shrink-0 cursor-pointer ${
+                    isActive
+                      ? "bg-white text-slate-950 font-extrabold"
+                      : "bg-white/10 hover:bg-white/20 border border-white/25 text-white"
+                  }`}
                 >
-                  Filter <span className="metal-filter-arrow">→</span>
+                  {isActive ? "Active ✓" : "Filter →"}
                 </button>
               </div>
             </div>

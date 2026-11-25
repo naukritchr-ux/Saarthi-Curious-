@@ -34,6 +34,8 @@ dist/
 frontend/dist/
 backend/dist/
 backend/generated_reports/
+backend/generated_certificates/
+scratch/
 *.tsbuildinfo
 *.otp_cache.json
 .otp_cache.json

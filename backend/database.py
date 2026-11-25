@@ -12,9 +12,21 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 # SQLAlchemy
 # ----------------------------
 
+# Auto-use port 6543 (Transaction Pooler) if pooler.supabase.com:5432 to avoid EMAXCONNSESSION max clients (15) limit
+if DATABASE_URL and "pooler.supabase.com:5432" in DATABASE_URL:
+    DATABASE_URL = DATABASE_URL.replace("pooler.supabase.com:5432", "pooler.supabase.com:6543")
+
 engine = create_engine(
     DATABASE_URL,
-    pool_pre_ping=True
+    pool_pre_ping=True,
+    pool_recycle=300,
+    connect_args={
+        "connect_timeout": 10,
+        "keepalives": 1,
+        "keepalives_idle": 30,
+        "keepalives_interval": 10,
+        "keepalives_count": 5,
+    }
 )
 
 SessionLocal = sessionmaker(

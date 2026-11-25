@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import axios from "axios";
 import MainLayout from "../../layout/mainLayout";
 import {
@@ -953,15 +953,7 @@ function AiWorkforceAnalystSection({
         isLight ? "cream-gloss-surface" : "ai-unified-main-tab-light"
       }`}
     >
-      {/* 4 VIVID MULTI-COLOUR TRAVELLING ORBS (TRAVEL EVERYWHERE EXCEPT THE 3 OPAQUE KPI CARDS) */}
-      {!isLight && (
-        <>
-          <div className="ai-travel-orb-rose" />
-          <div className="ai-travel-orb-purple" />
-          <div className="ai-travel-orb-amber" />
-          <div className="ai-travel-orb-cyan" />
-        </>
-      )}
+      {/* Clean Static Luxury Background */}
 
       {/* =====================================================================
           STATE A: STRUCTURED 3-ROW LAYOUT
@@ -3345,172 +3337,49 @@ export default function UserAccessControl() {
           }
 
           /* ===================================================================
-             MULTI-COLOUR TRAVELLING TAB BACKGROUND + OPAQUE KPI CARDS
-             - 4 Vivid Roaming Orbs (Magenta, Violet, Amber-Gold, Cyan-Emerald)
-               travel across the entire tab & behind the clear sub-tabs
-             - 3 Mini KPI Cards remain 100% opaque with their own base movement
+             MAIN TAB: CLEAN OBSIDIAN CHASSIS (STATIC, NO MULTI-COLOUR MOVEMENT)
           =================================================================== */
-          @keyframes roamMultiOrb1 {
-            0%   { transform: translate3d(-15%, -20%, 0) scale(1); }
-            25%  { transform: translate3d(65%, 10%, 0) scale(1.25); }
-            50%  { transform: translate3d(110%, 55%, 0) scale(0.95); }
-            75%  { transform: translate3d(25%, 70%, 0) scale(1.18); }
-            100% { transform: translate3d(-15%, -20%, 0) scale(1); }
-          }
-
-          @keyframes roamMultiOrb2 {
-            0%   { transform: translate3d(105%, -15%, 0) scale(1.1); }
-            25%  { transform: translate3d(30%, 65%, 0) scale(0.92); }
-            50%  { transform: translate3d(-20%, 40%, 0) scale(1.28); }
-            75%  { transform: translate3d(55%, -10%, 0) scale(1.05); }
-            100% { transform: translate3d(105%, -15%, 0) scale(1.1); }
-          }
-
-          @keyframes roamMultiOrb3 {
-            0%   { transform: translate3d(40%, 80%, 0) scale(1); }
-            33%  { transform: translate3d(-15%, -15%, 0) scale(1.24); }
-            66%  { transform: translate3d(95%, 15%, 0) scale(1.1); }
-            100% { transform: translate3d(40%, 80%, 0) scale(1); }
-          }
-
-          @keyframes roamMultiOrb4 {
-            0%   { transform: translate3d(85%, 75%, 0) scale(1.15); }
-            33%  { transform: translate3d(10%, 15%, 0) scale(0.95); }
-            66%  { transform: translate3d(-10%, 70%, 0) scale(1.22); }
-            100% { transform: translate3d(85%, 75%, 0) scale(1.15); }
-          }
-
-          @keyframes multiSpectrumBaseShift {
-            0%   { background-position: 0% 50%; }
-            50%  { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-          }
-
           @keyframes miniKpiBaseFlow {
             0%   { background-position: 0% 50%, 0% 0%; }
             50%  { background-position: 100% 50%, 100% 100%; }
             100% { background-position: 0% 50%, 0% 0%; }
           }
 
-          /* 1. Outer Main Tab: Deep Multi-Colour Spectrum + Travelling Orbs */
+          /* 1. Outer Main Tab: Deep Obsidian Luxury Background with High-Definition Gold Border */
           .ai-unified-main-tab-light,
           .ai-main-tab-dark-border {
             position: relative;
             isolation: isolate;
             overflow: hidden;
             background: linear-gradient(
-              125deg,
-              #160B2E 0%,
-              #2A0F3D 22%,
-              #0D1F3D 45%,
-              #2E142C 68%,
-              #122624 88%,
-              #1B0E36 100%
-            );
-            background-size: 320% 320%;
-            animation: multiSpectrumBaseShift 10s ease-in-out infinite;
-            border: 2.5px solid #040711 !important;
+              135deg,
+              #0E0D1F 0%,
+              #0A0B17 55%,
+              #06060E 100%
+            ) !important;
+            border: 2.5px solid rgba(245, 196, 81, 0.85) !important;
             box-shadow:
-              0 22px 52px rgba(0, 0, 0, 0.92),
-              0 0 0 1.5px rgba(226, 232, 240, 0.28),
-              inset 0 1px 2px rgba(255, 255, 255, 0.25) !important;
+              0 24px 54px rgba(0, 0, 0, 0.94),
+              0 0 30px -2px rgba(245, 196, 81, 0.38),
+              inset 0 1px 2.5px rgba(254, 240, 138, 0.38) !important;
           }
 
-          /* Orb 1: Vivid Magenta-Rose Travelling Glow */
-          .ai-travel-orb-rose {
-            position: absolute;
-            width: 46%;
-            height: 68%;
-            top: 0;
-            left: 0;
-            pointer-events: none;
-            z-index: 1;
-            background: radial-gradient(
-              circle,
-              rgba(244, 63, 94, 0.52) 0%,
-              rgba(217, 70, 239, 0.34) 45%,
-              transparent 72%
-            );
-            filter: blur(38px);
-            animation: roamMultiOrb1 7.5s ease-in-out infinite;
-            will-change: transform;
-          }
-
-          /* Orb 2: Vivid Royal Purple-Violet Travelling Glow */
-          .ai-travel-orb-purple {
-            position: absolute;
-            width: 48%;
-            height: 70%;
-            top: 0;
-            left: 0;
-            pointer-events: none;
-            z-index: 1;
-            background: radial-gradient(
-              circle,
-              rgba(168, 85, 247, 0.56) 0%,
-              rgba(99, 102, 241, 0.36) 46%,
-              transparent 72%
-            );
-            filter: blur(40px);
-            animation: roamMultiOrb2 8.5s ease-in-out infinite;
-            will-change: transform;
-          }
-
-          /* Orb 3: Vivid Amber-Gold Travelling Glow */
-          .ai-travel-orb-amber {
-            position: absolute;
-            width: 44%;
-            height: 64%;
-            top: 0;
-            left: 0;
-            pointer-events: none;
-            z-index: 1;
-            background: radial-gradient(
-              circle,
-              rgba(245, 158, 11, 0.48) 0%,
-              rgba(236, 72, 153, 0.3) 46%,
-              transparent 72%
-            );
-            filter: blur(38px);
-            animation: roamMultiOrb3 9s ease-in-out infinite;
-            will-change: transform;
-          }
-
-          /* Orb 4: Vivid Emerald-Cyan Travelling Glow */
-          .ai-travel-orb-cyan {
-            position: absolute;
-            width: 45%;
-            height: 66%;
-            top: 0;
-            left: 0;
-            pointer-events: none;
-            z-index: 1;
-            background: radial-gradient(
-              circle,
-              rgba(16, 185, 129, 0.48) 0%,
-              rgba(34, 211, 238, 0.36) 46%,
-              transparent 72%
-            );
-            filter: blur(38px);
-            animation: roamMultiOrb4 8s ease-in-out infinite;
-            will-change: transform;
-          }
-
-          /* 2. Inner Sub-Tabs: Crystal-Clear Glass so Travelling Colours Pass Right Through */
+          /* 2. Inner Sub-Tabs: Clean Dark Glass Pods with Crisp Defined Gold Borders */
           .ai-inner-glass-strip,
           .ai-middle-tab-light-border {
             position: relative;
             z-index: 10;
-            background: rgba(6, 9, 20, 0.18) !important;
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
-            border: 1.8px solid rgba(248, 250, 252, 0.78) !important;
+            background: rgba(14, 16, 32, 0.6) !important;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 2px solid rgba(245, 196, 81, 0.65) !important;
             box-shadow:
-              0 8px 24px rgba(0, 0, 0, 0.45),
-              inset 0 1px 2px rgba(255, 255, 255, 0.48) !important;
+              0 8px 24px rgba(0, 0, 0, 0.5),
+              0 0 18px -2px rgba(245, 196, 81, 0.28),
+              inset 0 1px 2px rgba(255, 255, 255, 0.16) !important;
           }
 
-          /* 3. Small KPI Cards: 100% Opaque Solid Base (Blocks Main Tab Travelling Colours) */
+          /* 3. Small KPI Cards: 100% Opaque Solid Base with Defined Jewel Borders */
           .mini-kpi-live-amber,
           .mini-kpi-live-rose,
           .mini-kpi-live-purple {
@@ -3528,15 +3397,16 @@ export default function UserAccessControl() {
             background-image:
               radial-gradient(circle at 80% 25%, rgba(251, 191, 36, 0.42) 0%, rgba(217, 119, 6, 0.22) 48%, transparent 74%),
               linear-gradient(135deg, #2D1D0C 0%, #523312 42%, #1A1107 100%) !important;
-            border: 1.8px solid rgba(251, 191, 36, 0.92) !important;
+            border: 2px solid rgba(251, 191, 36, 0.95) !important;
             box-shadow:
               0 12px 26px rgba(0, 0, 0, 0.9),
-              0 0 18px -2px rgba(245, 158, 11, 0.4),
-              inset 0 1.5px 2px rgba(255, 255, 255, 0.38) !important;
+              0 0 20px -2px rgba(245, 158, 11, 0.45),
+              inset 0 1.5px 2px rgba(255, 255, 255, 0.42) !important;
           }
           .mini-kpi-live-amber:hover {
             transform: translateY(-3px);
             border-color: #FEF08A !important;
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.95), 0 0 26px rgba(245, 158, 11, 0.65), inset 0 1.5px 2px rgba(255, 255, 255, 0.5) !important;
           }
 
           .mini-kpi-live-rose {
@@ -3544,15 +3414,16 @@ export default function UserAccessControl() {
             background-image:
               radial-gradient(circle at 25% 25%, rgba(251, 113, 133, 0.42) 0%, rgba(225, 29, 72, 0.22) 48%, transparent 74%),
               linear-gradient(135deg, #331021 0%, #591B37 42%, #1D0A13 100%) !important;
-            border: 1.8px solid rgba(251, 113, 133, 0.92) !important;
+            border: 2px solid rgba(251, 113, 133, 0.95) !important;
             box-shadow:
               0 12px 26px rgba(0, 0, 0, 0.9),
-              0 0 18px -2px rgba(244, 63, 94, 0.4),
-              inset 0 1.5px 2px rgba(255, 255, 255, 0.38) !important;
+              0 0 20px -2px rgba(244, 63, 94, 0.45),
+              inset 0 1.5px 2px rgba(255, 255, 255, 0.42) !important;
           }
           .mini-kpi-live-rose:hover {
             transform: translateY(-3px);
             border-color: #FECDD3 !important;
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.95), 0 0 26px rgba(244, 63, 94, 0.65), inset 0 1.5px 2px rgba(255, 255, 255, 0.5) !important;
           }
 
           .mini-kpi-live-purple {
@@ -3560,26 +3431,37 @@ export default function UserAccessControl() {
             background-image:
               radial-gradient(circle at 75% 75%, rgba(192, 132, 252, 0.44) 0%, rgba(126, 34, 206, 0.24) 48%, transparent 74%),
               linear-gradient(135deg, #241445 0%, #442375 42%, #150C28 100%) !important;
-            border: 1.8px solid rgba(192, 132, 252, 0.92) !important;
+            border: 2px solid rgba(192, 132, 252, 0.95) !important;
             box-shadow:
               0 12px 26px rgba(0, 0, 0, 0.9),
-              0 0 18px -2px rgba(168, 85, 247, 0.42),
-              inset 0 1.5px 2px rgba(255, 255, 255, 0.38) !important;
+              0 0 20px -2px rgba(168, 85, 247, 0.45),
+              inset 0 1.5px 2px rgba(255, 255, 255, 0.42) !important;
           }
           .mini-kpi-live-purple:hover {
             transform: translateY(-3px);
             border-color: #F3E8FF !important;
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.95), 0 0 26px rgba(168, 85, 247, 0.65), inset 0 1.5px 2px rgba(255, 255, 255, 0.5) !important;
           }
 
           /* ===================================================================
-             3. NORMAL STATIC DARK TABLE CONTAINER BACKGROUND
+             3. NORMAL STATIC DARK TABLE CONTAINER & DIRECTORY CONTAINERS
           =================================================================== */
           .normal-dark-table-shell {
             background: #070B14;
-            border: 1.8px solid rgba(56, 189, 248, 0.38);
+            border: 2.5px solid rgba(56, 189, 248, 0.7);
             box-shadow:
-              0 20px 48px rgba(0, 0, 0, 0.9),
-              inset 0 1px 2px rgba(255, 255, 255, 0.12);
+              0 24px 54px rgba(0, 0, 0, 0.94),
+              0 0 32px -4px rgba(56, 189, 248, 0.3),
+              inset 0 1px 2.5px rgba(255, 255, 255, 0.2);
+          }
+
+          .normal-dark-directory-section {
+            background: #080D1A;
+            border: 2px solid rgba(56, 189, 248, 0.52);
+            box-shadow:
+              0 20px 48px rgba(0, 0, 0, 0.92),
+              0 0 24px -4px rgba(56, 189, 248, 0.22),
+              inset 0 1px 2px rgba(255, 255, 255, 0.16);
           }
 
           /* ===================================================================
@@ -3615,17 +3497,17 @@ export default function UserAccessControl() {
             background-image:
               radial-gradient(circle at 20% 50%, rgba(34, 211, 238, 0.32) 0%, rgba(2, 132, 199, 0.16) 45%, transparent 72%),
               linear-gradient(135deg, #0C253D 0%, #16446B 35%, #091B2E 70%, #123656 100%) !important;
-            border: 1.8px solid rgba(56, 189, 248, 0.88) !important;
+            border: 2px solid rgba(56, 189, 248, 0.95) !important;
             box-shadow:
-              0 0 20px -2px rgba(34, 211, 238, 0.35),
-              0 8px 20px rgba(0, 0, 0, 0.75),
-              inset 0 0 18px rgba(34, 211, 238, 0.16),
-              inset 0 1px 1.5px rgba(255, 255, 255, 0.35) !important;
+              0 0 22px -1px rgba(34, 211, 238, 0.42),
+              0 8px 20px rgba(0, 0, 0, 0.8),
+              inset 0 0 18px rgba(34, 211, 238, 0.2),
+              inset 0 1px 1.5px rgba(255, 255, 255, 0.4) !important;
           }
           .live-user-tab-cyan:hover {
             transform: translateY(-2px);
             border-color: #A5F3FC !important;
-            box-shadow: 0 0 28px 1px rgba(34, 211, 238, 0.55), inset 0 0 22px rgba(34, 211, 238, 0.24) !important;
+            box-shadow: 0 0 30px 2px rgba(34, 211, 238, 0.65), inset 0 0 22px rgba(34, 211, 238, 0.28) !important;
           }
 
           /* 2. AMBER / GOLD LIVE BASE COLOUR USER TAB */
@@ -3633,17 +3515,17 @@ export default function UserAccessControl() {
             background-image:
               radial-gradient(circle at 80% 50%, rgba(251, 191, 36, 0.32) 0%, rgba(180, 83, 9, 0.18) 45%, transparent 72%),
               linear-gradient(135deg, #2E1F10 0%, #4E3316 35%, #1C130B 70%, #3D2712 100%) !important;
-            border: 1.8px solid rgba(251, 191, 36, 0.88) !important;
+            border: 2px solid rgba(251, 191, 36, 0.95) !important;
             box-shadow:
-              0 0 20px -2px rgba(245, 158, 11, 0.35),
-              0 8px 20px rgba(0, 0, 0, 0.75),
-              inset 0 0 18px rgba(245, 158, 11, 0.16),
-              inset 0 1px 1.5px rgba(255, 255, 255, 0.35) !important;
+              0 0 22px -1px rgba(245, 158, 11, 0.42),
+              0 8px 20px rgba(0, 0, 0, 0.8),
+              inset 0 0 18px rgba(245, 158, 11, 0.2),
+              inset 0 1px 1.5px rgba(255, 255, 255, 0.4) !important;
           }
           .live-user-tab-amber:hover {
             transform: translateY(-2px);
             border-color: #FEF08A !important;
-            box-shadow: 0 0 28px 1px rgba(245, 158, 11, 0.55), inset 0 0 22px rgba(245, 158, 11, 0.24) !important;
+            box-shadow: 0 0 30px 2px rgba(245, 158, 11, 0.65), inset 0 0 22px rgba(245, 158, 11, 0.28) !important;
           }
 
           /* 3. PURPLE / AMETHYST LIVE BASE COLOUR USER TAB */
@@ -3651,17 +3533,17 @@ export default function UserAccessControl() {
             background-image:
               radial-gradient(circle at 30% 50%, rgba(192, 132, 252, 0.34) 0%, rgba(126, 34, 206, 0.18) 45%, transparent 72%),
               linear-gradient(135deg, #24163E 0%, #3F256D 35%, #150D28 70%, #311C54 100%) !important;
-            border: 1.8px solid rgba(192, 132, 252, 0.88) !important;
+            border: 2px solid rgba(192, 132, 252, 0.95) !important;
             box-shadow:
-              0 0 20px -2px rgba(168, 85, 247, 0.36),
-              0 8px 20px rgba(0, 0, 0, 0.75),
-              inset 0 0 18px rgba(168, 85, 247, 0.16),
-              inset 0 1px 1.5px rgba(255, 255, 255, 0.35) !important;
+              0 0 22px -1px rgba(168, 85, 247, 0.44),
+              0 8px 20px rgba(0, 0, 0, 0.8),
+              inset 0 0 18px rgba(168, 85, 247, 0.2),
+              inset 0 1px 1.5px rgba(255, 255, 255, 0.4) !important;
           }
           .live-user-tab-purple:hover {
             transform: translateY(-2px);
             border-color: #E9D5FF !important;
-            box-shadow: 0 0 28px 1px rgba(168, 85, 247, 0.55), inset 0 0 22px rgba(168, 85, 247, 0.24) !important;
+            box-shadow: 0 0 30px 2px rgba(168, 85, 247, 0.65), inset 0 0 22px rgba(168, 85, 247, 0.28) !important;
           }
 
           /* 4. EMERALD / TEAL LIVE BASE COLOUR USER TAB */
@@ -3669,17 +3551,17 @@ export default function UserAccessControl() {
             background-image:
               radial-gradient(circle at 70% 50%, rgba(52, 211, 153, 0.32) 0%, rgba(5, 150, 105, 0.18) 45%, transparent 72%),
               linear-gradient(135deg, #0D2B25 0%, #174E43 35%, #081C18 70%, #133D35 100%) !important;
-            border: 1.8px solid rgba(52, 211, 153, 0.88) !important;
+            border: 2px solid rgba(52, 211, 153, 0.95) !important;
             box-shadow:
-              0 0 20px -2px rgba(16, 185, 129, 0.35),
-              0 8px 20px rgba(0, 0, 0, 0.75),
-              inset 0 0 18px rgba(16, 185, 129, 0.16),
-              inset 0 1px 1.5px rgba(255, 255, 255, 0.35) !important;
+              0 0 22px -1px rgba(16, 185, 129, 0.42),
+              0 8px 20px rgba(0, 0, 0, 0.8),
+              inset 0 0 18px rgba(16, 185, 129, 0.2),
+              inset 0 1px 1.5px rgba(255, 255, 255, 0.4) !important;
           }
           .live-user-tab-emerald:hover {
             transform: translateY(-2px);
             border-color: #A7F3D0 !important;
-            box-shadow: 0 0 28px 1px rgba(16, 185, 129, 0.55), inset 0 0 22px rgba(16, 185, 129, 0.24) !important;
+            box-shadow: 0 0 30px 2px rgba(16, 185, 129, 0.65), inset 0 0 22px rgba(16, 185, 129, 0.28) !important;
           }
 
           /* 5. ROSE / CRIMSON LIVE BASE COLOUR USER TAB */
@@ -3687,90 +3569,282 @@ export default function UserAccessControl() {
             background-image:
               radial-gradient(circle at 35% 50%, rgba(251, 113, 133, 0.32) 0%, rgba(190, 18, 60, 0.18) 45%, transparent 72%),
               linear-gradient(135deg, #311324 0%, #541F3C 35%, #1D0B16 70%, #42172E 100%) !important;
-            border: 1.8px solid rgba(251, 113, 133, 0.88) !important;
+            border: 2px solid rgba(251, 113, 133, 0.95) !important;
             box-shadow:
-              0 0 20px -2px rgba(244, 63, 94, 0.35),
-              0 8px 20px rgba(0, 0, 0, 0.75),
-              inset 0 0 18px rgba(244, 63, 94, 0.16),
-              inset 0 1px 1.5px rgba(255, 255, 255, 0.35) !important;
+              0 0 22px -1px rgba(244, 63, 94, 0.42),
+              0 8px 20px rgba(0, 0, 0, 0.8),
+              inset 0 0 18px rgba(244, 63, 94, 0.2),
+              inset 0 1px 1.5px rgba(255, 255, 255, 0.4) !important;
           }
           .live-user-tab-rose:hover {
             transform: translateY(-2px);
             border-color: #FECDD3 !important;
-            box-shadow: 0 0 28px 1px rgba(244, 63, 94, 0.55), inset 0 0 22px rgba(244, 63, 94, 0.24) !important;
+            box-shadow: 0 0 30px 2px rgba(244, 63, 94, 0.65), inset 0 0 22px rgba(244, 63, 94, 0.28) !important;
           }
 
-          /* ===================================================================
-             5. KPI METALLIC SHINE & VIBE-MATCHED BUTTONS
-          =================================================================== */
-          @keyframes kpiStyleLusterBreathe {
-            0%, 100% { transform: translate3d(-6%, -4%, 0) scale(1); opacity: 0.75; }
-            50% { transform: translate3d(8%, 6%, 0) scale(1.08); opacity: 1; }
-          }
-          @keyframes kpiStyleAnisotropicSweep {
-            0% { transform: translateX(-120%) skewX(-24deg); }
-            45%, 100% { transform: translateX(220%) skewX(-24deg); }
-          }
-          .kpi-brushed-grain {
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-            z-index: 0;
-            background-image: repeating-linear-gradient(
-              135deg,
-              rgba(255, 255, 255, 0.03) 0px,
-              rgba(255, 255, 255, 0.03) 1px,
-              transparent 1px,
-              transparent 3px
-            );
-          }
-          .kpi-style-purple-luster {
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-            z-index: 0;
-            background:
-              radial-gradient(circle at 24% 22%, rgba(233, 213, 255, 0.28) 0%, rgba(168, 85, 247, 0.12) 36%, transparent 68%),
-              radial-gradient(circle at 78% 76%, rgba(255, 255, 255, 0.16) 0%, rgba(139, 92, 246, 0.1) 34%, transparent 64%);
-            animation: kpiStyleLusterBreathe 9s ease-in-out infinite;
-          }
-          .kpi-style-anisotropic-sheen {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            left: 0;
-            width: 42%;
-            pointer-events: none;
-            z-index: 0;
-            background: linear-gradient(
-              90deg,
-              transparent 0%,
-              rgba(255, 255, 255, 0.08) 45%,
-              rgba(255, 255, 255, 0.18) 50%,
-              rgba(255, 255, 255, 0.08) 55%,
-              transparent 100%
-            );
-            animation: kpiStyleAnisotropicSweep 10s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+          /* ============================================================================
+             1. SCOPED COMMON BASE-COLOUR STAGE (KPI CARDS AREA ONLY)
+          ============================================================================ */
+          @keyframes kpiStageCommonA {
+            0%, 100% { transform: translate3d(-16%, -10%, 0) scale(1);    opacity: 0.58; }
+            50%      { transform: translate3d(44%, 12%, 0)   scale(1.15); opacity: 0.88; }
           }
 
-          .metal-gloss-purple-kpi-live {
-            position: relative;
-            isolation: isolate;
-            background:
-              radial-gradient(circle at 88% 14%, rgba(255, 255, 255, 0.34) 0%, rgba(192, 132, 252, 0.16) 28%, transparent 62%),
-              linear-gradient(135deg, #352F5B 0%, #211F3D 52%, #14142B 100%);
-            border: 1.5px solid rgba(216, 180, 254, 0.58);
-            box-shadow: 0 14px 34px rgba(0, 0, 0, 0.75), inset 0 1.5px 2px rgba(255, 255, 255, 0.45);
+          @keyframes kpiStageCommonB {
+            0%, 100% { transform: translate3d(36%, 14%, 0)  scale(1.1);  opacity: 0.52; }
+            50%      { transform: translate3d(-22%, -8%, 0) scale(0.95); opacity: 0.82; }
           }
-          .metal-gloss-cyan-kpi-live {
+
+          .kpi-ambient-stage {
             position: relative;
             isolation: isolate;
             overflow: hidden;
-            background:
-              radial-gradient(circle at 88% 14%, rgba(255, 255, 255, 0.36) 0%, rgba(56, 189, 248, 0.22) 28%, transparent 62%),
-              linear-gradient(135deg, #1E3F3B 0%, #16323F 52%, #0D1A24 100%);
-            border: 1.5px solid rgba(103, 232, 249, 0.62);
-            box-shadow: 0 14px 34px rgba(0, 0, 0, 0.75), inset 0 1.5px 2px rgba(255, 255, 255, 0.45);
+            border-radius: 1.75rem;
+            padding: 14px;
+            background: linear-gradient(180deg, #090814 0%, #06060E 100%);
+            border: 1.5px solid rgba(212, 175, 55, 0.45);
+            box-shadow:
+              inset 0 2px 18px rgba(0, 0, 0, 0.88),
+              0 0 20px -4px rgba(212, 175, 55, 0.2),
+              0 18px 42px rgba(0, 0, 0, 0.72);
+          }
+
+          /* Unified slow-moving base-colour clouds drifting behind all 4 KPI cards */
+          .kpi-stage-glow-a,
+          .kpi-stage-glow-b {
+            position: absolute;
+            border-radius: 9999px;
+            pointer-events: none;
+            z-index: 0;
+            will-change: transform, opacity;
+          }
+
+          .kpi-stage-glow-a {
+            width: 56%;
+            height: 165%;
+            top: -32%;
+            left: -8%;
+            background: radial-gradient(
+              ellipse at center,
+              rgba(147, 51, 234, 0.36) 0%,
+              rgba(217, 119, 6, 0.22) 48%,
+              transparent 74%
+            );
+            filter: blur(56px);
+            animation: kpiStageCommonA 16s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+          }
+
+          .kpi-stage-glow-b {
+            width: 54%;
+            height: 165%;
+            bottom: -35%;
+            right: -8%;
+            background: radial-gradient(
+              ellipse at center,
+              rgba(245, 196, 81, 0.3) 0%,
+              rgba(126, 34, 206, 0.26) 50%,
+              transparent 74%
+            );
+            filter: blur(60px);
+            animation: kpiStageCommonB 21s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+          }
+
+          /* ============================================================================
+             2. DENSE 3PX 24K GOLDEN BORDER + SYNCHRONIZED INTERIOR CORNER FADE
+             Driven by non-circular random corner trajectories (no conic rotation).
+             Both border & interior glow share the exact same --gl1x/y and --gl2x/y.
+          ============================================================================ */
+          @property --gl1x { syntax: "<percentage>"; inherits: false; initial-value: 12%; }
+          @property --gl1y { syntax: "<percentage>"; inherits: false; initial-value: 10%; }
+          @property --gl2x { syntax: "<percentage>"; inherits: false; initial-value: 88%; }
+          @property --gl2y { syntax: "<percentage>"; inherits: false; initial-value: 90%; }
+
+          /* Card 1: Diagonal Top-Left <-> Bottom-Right Criss-Cross with Edge Pauses */
+          @keyframes goldRandom1A {
+            0%   { --gl1x: 10%; --gl1y: 8%;  }  /* Top-left corner */
+            18%  { --gl1x: 48%; --gl1y: 6%;  }  /* Top center */
+            38%  { --gl1x: 92%; --gl1y: 24%; }  /* Upper right edge */
+            58%  { --gl1x: 88%; --gl1y: 88%; }  /* Bottom-right corner */
+            78%  { --gl1x: 22%; --gl1y: 92%; }  /* Bottom edge */
+            100% { --gl1x: 10%; --gl1y: 8%;  }  /* Back to top-left */
+          }
+          @keyframes goldRandom1B {
+            0%   { --gl2x: 90%; --gl2y: 92%; }  /* Bottom-right corner */
+            22%  { --gl2x: 16%; --gl2y: 84%; }  /* Bottom-left corner */
+            46%  { --gl2x: 12%; --gl2y: 38%; }  /* Left vertical edge */
+            72%  { --gl2x: 64%; --gl2y: 8%;  }  /* Top-right bevel */
+            100% { --gl2x: 90%; --gl2y: 92%; }  /* Back to bottom-right */
+          }
+
+          /* Card 2: Figure-8 Inverted Loop */
+          @keyframes goldRandom2A {
+            0%   { --gl1x: 92%; --gl1y: 12%; }  /* Top-right corner */
+            24%  { --gl1x: 14%; --gl1y: 86%; }  /* Cross to bottom-left */
+            48%  { --gl1x: 88%; --gl1y: 88%; }  /* Slide to bottom-right */
+            74%  { --gl1x: 10%; --gl1y: 14%; }  /* Cross to top-left */
+            100% { --gl1x: 92%; --gl1y: 12%; }  /* Return */
+          }
+          @keyframes goldRandom2B {
+            0%   { --gl2x: 12%; --gl2y: 48%; }  /* Mid-left */
+            28%  { --gl2x: 86%; --gl2y: 6%;  }  /* Top-right */
+            54%  { --gl2x: 48%; --gl2y: 92%; }  /* Mid-bottom */
+            82%  { --gl2x: 92%; --gl2y: 46%; }  /* Mid-right */
+            100% { --gl2x: 12%; --gl2y: 48%; }  /* Return */
+          }
+
+          /* Card 3: Counter-Clockwise Erratic Perimeter Jump */
+          @keyframes goldRandom3A {
+            0%   { --gl1x: 12%; --gl1y: 90%; }  /* Bottom-left */
+            22%  { --gl1x: 90%; --gl1y: 84%; }  /* Bottom-right */
+            44%  { --gl1x: 94%; --gl1y: 12%; }  /* Top-right */
+            70%  { --gl1x: 10%; --gl1y: 10%; }  /* Top-left */
+            88%  { --gl1x: 8%;  --gl1y: 52%; }  /* Left waist */
+            100% { --gl1x: 12%; --gl1y: 90%; }  /* Return */
+          }
+          @keyframes goldRandom3B {
+            0%   { --gl2x: 52%; --gl2y: 8%;  }  /* Top-center */
+            26%  { --gl2x: 14%; --gl2y: 72%; }  /* Lower-left */
+            56%  { --gl2x: 86%; --gl2y: 90%; }  /* Bottom-right */
+            80%  { --gl2x: 92%; --gl2y: 28%; }  /* Upper-right */
+            100% { --gl2x: 52%; --gl2y: 8%;  }  /* Return */
+          }
+
+          /* Card 4: Diamond Corner Ricochet */
+          @keyframes goldRandom4A {
+            0%   { --gl1x: 50%; --gl1y: 6%;  }  /* Top center */
+            25%  { --gl1x: 94%; --gl1y: 50%; }  /* Right center */
+            50%  { --gl1x: 50%; --gl1y: 94%; }  /* Bottom center */
+            75%  { --gl1x: 6%;  --gl1y: 50%; }  /* Left center */
+            100% { --gl1x: 50%; --gl1y: 6%;  }  /* Return */
+          }
+          @keyframes goldRandom4B {
+            0%   { --gl2x: 12%; --gl2y: 12%; }  /* Top-left */
+            30%  { --gl2x: 88%; --gl2y: 88%; }  /* Bottom-right */
+            60%  { --gl2x: 88%; --gl2y: 12%; }  /* Top-right */
+            85%  { --gl2x: 12%; --gl2y: 88%; }  /* Bottom-left */
+            100% { --gl2x: 12%; --gl2y: 12%; }  /* Return */
+          }
+
+          /* ============================================================================
+             2. INACTIVE TAB METALLIC SATIN INTERIORS + LIVE 24K GOLD BEZEL BORDERS
+             Combines the rich specular metallic backgrounds from the inactive tab
+             with 3.5px dense 24K machined gold borders & live roving specular flares.
+          ============================================================================ */
+          .dense-gold-kpi {
+            position: relative;
+            z-index: 10;
+            isolation: isolate;
+            overflow: hidden;
+            border-radius: 1.25rem;
+            border: 3.5px solid transparent;
+            background-clip: padding-box, padding-box, border-box, border-box, border-box;
+            background-origin: padding-box, padding-box, border-box, border-box, border-box;
+            box-shadow:
+              0 14px 34px rgba(0, 0, 0, 0.78),
+              0 0 24px -4px rgba(234, 179, 8, 0.45),
+              inset 0 1.5px 2px rgba(255, 255, 255, 0.45);
+            transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.25s ease;
+          }
+
+          /* Card 1: TOTAL USERS — Inactive Tab Metal Gloss Purple + Live 24K Gold Border */
+          .dense-gold-kpi-purple {
+            background-image:
+              /* Interior Layer 1: Specular circle highlight from inactive tab */
+              radial-gradient(circle at 88% 14%, rgba(255, 255, 255, 0.36) 0%, rgba(192, 132, 252, 0.18) 28%, transparent 62%),
+              /* Interior Layer 2: Deep rich Purple satin base from inactive tab */
+              linear-gradient(135deg, #352F5B 0%, #211F3D 52%, #14142B 100%),
+              /* Border Layer 1: Roving white-hot 24K gold flare */
+              radial-gradient(ellipse 48% 54% at var(--gl1x) var(--gl1y), #FFFFFF 0%, #FFFBEB 18%, #FDE047 38%, rgba(217, 119, 6, 0.85) 56%, transparent 72%),
+              /* Border Layer 2: Secondary roving molten amber highlight */
+              radial-gradient(ellipse 54% 60% at var(--gl2x) var(--gl2y), #FEF9C3 0%, #FACC15 26%, rgba(180, 83, 9, 0.78) 50%, transparent 72%),
+              /* Border Layer 3: Dense solid 24K brushed gold foundation */
+              linear-gradient(135deg, #8A5D12 0%, #E5B442 25%, #734B0B 50%, #F5CE67 75%, #875B10 100%);
+          }
+
+          /* Card 2: ACTIVE ACCOUNTS — Inactive Tab Metal Gloss Cyan + Live 24K Gold Border */
+          .dense-gold-kpi-cyan {
+            background-image:
+              /* Interior Layer 1: Specular circle highlight from inactive tab */
+              radial-gradient(circle at 88% 14%, rgba(255, 255, 255, 0.38) 0%, rgba(56, 189, 248, 0.22) 28%, transparent 62%),
+              /* Interior Layer 2: Deep rich Cyan satin base from inactive tab */
+              linear-gradient(135deg, #243B55 0%, #17263C 52%, #0F1829 100%),
+              /* Border Layer 1: Roving white-hot 24K gold flare */
+              radial-gradient(ellipse 48% 54% at var(--gl1x) var(--gl1y), #FFFFFF 0%, #FFFBEB 18%, #FDE047 38%, rgba(217, 119, 6, 0.85) 56%, transparent 72%),
+              /* Border Layer 2: Secondary roving molten amber highlight */
+              radial-gradient(ellipse 54% 60% at var(--gl2x) var(--gl2y), #FEF9C3 0%, #FACC15 26%, rgba(180, 83, 9, 0.78) 50%, transparent 72%),
+              /* Border Layer 3: Dense solid 24K brushed gold foundation */
+              linear-gradient(135deg, #8A5D12 0%, #E5B442 25%, #734B0B 50%, #F5CE67 75%, #875B10 100%);
+          }
+
+          /* Card 3: NEEDS REVIEW — Inactive Tab Metal Gloss Amber + Live 24K Gold Border */
+          .dense-gold-kpi-amber {
+            background-image:
+              /* Interior Layer 1: Specular circle highlight from inactive tab */
+              radial-gradient(circle at 88% 14%, rgba(255, 255, 255, 0.38) 0%, rgba(251, 191, 36, 0.20) 28%, transparent 62%),
+              /* Interior Layer 2: Deep rich Amber satin base from inactive tab */
+              linear-gradient(135deg, #463730 0%, #292228 52%, #181622 100%),
+              /* Border Layer 1: Roving white-hot 24K gold flare */
+              radial-gradient(ellipse 48% 54% at var(--gl1x) var(--gl1y), #FFFFFF 0%, #FFFBEB 18%, #FDE047 38%, rgba(217, 119, 6, 0.85) 56%, transparent 72%),
+              /* Border Layer 2: Secondary roving molten amber highlight */
+              radial-gradient(ellipse 54% 60% at var(--gl2x) var(--gl2y), #FEF9C3 0%, #FACC15 26%, rgba(180, 83, 9, 0.78) 50%, transparent 72%),
+              /* Border Layer 3: Dense solid 24K brushed gold foundation */
+              linear-gradient(135deg, #8A5D12 0%, #E5B442 25%, #734B0B 50%, #F5CE67 75%, #875B10 100%);
+          }
+
+          /* Card 4: PENDING / INVITED — Inactive Tab Metal Gloss Rose + Live 24K Gold Border */
+          .dense-gold-kpi-rose {
+            background-image:
+              /* Interior Layer 1: Specular circle highlight from inactive tab */
+              radial-gradient(circle at 88% 14%, rgba(255, 255, 255, 0.36) 0%, rgba(251, 113, 133, 0.22) 28%, transparent 62%),
+              /* Interior Layer 2: Deep rich Rose satin base from inactive tab */
+              linear-gradient(135deg, #49263B 0%, #2B192C 52%, #181120 100%),
+              /* Border Layer 1: Roving white-hot 24K gold flare */
+              radial-gradient(ellipse 48% 54% at var(--gl1x) var(--gl1y), #FFFFFF 0%, #FFFBEB 18%, #FDE047 38%, rgba(217, 119, 6, 0.85) 56%, transparent 72%),
+              /* Border Layer 2: Secondary roving molten amber highlight */
+              radial-gradient(ellipse 54% 60% at var(--gl2x) var(--gl2y), #FEF9C3 0%, #FACC15 26%, rgba(180, 83, 9, 0.78) 50%, transparent 72%),
+              /* Border Layer 3: Dense solid 24K brushed gold foundation */
+              linear-gradient(135deg, #8A5D12 0%, #E5B442 25%, #734B0B 50%, #F5CE67 75%, #875B10 100%);
+          }
+
+          .dense-gold-kpi:hover {
+            transform: translateY(-3px);
+            box-shadow:
+              0 22px 44px -6px rgba(0, 0, 0, 0.94),
+              0 0 34px -2px rgba(245, 208, 97, 0.65),
+              inset 0 1.5px 2px rgba(255, 255, 255, 0.6);
+          }
+
+          .dense-gold-kpi.is-active {
+            box-shadow:
+              0 20px 42px -6px rgba(0, 0, 0, 0.95),
+              0 0 36px 0px rgba(250, 204, 21, 0.75),
+              inset 0 1.5px 2px rgba(255, 255, 255, 0.65);
+          }
+
+          /* 4 Unique Non-Harmonic Motion Profiles (Prime-Ratio Timings) */
+          .gold-random-1 {
+            animation:
+              goldRandom1A 12.7s cubic-bezier(0.42, 0, 0.58, 1) infinite,
+              goldRandom1B 17.9s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+          }
+
+          .gold-random-2 {
+            animation:
+              goldRandom2A 14.3s cubic-bezier(0.42, 0, 0.58, 1) infinite,
+              goldRandom2B 19.7s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+          }
+
+          .gold-random-3 {
+            animation:
+              goldRandom3A 11.9s cubic-bezier(0.42, 0, 0.58, 1) infinite,
+              goldRandom3B 16.3s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+          }
+
+          .gold-random-4 {
+            animation:
+              goldRandom4A 13.5s cubic-bezier(0.42, 0, 0.58, 1) infinite,
+              goldRandom4B 18.9s cubic-bezier(0.42, 0, 0.58, 1) infinite;
           }
           .metal-gloss-amber-kpi-live {
             position: relative;
@@ -3810,9 +3884,9 @@ export default function UserAccessControl() {
 
           .vibe-btn-amber {
             background: linear-gradient(180deg, rgba(180, 83, 9, 0.52) 0%, rgba(28, 18, 10, 0.94) 100%);
-            border: 1.5px solid rgba(251, 191, 36, 0.9);
+            border: 2px solid rgba(251, 191, 36, 0.95);
             color: #FEF08A;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55), 0 0 12px rgba(245, 158, 11, 0.24), inset 0 1px 1px rgba(255, 255, 255, 0.28);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55), 0 0 16px rgba(245, 158, 11, 0.35), inset 0 1px 1.5px rgba(255, 255, 255, 0.35);
             transition: all 0.2s ease;
           }
           .vibe-btn-amber:hover {
@@ -3824,9 +3898,9 @@ export default function UserAccessControl() {
 
           .vibe-btn-purple {
             background: linear-gradient(180deg, rgba(109, 40, 217, 0.52) 0%, rgba(22, 14, 42, 0.94) 100%);
-            border: 1.5px solid rgba(192, 132, 252, 0.88);
+            border: 1.8px solid rgba(192, 132, 252, 0.92);
             color: #F3E8FF;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55), 0 0 12px rgba(168, 85, 247, 0.24), inset 0 1px 1px rgba(255, 255, 255, 0.28);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55), 0 0 14px rgba(168, 85, 247, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.32);
             transition: all 0.2s ease;
           }
           .vibe-btn-purple:hover {
@@ -3838,9 +3912,9 @@ export default function UserAccessControl() {
 
           .vibe-btn-emerald {
             background: linear-gradient(180deg, rgba(5, 150, 105, 0.5) 0%, rgba(8, 28, 24, 0.94) 100%);
-            border: 1.5px solid rgba(52, 211, 153, 0.88);
+            border: 1.8px solid rgba(52, 211, 153, 0.92);
             color: #D1FAE5;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55), 0 0 12px rgba(16, 185, 129, 0.22), inset 0 1px 1px rgba(255, 255, 255, 0.28);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55), 0 0 14px rgba(16, 185, 129, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.32);
             transition: all 0.2s ease;
           }
           .vibe-btn-emerald:hover {
@@ -3852,9 +3926,9 @@ export default function UserAccessControl() {
 
           .vibe-btn-rose {
             background: linear-gradient(180deg, rgba(190, 18, 60, 0.52) 0%, rgba(32, 10, 20, 0.94) 100%);
-            border: 1.5px solid rgba(251, 113, 133, 0.88);
+            border: 1.8px solid rgba(251, 113, 133, 0.92);
             color: #FFE4E6;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55), 0 0 12px rgba(244, 63, 94, 0.24), inset 0 1px 1px rgba(255, 255, 255, 0.28);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55), 0 0 14px rgba(244, 63, 94, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.32);
             transition: all 0.2s ease;
           }
           .vibe-btn-rose:hover {
@@ -3866,13 +3940,13 @@ export default function UserAccessControl() {
 
           .vibe-btn-slate {
             background: linear-gradient(180deg, rgba(30, 41, 59, 0.88) 0%, rgba(11, 16, 30, 0.96) 100%);
-            border: 1.5px solid rgba(148, 163, 184, 0.52);
+            border: 1.8px solid rgba(148, 163, 184, 0.7);
             color: #E2E8F0;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.18);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55), inset 0 1px 1.5px rgba(255, 255, 255, 0.22);
             transition: all 0.2s ease;
           }
           .vibe-btn-slate:hover {
-            border-color: rgba(251, 191, 36, 0.8);
+            border-color: rgba(251, 191, 36, 0.85);
             color: #FEF08A;
             transform: translateY(-1px);
           }
@@ -4039,126 +4113,141 @@ export default function UserAccessControl() {
         </header>
 
         {/* ===================================================================
-            ZONE 2: 4 KPI SUMMARY CARDS (WITH METALLIC SHINE)
+            ZONE 2: 4 KPI CARDS (SCOPED COMMON BASE-COLOUR STAGE + DENSE 3PX 24K GOLD)
         =================================================================== */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            {
-              key: "ALL",
-              title: "TOTAL USERS",
-              value: summaryStats.total,
-              sub: "Everyone in the system",
-              delay: "0s",
-              surface: isLight
-                ? "cream-gloss-surface"
-                : "metal-gloss-purple-kpi-live",
-              bottomGlow: "from-purple-400 via-fuchsia-300 to-indigo-400",
-              valueColor: isLight ? "text-stone-950" : "text-white",
-              iconCls: "vibe-btn-purple",
-              icon: <Users className="w-6 h-6" />,
-            },
-            {
-              key: "ACTIVE_ACCOUNTS",
-              title: "ACTIVE ACCOUNTS",
-              value: summaryStats.activeAccounts,
-              sub: "Can currently log in",
-              delay: "-0.9s",
-              surface: isLight
-                ? "cream-gloss-surface"
-                : "metal-gloss-cyan-kpi-live",
-              bottomGlow: "from-cyan-400 via-teal-300 to-emerald-400",
-              valueColor: isLight ? "text-sky-900" : "text-cyan-300",
-              iconCls: "vibe-btn-cyan",
-              icon: <UserCheck className="w-6 h-6" />,
-            },
-            {
-              key: "NEEDS_REVIEW",
-              title: "NEEDS REVIEW",
-              value: summaryStats.needsReview,
-              sub: "Dormant 30d+ OR Never Logged In",
-              delay: "-1.8s",
-              surface: isLight
-                ? "cream-gloss-surface"
-                : "metal-gloss-amber-kpi-live",
-              bottomGlow: "from-amber-400 via-yellow-300 to-orange-400",
-              valueColor: isLight ? "text-amber-900" : "text-amber-300",
-              iconCls: "vibe-btn-amber",
-              icon: <AlertTriangle className="w-6 h-6" />,
-            },
-            {
-              key: "INVITED",
-              title: "PENDING / INVITED",
-              value: summaryStats.invited,
-              sub: "Invitation sent, not yet accepted",
-              delay: "-2.7s",
-              surface: isLight
-                ? "cream-gloss-surface"
-                : "metal-gloss-rose-kpi-live",
-              bottomGlow: "from-rose-500 via-pink-400 to-amber-300",
-              valueColor: isLight ? "text-rose-900" : "text-rose-300",
-              iconCls: "vibe-btn-rose",
-              icon: <Mail className="w-6 h-6" />,
-            },
-          ].map((card) => {
-            const isSelected = savedView === card.key;
-            return (
-              <div
-                key={card.key}
-                onClick={() => handleApplySavedView(card.key)}
-                className={`cursor-pointer rounded-3xl p-5 transition-all duration-200 hover:-translate-y-1 flex flex-col justify-between space-y-3 relative overflow-hidden select-none ${
-                  card.surface
-                } ${isSelected ? "ring-2 ring-amber-300" : ""}`}
-              >
-                {!isLight && (
-                  <>
-                    <div className="kpi-brushed-grain" />
-                    <div
-                      className="kpi-style-purple-luster"
-                      style={{ animationDelay: card.delay }}
-                    />
-                    <div
-                      className="kpi-style-anisotropic-sheen"
-                      style={{ animationDelay: card.delay }}
-                    />
-                  </>
-                )}
+        <section className={isLight ? "" : "kpi-ambient-stage"}>
+          {/* Unified Smooth Moving Base-Colour Layer Behind All 4 KPI Cards */}
+          {!isLight && (
+            <>
+              <div className="kpi-stage-glow-a" aria-hidden="true" />
+              <div className="kpi-stage-glow-b" aria-hidden="true" />
+            </>
+          )}
 
-                <div className="flex items-start justify-between gap-3 relative z-10">
-                  <div>
-                    <span className="text-[11px] font-black uppercase tracking-wider opacity-85 block">
-                      {card.title}
-                    </span>
-                    <span
-                      className={`text-4xl font-black leading-tight mt-1 block ${card.valueColor}`}
-                    >
-                      {card.value}
-                    </span>
-                  </div>
-
-                  <div
-                    className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-                      isLight ? "cream-dark-btn" : card.iconCls
-                    }`}
-                  >
-                    {card.icon}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-xs font-semibold opacity-90 relative z-10">
-                  <span>{card.sub}</span>
-                  {isSelected && (
-                    <span className="text-[10px] font-black text-amber-300">
-                      ● Active View
-                    </span>
-                  )}
-                </div>
-
+          <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              {
+                id: "ALL",
+                label: "TOTAL USERS",
+                value: summaryStats.total ?? 23,
+                subtitle: "Everyone in the system",
+                themeCls: "dense-gold-kpi-purple",
+                labelCls: "text-purple-200/90",
+                numCls: isLight ? "text-stone-950" : "text-white",
+                iconBox:
+                  "bg-white/10 border border-white/20 text-purple-200 shadow-inner",
+                barCls: "from-purple-400 via-fuchsia-300 to-indigo-300",
+                barWidth: "100%",
+                motionCls: "gold-random-1",
+                icon: <Users className="w-5 h-5 stroke-[2.1]" />,
+              },
+              {
+                id: "ACTIVE_ACCOUNTS",
+                label: "ACTIVE ACCOUNTS",
+                value: summaryStats.activeAccounts ?? 20,
+                subtitle: "Can currently log in",
+                themeCls: "dense-gold-kpi-cyan",
+                labelCls: "text-cyan-200/90",
+                numCls: isLight ? "text-sky-900" : "text-cyan-300",
+                iconBox:
+                  "bg-white/10 border border-white/20 text-cyan-200 shadow-inner",
+                barCls: "from-cyan-400 via-teal-300 to-emerald-400",
+                barWidth: "87%",
+                motionCls: "gold-random-2",
+                icon: <UserCheck className="w-5 h-5 stroke-[2.1]" />,
+              },
+              {
+                id: "NEEDS_REVIEW",
+                label: "NEEDS REVIEW",
+                value: summaryStats.needsReview ?? 14,
+                subtitle: "Dormant 30d+ OR Never Logged In",
+                themeCls: "dense-gold-kpi-amber",
+                labelCls: "text-amber-200/90",
+                numCls: isLight ? "text-amber-900" : "text-amber-300",
+                iconBox:
+                  "bg-white/10 border border-white/20 text-amber-200 shadow-inner",
+                barCls: "from-amber-400 via-yellow-300 to-amber-100",
+                barWidth: "61%",
+                motionCls: "gold-random-3",
+                icon: <AlertTriangle className="w-5 h-5 stroke-[2.1]" />,
+              },
+              {
+                id: "INVITED",
+                label: "PENDING / INVITED",
+                value: summaryStats.invited ?? 2,
+                subtitle: "Invitation sent, not yet accepted",
+                themeCls: "dense-gold-kpi-rose",
+                labelCls: "text-rose-200/90",
+                numCls: isLight ? "text-rose-900" : "text-rose-300",
+                iconBox:
+                  "bg-white/10 border border-white/20 text-rose-200 shadow-inner",
+                barCls: "from-rose-500 via-pink-400 to-rose-200",
+                barWidth: "16%",
+                motionCls: "gold-random-4",
+                icon: <Mail className="w-5 h-5 stroke-[2.1]" />,
+              },
+            ].map((card) => {
+              const isActive = savedView === card.id;
+              return (
                 <div
-                  className={`w-full h-1.5 rounded-full bg-gradient-to-r ${card.bottomGlow} relative z-10`}
-                />
-              </div>
-            );
-          })}
+                  key={card.id}
+                  onClick={() => handleApplySavedView(card.id)}
+                  className={`${
+                    isLight
+                      ? "cream-gloss-surface"
+                      : `dense-gold-kpi ${card.themeCls} ${card.motionCls}`
+                  } ${
+                    isActive ? "is-active" : ""
+                  } cursor-pointer group p-5 flex flex-col justify-between space-y-4 select-none`}
+                >
+                  {/* Top Row: Label, Big Number & Dark Accent Icon Capsule */}
+                  <div className="flex items-start justify-between gap-3 relative z-10">
+                    <div>
+                      <span
+                        className={`text-[10.5px] font-black uppercase tracking-[0.16em] block ${
+                          isLight ? "text-amber-900/80" : card.labelCls
+                        }`}
+                      >
+                        {card.label}
+                      </span>
+                      <span
+                        className={`text-4xl font-black font-mono leading-none mt-2 block drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)] ${card.numCls}`}
+                      >
+                        {card.value}
+                      </span>
+                    </div>
+
+                    <div
+                      className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105 ${card.iconBox}`}
+                    >
+                      {card.icon}
+                    </div>
+                  </div>
+
+                  {/* Bottom Row: Description, Active Indicator & Accent Progress Bar */}
+                  <div className="space-y-3 relative z-10">
+                    <div className="flex items-end justify-between gap-2 min-h-[28px]">
+                      <span className="text-xs font-semibold text-slate-300 leading-snug">
+                        {card.subtitle}
+                      </span>
+                      {isActive && (
+                        <span className="text-[10.5px] font-black text-amber-300 whitespace-nowrap shrink-0">
+                          • Active View
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="w-full h-2 rounded-full bg-black/40 p-0.5 border border-white/15 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full bg-gradient-to-r ${card.barCls} transition-all duration-500`}
+                        style={{ width: card.barWidth }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </section>
 
         {/* ===================================================================
@@ -4345,7 +4434,7 @@ export default function UserAccessControl() {
           </div>
 
           {/* Row C — Saved View Smart Filter Tabs */}
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-white/10 relative z-10">
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-cyan-400/25 relative z-10">
             <div className="flex flex-wrap items-center gap-2">
               {[
                 { id: "ALL", label: `All Users (${summaryStats.total})` },
@@ -4490,7 +4579,7 @@ export default function UserAccessControl() {
           }`}
         >
           {/* TABLE TOP BAR: Title + [ Show All (23) / Show First 5 ] at Top + Select All */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-cyan-400/25 pb-4">
             <div>
               <span
                 className={`text-[10px] font-black uppercase tracking-wider block ${

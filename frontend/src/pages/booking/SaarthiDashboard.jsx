@@ -2841,7 +2841,7 @@ export default function SaarthiDashboard({ adminId = null }) {
                     api.gotoDate("2026-10-22");
                     api.changeView("timeGridDay");
                     setCurrentView("timeGridDay");
-                    updateDateRangeText(api);
+                    updateDateText();
                     toast.success("Navigated to Thursday, 22 Oct: Showing overlapping meetings", { icon: "📅" });
                   }
                 }}

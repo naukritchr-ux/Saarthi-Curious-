@@ -20,8 +20,9 @@ const UserTable = ({ users, onAction, canEditUser = true }) => {
             <td className="px-4 py-5">
               <div className="flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#ECE5F2] text-sm font-bold text-[#693C83]">
-                  {user.name
+                  {(user.name || "User")
                     .split(" ")
+                    .filter(Boolean)
                     .map((part) => part[0])
                     .join("")}
                 </div>
@@ -36,7 +37,7 @@ const UserTable = ({ users, onAction, canEditUser = true }) => {
               </div>
             </td>
             <td className="px-4 py-5">{user.role}</td>
-            <td className="px-4 py-5">{user.franchise_partner || "-"}</td>
+            <td className="px-4 py-5">{user.franchise_partner || (user.role_id === 5 ? user.Reporting_Manager : "-")}</td>
             <td className="px-4 py-5">
               <div className="flex items-center gap-2 text-[#4F4679]">
                 <Calendar size={16} />

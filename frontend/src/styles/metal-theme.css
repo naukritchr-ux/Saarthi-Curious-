@@ -1,0 +1,1399 @@
+
+
+/* ============================================================================
+   PREMIUM 3D METALLIC & SKEUOMORPHIC STYLES
+   ============================================================================ */
+
+/* A. THE GOLD EXECUTIVE BUTTON (Like "Refresh" in Image 2) */
+.gold-metallic-btn {
+  background: linear-gradient(180deg, #FFE58F 0%, #F5B041 40%, #B9770E 100%);
+  border: 1px solid #FFF3C4;
+  color: #3E1A00;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.4);
+  box-shadow: 
+    inset 0 2px 2px rgba(255, 255, 255, 0.8),   /* Top Rim Light */
+    inset 0 -2px 4px rgba(0, 0, 0, 0.3),        /* Bottom Inner Shadow */
+    0 6px 15px rgba(245, 176, 65, 0.4);         /* Outer Glow */
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: 800;
+}
+.gold-metallic-btn:hover {
+  background: linear-gradient(180deg, #FFF0B3 0%, #F7C15C 40%, #C98A12 100%);
+  transform: translateY(-2px);
+  box-shadow: inset 0 2px 2px rgba(255, 255, 255, 0.9), 0 8px 20px rgba(245, 176, 65, 0.6);
+}
+.gold-metallic-btn:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3), 0 2px 5px rgba(245, 176, 65, 0.3);
+}
+
+/* B. THE PURPLE SATIN BUTTON (Like "Manage" in Image 2, or "Filter ->") */
+.purple-metallic-btn {
+  background: linear-gradient(180deg, #9B7AFF 0%, #6C47D6 40%, #3E1A8A 100%);
+  border: 1px solid #D8C8FF;
+  color: #FFFFFF;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  box-shadow: 
+    inset 0 2px 2px rgba(255, 255, 255, 0.4), 
+    inset 0 -2px 4px rgba(0, 0, 0, 0.5),
+    0 4px 15px rgba(108, 71, 214, 0.5);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: 800;
+}
+.purple-metallic-btn:hover {
+  background: linear-gradient(180deg, #B095FF 0%, #7E58E8 40%, #4F249F 100%);
+  transform: translateY(-1px);
+  box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.5), 0 6px 20px rgba(108, 71, 214, 0.7);
+}
+.purple-metallic-btn:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3), 0 2px 5px rgba(108, 71, 214, 0.3);
+}
+
+/* C. ACTIVE & INACTIVE FILTER TABS (Like "All", "Active", "Shielded", "Never" in Image 2 & 4) */
+.metallic-tab-bar {
+  background: rgba(11, 10, 28, 0.92);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.6), 0 6px 16px rgba(0, 0, 0, 0.35);
+  padding: 5px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 1. GOLD METALLIC GLOSS TAB ("All" Tab) */
+.tab-metallic-gold,
+.tab-active-metallic {
+  background: linear-gradient(180deg, #FFE896 0%, #F5B041 38%, #B9770E 100%);
+  border: 1px solid #FFF8D6;
+  color: #3A1900;
+  font-weight: 900;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.45);
+  box-shadow: 
+    inset 0 2px 2px rgba(255, 255, 255, 0.95),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.45),
+    0 6px 18px rgba(245, 176, 65, 0.55),
+    0 2px 4px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.tab-metallic-gold:hover,
+.tab-active-metallic:hover {
+  background: linear-gradient(180deg, #FFF0B3 0%, #F7C15C 38%, #C98A12 100%);
+  transform: translateY(-1.5px);
+  box-shadow: 
+    inset 0 2px 2px rgba(255, 255, 255, 0.95),
+    0 8px 24px rgba(245, 176, 65, 0.7);
+}
+
+/* 2. FLAME / ROSE METALLIC GLOSS TAB ("High Risk" / Active Flame) */
+.tab-metallic-rose {
+  background: linear-gradient(180deg, #FFA4A4 0%, #F43F5E 38%, #9F1239 100%);
+  border: 1px solid #FFE4E6;
+  color: #FFFFFF;
+  font-weight: 900;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  box-shadow: 
+    inset 0 2px 2px rgba(255, 255, 255, 0.95),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.5),
+    0 6px 18px rgba(244, 63, 94, 0.65),
+    0 2px 4px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.tab-metallic-rose:hover {
+  background: linear-gradient(180deg, #FFB8B8 0%, #FB7185 38%, #BE123C 100%);
+  transform: translateY(-1.5px);
+  box-shadow: 
+    inset 0 2px 2px rgba(255, 255, 255, 0.95),
+    0 8px 24px rgba(244, 63, 94, 0.8);
+}
+
+/* 3. AMBER METALLIC GLOSS TAB ("Medium Risk" Tab) */
+.tab-metallic-amber {
+  background: linear-gradient(180deg, #FDE68A 0%, #F59E0B 38%, #B45309 100%);
+  border: 1px solid #FEF3C7;
+  color: #451A03;
+  font-weight: 900;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.4);
+  box-shadow: 
+    inset 0 2px 2px rgba(255, 255, 255, 0.95),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.45),
+    0 6px 18px rgba(245, 158, 11, 0.65),
+    0 2px 4px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.tab-metallic-amber:hover {
+  background: linear-gradient(180deg, #FEF08A 0%, #FBBF24 38%, #D97706 100%);
+  transform: translateY(-1.5px);
+  box-shadow: 
+    inset 0 2px 2px rgba(255, 255, 255, 0.95),
+    0 8px 24px rgba(245, 158, 11, 0.8);
+}
+
+/* 4. ELECTRIC CYAN METALLIC GLOSS TAB ("Low Risk" / Shielded) */
+.tab-metallic-cyan {
+  background: linear-gradient(180deg, #BAE6FD 0%, #38BDF8 38%, #0284C7 100%);
+  border: 1px solid #E0F2FE;
+  color: #042F2E;
+  font-weight: 900;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.4);
+  box-shadow: 
+    inset 0 2px 2px rgba(255, 255, 255, 0.95),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.45),
+    0 6px 18px rgba(56, 189, 248, 0.65),
+    0 2px 4px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.tab-metallic-cyan:hover {
+  background: linear-gradient(180deg, #E0F2FE 0%, #60A5FA 38%, #0369A1 100%);
+  transform: translateY(-1.5px);
+  box-shadow: 
+    inset 0 2px 2px rgba(255, 255, 255, 0.95),
+    0 8px 24px rgba(56, 189, 248, 0.8);
+}
+
+/* 5. PURPLE SATIN METALLIC GLOSS TAB */
+.tab-metallic-purple {
+  background: linear-gradient(180deg, #C4B5FD 0%, #8B5CF6 38%, #5B21B6 100%);
+  border: 1px solid #EDE9FE;
+  color: #FFFFFF;
+  font-weight: 900;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  box-shadow: 
+    inset 0 2px 2px rgba(255, 255, 255, 0.95),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.5),
+    0 6px 18px rgba(139, 92, 246, 0.65),
+    0 2px 4px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* 6. INACTIVE METALLIC GLASS TABS (Matching Image 2 & 4 Inactive Tabs) */
+.tab-inactive-glass,
+.tab-metallic-glass {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(20, 18, 38, 0.75) 45%, rgba(10, 8, 22, 0.92) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #D4D0E8;
+  font-weight: 800;
+  box-shadow: inset 0 1.5px 1.5px rgba(255, 255, 255, 0.22), 0 2px 4px rgba(0, 0, 0, 0.35);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.tab-inactive-glass:hover,
+.tab-metallic-glass:hover {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(28, 24, 52, 0.85) 45%, rgba(14, 12, 30, 0.95) 100%);
+  color: #FFFFFF;
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-1.5px);
+  box-shadow: inset 0 1.5px 1.5px rgba(255, 255, 255, 0.35), 0 6px 16px rgba(0, 0, 0, 0.45);
+}
+
+.tab-metallic-glass-gold:hover {
+  border-color: rgba(253, 224, 71, 0.75);
+  box-shadow: inset 0 1.5px 1.5px rgba(255, 255, 255, 0.35), 0 6px 18px rgba(245, 176, 65, 0.45);
+}
+.tab-metallic-glass-rose:hover {
+  border-color: rgba(254, 205, 211, 0.75);
+  box-shadow: inset 0 1.5px 1.5px rgba(255, 255, 255, 0.35), 0 6px 18px rgba(244, 63, 94, 0.45);
+}
+.tab-metallic-glass-amber:hover {
+  border-color: rgba(254, 240, 138, 0.75);
+  box-shadow: inset 0 1.5px 1.5px rgba(255, 255, 255, 0.35), 0 6px 18px rgba(245, 158, 11, 0.45);
+}
+.tab-metallic-glass-cyan:hover {
+  border-color: rgba(186, 230, 253, 0.75);
+  box-shadow: inset 0 1.5px 1.5px rgba(255, 255, 255, 0.35), 0 6px 18px rgba(56, 189, 248, 0.45);
+}
+
+/* ============================================================================
+   2. METALLIC KPI CARDS (Like Image 1 & Image 2)
+   ============================================================================ */
+
+/* The base structural setup for a 3D metallic card */
+.metallic-card-base {
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 
+    0 15px 35px rgba(0, 0, 0, 0.6), 
+    inset 0 1px 1px rgba(255, 255, 255, 0.3); /* Top edge shine */
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+.metallic-card-base:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 20px 42px rgba(0, 0, 0, 0.75), 
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.5);
+}
+
+/* Purple Gradient Plate */
+.card-metallic-purple {
+  background: 
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.15) 0%, transparent 40%),
+    linear-gradient(135deg, #2D2352 0%, #1B1436 100%);
+  border: 1.5px solid rgba(168, 130, 255, 0.4);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.4), inset 0 -2px 10px rgba(0,0,0,0.5);
+}
+
+/* Red Gradient Plate (High Risk) */
+.card-metallic-red {
+  background: 
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.15) 0%, transparent 40%),
+    linear-gradient(135deg, #4A1C2A 0%, #2B0F18 100%);
+  border: 1.5px solid rgba(255, 100, 120, 0.4);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.4);
+}
+
+/* Gold Gradient Plate (Medium Risk / Pacesetter) */
+.card-metallic-gold {
+  background: 
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.15) 0%, transparent 40%),
+    linear-gradient(135deg, #423518 0%, #241D0B 100%);
+  border: 1.5px solid rgba(255, 215, 100, 0.4);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.4);
+}
+
+/* Cyan Gradient Plate (Low Risk / Freezes) */
+.card-metallic-cyan {
+  background: 
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.15) 0%, transparent 40%),
+    linear-gradient(135deg, #123548 0%, #091C26 100%);
+  border: 1.5px solid rgba(100, 200, 255, 0.4);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.4);
+}
+
+/* Emerald Gradient Plate */
+.card-metallic-emerald {
+  background: 
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.15) 0%, transparent 40%),
+    linear-gradient(135deg, #16382E 0%, #0D201B 100%);
+  border: 1.5px solid rgba(110, 231, 183, 0.4);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.4);
+}
+
+/* ============================================================================
+   3. GLOWING PROGRESS BARS
+   ============================================================================ */
+.metallic-progress-track {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+  border-radius: 99px;
+  overflow: hidden;
+  height: 6px;
+}
+.metallic-progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  box-shadow: inset 0 1px 1px rgba(255,255,255,0.5), 0 0 10px currentColor;
+}
+
+
+/* ==========================================================================
+   EXTENDED METALLIC SURFACE & COMPONENT SYSTEM
+   ========================================================================== */
+/* ==========================================================================
+   METAL THEME: matte-satin glass surfaces with a gleaming metallic rim
+   Drop into src/index.css (or import it once in main.jsx).
+   Needs: Edge/Chrome 111+ (color-mix). Pairs with Tailwind for layout only.
+   ========================================================================== */
+
+:root {
+  --mx-text: #f4f1ff;
+  --mx-text-dim: #bdb6e0;
+  --mx-ease: cubic-bezier(0.22, 0.8, 0.3, 1);
+  /* fine matte grain, tiled */
+  --mx-noise: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+/* --------------------------------------------------------------------------
+   0. PAGE BACKGROUND (the metal needs a dark slate-purple stage to read well)
+   -------------------------------------------------------------------------- */
+.metal-page {
+  color: var(--mx-text);
+  min-height: 100%;
+  padding: 1.25rem;
+  background:
+    radial-gradient(900px 500px at 8% -10%, rgba(139, 92, 246, 0.38), transparent 60%),
+    radial-gradient(800px 500px at 100% 0%, rgba(56, 189, 248, 0.14), transparent 55%),
+    linear-gradient(180deg, #2d2955 0%, #211e43 45%, #18162f 100%);
+}
+.metal-page h1,
+.metal-page h2,
+.metal-page h3,
+.metal-page p,
+.metal-page span,
+.metal-page td,
+.metal-page th {
+  color: inherit;
+}
+
+/* --------------------------------------------------------------------------
+   1. TONES (set the accent once, everything inside inherits it)
+      Use on any surface or button: metal-tone--purple | amber | cyan | emerald | rose
+   -------------------------------------------------------------------------- */
+.metal-tone--purple {
+  --tint-top: #4b4577; --tint-bottom: #2a2650;
+  --rim-hi: rgba(233, 223, 255, 0.9); --rim-lo: rgba(150, 130, 220, 0.28);
+  --accent: #a855f7; --accent-hi: #e9d5ff; --glow: rgba(168, 85, 247, 0.38);
+  --value: #ffffff;
+}
+.metal-tone--amber {
+  --tint-top: #5a4c47; --tint-bottom: #2f2724;
+  --rim-hi: rgba(253, 230, 138, 0.92); --rim-lo: rgba(180, 130, 40, 0.3);
+  --accent: #f59e0b; --accent-hi: #fde68a; --glow: rgba(245, 158, 11, 0.36);
+  --value: #fde047;
+}
+.metal-tone--cyan {
+  --tint-top: #3d5f7d; --tint-bottom: #1c2f48;
+  --rim-hi: rgba(186, 230, 253, 0.92); --rim-lo: rgba(70, 140, 190, 0.3);
+  --accent: #22d3ee; --accent-hi: #a5f3fc; --glow: rgba(34, 211, 238, 0.34);
+  --value: #7dd3fc;
+}
+.metal-tone--emerald {
+  --tint-top: #2f6360; --tint-bottom: #15302f;
+  --rim-hi: rgba(167, 243, 208, 0.9); --rim-lo: rgba(40, 140, 110, 0.3);
+  --accent: #10b981; --accent-hi: #a7f3d0; --glow: rgba(16, 185, 129, 0.34);
+  --value: #6ee7b7;
+}
+.metal-tone--rose {
+  --tint-top: #67405a; --tint-bottom: #331b32;
+  --rim-hi: rgba(254, 205, 211, 0.92); --rim-lo: rgba(190, 80, 110, 0.3);
+  --accent: #fb7185; --accent-hi: #fecdd3; --glow: rgba(244, 63, 94, 0.34);
+  --value: #fda4af;
+}
+
+/* --------------------------------------------------------------------------
+   2. SURFACE: the metallic-rim, dim-satin, matte-grain body
+      metal-surface is the base; metal-card / metal-panel / metal-hero add spacing
+   -------------------------------------------------------------------------- */
+.metal-surface {
+  /* default tone = purple, overridden by any metal-tone--* on the element */
+  --tint-top: #4b4577; --tint-bottom: #2a2650;
+  --rim-hi: rgba(233, 223, 255, 0.9); --rim-lo: rgba(150, 130, 220, 0.28);
+  --accent: #a855f7; --accent-hi: #e9d5ff; --glow: rgba(168, 85, 247, 0.38);
+  --value: #ffffff;
+
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1.5px solid transparent;
+  background:
+    radial-gradient(120% 90% at 8% 0%, rgba(255, 255, 255, 0.16), transparent 46%) padding-box,
+    linear-gradient(165deg, var(--tint-top), var(--tint-bottom)) padding-box,
+    linear-gradient(135deg, var(--rim-hi) 0%, var(--rim-lo) 45%, var(--rim-hi) 100%) border-box;
+  box-shadow:
+    0 14px 34px rgba(8, 6, 24, 0.55),
+    inset 0 1px 1px rgba(255, 255, 255, 0.45),
+    inset 0 -12px 26px rgba(0, 0, 0, 0.28);
+  transition: transform 0.25s var(--mx-ease), box-shadow 0.25s var(--mx-ease);
+}
+/* diagonal satin sheen */
+.metal-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 16%,
+    rgba(255, 255, 255, 0.11) 31%,
+    rgba(255, 255, 255, 0.02) 43%,
+    transparent 52%,
+    rgba(255, 255, 255, 0.07) 70%,
+    transparent 84%
+  );
+  transition: transform 0.9s var(--mx-ease);
+}
+/* matte grain */
+.metal-surface::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background-image: var(--mx-noise);
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+}
+/* real content sits above sheen + grain (add .metal-abs to opt out) */
+.metal-surface > *:not(.metal-abs) {
+  position: relative;
+  z-index: 1;
+}
+
+.metal-card { padding: 1.1rem 1.25rem; }
+.metal-panel { padding: 1.25rem 1.4rem; }
+.metal-hero { padding: 1.4rem 1.6rem; }
+
+.metal-card:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 20px 44px var(--glow),
+    0 14px 30px rgba(8, 6, 24, 0.5),
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.6),
+    inset 0 -12px 26px rgba(0, 0, 0, 0.25);
+}
+.metal-card:hover::before { transform: translateX(7%); }
+.metal-card[role="button"],
+.metal-card.is-clickable { cursor: pointer; }
+
+/* --------------------------------------------------------------------------
+   3. CARD PARTS
+   -------------------------------------------------------------------------- */
+.metal-icon {
+  width: 56px;
+  height: 56px;
+  flex: none;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+  border: 1.5px solid var(--accent-hi);
+  background:
+    radial-gradient(circle at 30% 15%, rgba(255, 255, 255, 0.38), transparent 55%),
+    linear-gradient(160deg, color-mix(in srgb, var(--accent) 72%, #000), color-mix(in srgb, var(--accent) 34%, #000));
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px rgba(255, 255, 255, 0.55),
+    0 0 18px var(--glow);
+}
+.metal-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mx-text);
+}
+.metal-value {
+  font-size: 2.25rem;
+  line-height: 1.1;
+  font-weight: 900;
+  color: var(--value);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+.metal-caption {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--mx-text-dim);
+}
+
+/* progress bar with inset groove + glowing fill */
+.metal-bar {
+  height: 9px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(10, 8, 30, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+.metal-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--accent-hi));
+  box-shadow: 0 0 10px var(--glow), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  transition: width 0.8s var(--mx-ease);
+}
+
+/* --------------------------------------------------------------------------
+   4. BUTTONS: satin metal body, specular rim, sheen sweep on hover
+      tones: --gold | --purple | --silver | --emerald | --ghost   sizes: --sm
+   -------------------------------------------------------------------------- */
+.metal-btn {
+  /* default = purple */
+  --b-top: #7c5ce0; --b-bot: #43279a;
+  --b-rim-hi: #eadcff; --b-rim-lo: #7b5bd6;
+  --b-text: #ffffff; --b-shadow: rgba(88, 28, 135, 0.5);
+
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.6rem 1.2rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+  color: var(--b-text);
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(180deg, var(--b-top), var(--b-bot)) padding-box,
+    linear-gradient(180deg, var(--b-rim-hi), var(--b-rim-lo)) border-box;
+  box-shadow:
+    0 6px 16px var(--b-shadow),
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.65),
+    inset 0 -3px 4px rgba(0, 0, 0, 0.28);
+  transition: transform 0.18s var(--mx-ease), filter 0.18s, box-shadow 0.18s;
+}
+/* glossy top half */
+.metal-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 50% 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0));
+}
+/* sheen sweep */
+.metal-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -70%;
+  width: 40%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.6s var(--mx-ease);
+}
+.metal-btn:hover { transform: translateY(-1px); filter: brightness(1.07); }
+.metal-btn:hover::before { left: 130%; }
+.metal-btn:active {
+  transform: translateY(0) scale(0.97);
+  box-shadow: 0 2px 6px var(--b-shadow), inset 0 2px 5px rgba(0, 0, 0, 0.4);
+}
+.metal-btn:focus-visible { outline: 2px solid var(--b-rim-hi); outline-offset: 2px; }
+.metal-btn:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.4); transform: none; }
+
+.metal-btn--sm { padding: 0.32rem 0.8rem; font-size: 0.72rem; }
+
+.metal-btn--gold {
+  --b-top: #fde68a; --b-bot: #c9890f;
+  --b-rim-hi: #fff6c8; --b-rim-lo: #c58a10;
+  --b-text: #2a1a00; --b-shadow: rgba(234, 179, 8, 0.42);
+}
+.metal-btn--silver {
+  --b-top: #f1f5f9; --b-bot: #a3b0c3;
+  --b-rim-hi: #ffffff; --b-rim-lo: #8896aa;
+  --b-text: #0f172a; --b-shadow: rgba(0, 0, 0, 0.45);
+}
+.metal-btn--emerald {
+  --b-top: #22947a; --b-bot: #0e4234;
+  --b-rim-hi: #a7f3d0; --b-rim-lo: #1f8a6c;
+  --b-text: #ecfdf5; --b-shadow: rgba(6, 78, 59, 0.5);
+}
+.metal-btn--ghost {
+  --b-top: rgba(255, 255, 255, 0.1); --b-bot: rgba(255, 255, 255, 0.03);
+  --b-rim-hi: rgba(255, 255, 255, 0.5); --b-rim-lo: rgba(255, 255, 255, 0.14);
+  --b-text: var(--mx-text); --b-shadow: rgba(0, 0, 0, 0.35);
+}
+
+/* --------------------------------------------------------------------------
+   5. TABS (filter pills). Container + pills; active pill turns gold metal
+   -------------------------------------------------------------------------- */
+.metal-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem;
+  border-radius: 20px;
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(165deg, rgba(75, 69, 119, 0.85), rgba(42, 38, 80, 0.85)) padding-box,
+    linear-gradient(135deg, rgba(233, 223, 255, 0.7), rgba(150, 130, 220, 0.22), rgba(233, 223, 255, 0.7)) border-box;
+  box-shadow: 0 8px 22px rgba(8, 6, 24, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+}
+.metal-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1.05rem;
+  border-radius: 14px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  color: var(--mx-text);
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02)) padding-box,
+    linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.1)) border-box;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.25), 0 3px 8px rgba(0, 0, 0, 0.3);
+  transition: transform 0.18s var(--mx-ease), filter 0.18s;
+}
+.metal-tab:hover { transform: translateY(-1px); filter: brightness(1.15); }
+.metal-tab.is-active {
+  color: #2a1a00;
+  background:
+    linear-gradient(180deg, #fde68a, #c9890f) padding-box,
+    linear-gradient(180deg, #fff6c8, #c58a10) border-box;
+  box-shadow: 0 6px 16px rgba(234, 179, 8, 0.4), inset 0 1.5px 1px rgba(255, 255, 255, 0.7), inset 0 -3px 4px rgba(0, 0, 0, 0.25);
+}
+
+/* --------------------------------------------------------------------------
+   6. INPUTS, PILLS, LIVE BADGE
+   -------------------------------------------------------------------------- */
+.metal-input {
+  width: 100%;
+  padding: 0.7rem 1rem 0.7rem 2.6rem;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  color: var(--mx-text);
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(180deg, rgba(20, 17, 45, 0.55), rgba(40, 36, 80, 0.5)) padding-box,
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.15)) border-box;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.4);
+  transition: box-shadow 0.2s;
+}
+.metal-input::placeholder { color: var(--mx-text-dim); }
+.metal-input:focus { outline: none; box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.4), 0 0 0 3px rgba(168, 85, 247, 0.4); }
+
+.metal-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.18rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #fff;
+  border: 1.2px solid transparent;
+  background:
+    linear-gradient(180deg, #6c47d6, #3b2187) padding-box,
+    linear-gradient(180deg, rgba(233, 213, 255, 0.95), rgba(123, 91, 214, 0.6)) border-box;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.4);
+}
+.metal-pill--green {
+  color: #d1fae5;
+  background:
+    linear-gradient(180deg, #1e7e62, #0e4234) padding-box,
+    linear-gradient(180deg, rgba(167, 243, 208, 0.95), rgba(31, 138, 108, 0.6)) border-box;
+}
+.metal-pill--amber {
+  color: #2a1a00;
+  background:
+    linear-gradient(180deg, #fde68a, #c9890f) padding-box,
+    linear-gradient(180deg, #fff6c8, #c58a10) border-box;
+}
+.metal-pill--rose {
+  color: #ffe4e6;
+  background:
+    linear-gradient(180deg, #b3324f, #5e1630) padding-box,
+    linear-gradient(180deg, rgba(254, 205, 211, 0.95), rgba(190, 80, 110, 0.6)) border-box;
+}
+
+.metal-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #a7f3d0;
+  border: 1.2px solid rgba(110, 231, 183, 0.6);
+  background: rgba(16, 80, 62, 0.55);
+}
+.metal-live::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 8px #34d399;
+  animation: metal-pulse 1.6s ease-in-out infinite;
+}
+@keyframes metal-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+/* --------------------------------------------------------------------------
+   7. TABLE (inside a metal-panel)
+   -------------------------------------------------------------------------- */
+.metal-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.metal-table thead th {
+  padding: 0.7rem 0.9rem;
+  text-align: left;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mx-text-dim);
+  background: rgba(255, 255, 255, 0.07);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+}
+.metal-table thead th:first-child { border-top-left-radius: 12px; }
+.metal-table thead th:last-child { border-top-right-radius: 12px; }
+.metal-table tbody td {
+  padding: 0.8rem 0.9rem;
+  font-size: 0.85rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.metal-table tbody tr { transition: background 0.15s; }
+.metal-table tbody tr:hover { background: rgba(255, 255, 255, 0.06); }
+
+/* --------------------------------------------------------------------------
+   8. ACCESSIBILITY
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .metal-surface, .metal-surface::before, .metal-btn, .metal-btn::before,
+  .metal-tab, .metal-bar > i { transition: none; }
+  .metal-live::before { animation: none; }
+}
+
+
+/* ==========================================================================
+   MACHINED ANODIZED METALLIC KPI CARDS (FROM CANDIDATE ATTRITION & USER MGMT)
+   - Balanced, compact "normal not too big" proportions (matches User Management)
+   - 120FPS GPU anisotropic luster + organic underglow
+   - 5 Metal Base Alloys: Violet, Crimson, Bronze/Gold, Cyan, Emerald
+   ========================================================================== */
+
+/* 2x2 or 4x1 KPI Metallic Grid */
+.metal-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+}
+
+@media (max-width: 640px) {
+  .metal-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
+   5 DISTINCT ANODIZED METAL BASE ALLOYS
+   ========================================================================== */
+
+/* 1. VIOLET TITANIUM / AMETHYST */
+.metal-violet {
+  --plate-top: #52437a;
+  --plate-mid: #322652;
+  --plate-bot: #1f1736;
+  --luster-tint: rgba(233, 213, 255, 0.28);
+  --luster-core: rgba(255, 255, 255, 0.22);
+  --underglow: rgba(168, 85, 247, 0.34);
+  --rim-light: #e9d5ff;
+  --rim-warm: #d6bcfa;
+  --squircle-bg: linear-gradient(145deg, rgba(139, 92, 246, 0.45), rgba(46, 16, 101, 0.85));
+  --squircle-border: rgba(216, 180, 254, 0.55);
+  --num-color: #ffffff;
+  --bar-grad: linear-gradient(90deg, #9333ea 0%, #c084fc 72%, #f5d0fe 100%);
+  --bar-glow: rgba(192, 132, 252, 0.55);
+}
+
+/* 2. FORGED RUBY / CRIMSON STEEL */
+.metal-crimson {
+  --plate-top: #733244;
+  --plate-mid: #4a1c29;
+  --plate-bot: #2b0f18;
+  --luster-tint: rgba(254, 205, 211, 0.28);
+  --luster-core: rgba(255, 241, 242, 0.22);
+  --underglow: rgba(244, 63, 94, 0.34);
+  --rim-light: #fecdd3;
+  --rim-warm: #fda4af;
+  --squircle-bg: linear-gradient(145deg, rgba(190, 18, 60, 0.48), rgba(76, 5, 25, 0.88));
+  --squircle-border: rgba(253, 164, 175, 0.52);
+  --num-color: #fda4af;
+  --bar-grad: linear-gradient(90deg, #e11d48 0%, #fb7185 72%, #ffe4e6 100%);
+  --bar-glow: rgba(251, 113, 133, 0.55);
+}
+
+/* 3. CHAMPAGNE BRONZE / SATIN GOLD */
+.metal-bronze,
+.metal-amber {
+  --plate-top: #6e5530;
+  --plate-mid: #47351b;
+  --plate-bot: #291e0e;
+  --luster-tint: rgba(254, 240, 138, 0.25);
+  --luster-core: rgba(255, 251, 235, 0.22);
+  --underglow: rgba(234, 179, 8, 0.3);
+  --rim-light: #fef08a;
+  --rim-warm: #fde047;
+  --squircle-bg: linear-gradient(145deg, rgba(180, 118, 22, 0.48), rgba(69, 39, 7, 0.88));
+  --squircle-border: rgba(253, 224, 71, 0.5);
+  --num-color: #facc15;
+  --bar-grad: linear-gradient(90deg, #d97706 0%, #facc15 72%, #fef9c3 100%);
+  --bar-glow: rgba(250, 204, 21, 0.52);
+}
+
+/* 4. CRYO COBALT / ICE-CYAN STEEL */
+.metal-cyan {
+  --plate-top: #315a78;
+  --plate-mid: #1d394f;
+  --plate-bot: #102230;
+  --luster-tint: rgba(186, 230, 253, 0.28);
+  --luster-core: rgba(240, 249, 255, 0.22);
+  --underglow: rgba(34, 211, 238, 0.32);
+  --rim-light: #bae6fd;
+  --rim-warm: #7dd3fc;
+  --squircle-bg: linear-gradient(145deg, rgba(14, 116, 144, 0.5), rgba(8, 47, 73, 0.88));
+  --squircle-border: rgba(125, 211, 252, 0.52);
+  --num-color: #67e8f9;
+  --bar-grad: linear-gradient(90deg, #0284c7 0%, #22d3ee 72%, #cffafe 100%);
+  --bar-glow: rgba(34, 211, 238, 0.55);
+}
+
+/* 5. JADE / EMERALD STEEL */
+.metal-emerald {
+  --plate-top: #255444;
+  --plate-mid: #15362a;
+  --plate-bot: #0d211a;
+  --luster-tint: rgba(167, 243, 208, 0.28);
+  --luster-core: rgba(236, 253, 245, 0.22);
+  --underglow: rgba(16, 185, 129, 0.34);
+  --rim-light: #a7f3d0;
+  --rim-warm: #6ee7b7;
+  --squircle-bg: linear-gradient(145deg, rgba(16, 185, 129, 0.48), rgba(6, 78, 59, 0.88));
+  --squircle-border: rgba(110, 231, 183, 0.52);
+  --num-color: #6ee7b7;
+  --bar-grad: linear-gradient(90deg, #059669 0%, #34d399 72%, #a7f3d0 100%);
+  --bar-glow: rgba(52, 211, 153, 0.55);
+}
+
+/* ==========================================================================
+   METALLIC CHASSIS CONTAINER (NORMAL NOT TOO BIG PROPORTIONS)
+   ========================================================================== */
+.metal-kpi-card {
+  position: relative;
+  border-radius: 16px;
+  padding: 14px 16px 12px;
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+  contain: paint;
+  min-height: 120px;
+
+  /* Colored Satin-Matte Anodized Metal Body */
+  background: linear-gradient(
+    162deg,
+    var(--plate-top) 0%,
+    var(--plate-mid) 46%,
+    var(--plate-bot) 100%
+  );
+
+  /* Realistic 3D Elevation & Inner Bevel */
+  box-shadow:
+    0 8px 20px -5px rgba(0, 0, 0, 0.72),
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.55),
+    inset 0 -1.5px 2px rgba(0, 0, 0, 0.55);
+
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.22s ease;
+}
+
+.metal-kpi-card:hover {
+  transform: translate3d(0, -2px, 0);
+  box-shadow:
+    0 12px 24px -5px rgba(0, 0, 0, 0.82),
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.72),
+    inset 0 -1.5px 2px rgba(0, 0, 0, 0.55);
+}
+
+.metal-kpi-card.is-selected {
+  box-shadow:
+    0 0 0 1.5px var(--rim-light),
+    0 12px 26px -4px rgba(0, 0, 0, 0.8),
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.8);
+  transform: translate3d(0, -2px, 0) scale(1.01);
+}
+
+/* ==========================================================================
+   SURFACE TEXTURE & STUDIO LIGHTING
+   ========================================================================== */
+
+/* Ultra-fine horizontal brushed titanium grain */
+.metal-brushed-surface {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.024) 0px,
+    rgba(255, 255, 255, 0.024) 1px,
+    rgba(0, 0, 0, 0.02) 1px,
+    rgba(0, 0, 0, 0.02) 2px
+  );
+}
+
+/* Top-Left Corner Specular Hotspot + Diagonal Satin Cone */
+.metal-studio-bevel {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 55% 50% at 6% 4%,
+      rgba(255, 255, 255, 0.34) 0%,
+      var(--luster-tint) 38%,
+      transparent 75%
+    ),
+    linear-gradient(
+      128deg,
+      transparent 48%,
+      rgba(255, 255, 255, 0.03) 62%,
+      rgba(255, 255, 255, 0.19) 74%,
+      rgba(255, 255, 255, 0.04) 84%,
+      transparent 94%
+    );
+}
+
+/* Live Anisotropic Metal Shine */
+.metal-live-luster {
+  position: absolute;
+  top: -35%;
+  bottom: -35%;
+  left: -60%;
+  width: 220%;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+    112deg,
+    transparent 24%,
+    var(--luster-tint) 41%,
+    var(--luster-core) 49.5%,
+    var(--luster-tint) 58%,
+    transparent 75%
+  );
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  animation: realisticMetalGlide 4.8s cubic-bezier(0.42, 0, 0.58, 1) infinite alternate;
+  animation-delay: var(--phase, 0s);
+}
+
+.metal-live-underglow {
+  position: absolute;
+  inset: -15%;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 65% 55% at 55% 92%,
+    var(--underglow) 0%,
+    transparent 70%
+  );
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  animation: metalUnderglowPulse 3.8s ease-in-out infinite alternate;
+  animation-delay: var(--phase, 0s);
+}
+
+@keyframes realisticMetalGlide {
+  0% {
+    transform: translate3d(-18%, 0, 0) rotate(-1.5deg);
+    opacity: 0.72;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(18%, 0, 0) rotate(1.5deg);
+    opacity: 0.78;
+  }
+}
+
+@keyframes metalUnderglowPulse {
+  0% {
+    opacity: 0.55;
+    transform: translate3d(-4%, 2%, 0) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(4%, -2%, 0) scale(1.06);
+  }
+}
+
+/* Machined Outer Rim */
+.metal-chamfer-rim {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: 16px;
+  padding: 1.4px;
+  pointer-events: none;
+  background: linear-gradient(
+    140deg,
+    #ffffff 0%,
+    var(--rim-light) 24%,
+    rgba(255, 255, 255, 0.25) 50%,
+    var(--rim-warm) 82%,
+    #fde68a 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.88;
+}
+
+/* ==========================================================================
+   FOREGROUND CONTENT
+   ========================================================================== */
+.metal-kpi-inner {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  height: 100%;
+}
+
+/* Top Section */
+.metal-top-section {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.metal-icon-squircle {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--squircle-bg);
+  border: 1px solid var(--squircle-border);
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.42),
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.38),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.metal-icon-squircle svg {
+  width: 26px;
+  height: 26px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
+}
+
+.metal-title-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.metal-kpi-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #f8fafc;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65);
+}
+
+.metal-kpi-number {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--num-color);
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.65);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Progress Track */
+.metal-progress-track {
+  width: 100%;
+  height: 6.5px;
+  margin-top: 6px;
+  margin-bottom: 2px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow:
+    inset 0 1.5px 3px rgba(0, 0, 0, 0.55),
+    0 1px 0 rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+
+.metal-progress-bar {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--bar-grad);
+  box-shadow: 0 0 12px var(--bar-glow);
+  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Bottom Section */
+.metal-bottom-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.metal-kpi-sub {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(248, 250, 252, 0.92);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 3D Brushed Metallic "Filter ->" Pill */
+.metal-filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid #d6c79c;
+  background:
+    radial-gradient(circle at 50% 25%, #ffffff 0%, transparent 65%),
+    linear-gradient(
+      90deg,
+      #aeb6c4 0%,
+      #f1f5f9 28%,
+      #ffffff 50%,
+      #e2e8f0 74%,
+      #9ea7b8 100%
+    );
+  color: #0f172a;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.55),
+    inset 0 1px 1px #ffffff,
+    inset 0 -1px 1.5px rgba(71, 85, 105, 0.55);
+  transition: transform 0.16s ease, filter 0.16s ease;
+}
+
+.metal-filter-pill:hover {
+  transform: translate3d(0, -1px, 0) scale(1.03);
+  filter: brightness(1.06);
+}
+
+.metal-filter-arrow {
+  font-size: 11px;
+  font-weight: 900;
+  transition: transform 0.16s ease;
+}
+
+.metal-filter-pill:hover .metal-filter-arrow {
+  transform: translate3d(2px, 0, 0);
+}
+
+/* ==========================================================================
+   CREAM LUXE THEME (WHEN isLight IS ACTIVE)
+   ========================================================================== */
+.metal-kpi-card.is-light {
+  background: #FFFDF9;
+  box-shadow: 0 4px 14px rgba(72, 58, 38, 0.08), inset 0 1px 0 #FFFFFF;
+}
+
+.metal-kpi-card.is-light.metal-violet {
+  border: 1.5px solid #DDD0F5;
+  background: linear-gradient(145deg, #FFFDFB 0%, #F7F3FF 100%);
+  --num-color: #1E1B4B;
+  --squircle-bg: #EDE9FE;
+  --squircle-border: #C4B5FD;
+  --bar-grad: linear-gradient(90deg, #8B5CF6, #6D28D9);
+}
+
+.metal-kpi-card.is-light.metal-crimson {
+  border: 1.5px solid #F5CBD1;
+  background: linear-gradient(145deg, #FFFDFB 0%, #FFF1F3 100%);
+  --num-color: #BE123C;
+  --squircle-bg: #FFE4E6;
+  --squircle-border: #FDA4AF;
+  --bar-grad: linear-gradient(90deg, #F43F5E, #BE123C);
+}
+
+.metal-kpi-card.is-light.metal-bronze,
+.metal-kpi-card.is-light.metal-amber {
+  border: 1.5px solid #F2DFB1;
+  background: linear-gradient(145deg, #FFFDFB 0%, #FEF8E8 100%);
+  --num-color: #B45309;
+  --squircle-bg: #FEF3C7;
+  --squircle-border: #FCD34D;
+  --bar-grad: linear-gradient(90deg, #F59E0B, #D97706);
+}
+
+.metal-kpi-card.is-light.metal-cyan {
+  border: 1.5px solid #C5E2F0;
+  background: linear-gradient(145deg, #FFFDFB 0%, #EFF8FC 100%);
+  --num-color: #0369A1;
+  --squircle-bg: #E0F2FE;
+  --squircle-border: #7DD3FC;
+  --bar-grad: linear-gradient(90deg, #0EA5E9, #0284C7);
+}
+
+.metal-kpi-card.is-light .metal-kpi-title {
+  color: #475569;
+  text-shadow: none;
+}
+
+.metal-kpi-card.is-light .metal-kpi-sub {
+  color: #64748B;
+  text-shadow: none;
+}
+
+.metal-kpi-card.is-light .metal-progress-track {
+  background: #E2E8F0;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.metal-kpi-card.is-light .metal-filter-pill {
+  background: #FFFFFF;
+  border-color: #CBD5E1;
+  color: #334155;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.metal-kpi-card.is-light .metal-chamfer-rim,
+.metal-kpi-card.is-light .metal-brushed-surface,
+.metal-kpi-card.is-light .metal-studio-bevel,
+.metal-kpi-card.is-light .metal-live-luster,
+.metal-kpi-card.is-light .metal-live-underglow {
+  display: none;
+}
+
+/* ==========================================================================
+   COMPACT GLOWING NEON KPI CARDS (CLONED FROM STREAK MANAGEMENT)
+   - Reduced, compact "normal not too big" footprint
+   - Continuous live-pulsing neon glass tube glow + multi-color drifting base
+   ========================================================================== */
+
+@keyframes neonBaseFlow {
+  0%   { background-position: 0% 50%, 0% 0%; }
+  50%  { background-position: 100% 50%, 100% 100%; }
+  100% { background-position: 0% 50%, 0% 0%; }
+}
+
+@keyframes neonTubePulsePurple {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(176, 38, 255, 0.45), 0 0 22px rgba(176, 38, 255, 0.2), inset 0 0 14px rgba(176, 38, 255, 0.16);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(217, 70, 239, 0.75), 0 0 32px rgba(176, 38, 255, 0.35), inset 0 0 20px rgba(176, 38, 255, 0.25);
+  }
+}
+
+@keyframes neonTubePulseFlame {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(255, 61, 0, 0.45), 0 0 22px rgba(255, 0, 127, 0.2), inset 0 0 14px rgba(255, 61, 0, 0.16);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(255, 85, 0, 0.75), 0 0 32px rgba(255, 0, 127, 0.35), inset 0 0 20px rgba(255, 0, 127, 0.25);
+  }
+}
+
+@keyframes neonTubePulseGold {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(255, 230, 0, 0.42), 0 0 22px rgba(255, 153, 0, 0.18), inset 0 0 14px rgba(255, 230, 0, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(255, 230, 0, 0.72), 0 0 32px rgba(255, 153, 0, 0.32), inset 0 0 20px rgba(255, 230, 0, 0.22);
+  }
+}
+
+@keyframes neonTubePulseCyan {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(0, 245, 255, 0.45), 0 0 22px rgba(0, 153, 255, 0.2), inset 0 0 14px rgba(0, 245, 255, 0.16);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(0, 245, 255, 0.75), 0 0 32px rgba(0, 153, 255, 0.35), inset 0 0 20px rgba(0, 245, 255, 0.25);
+  }
+}
+
+.neon-kpi-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background-size: 260% 260%, 200% 200% !important;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.22s ease, outline-color 0.2s ease;
+  border-radius: 14px;
+  padding: 12px 14px 10px;
+  min-height: 108px;
+}
+
+.neon-kpi-card:hover {
+  transform: translateY(-2px) scale(1.01);
+}
+
+.neon-kpi-card.is-selected {
+  outline: 2px solid #FFFFFF;
+  outline-offset: 2px;
+  transform: translateY(-2px) scale(1.015);
+  filter: brightness(1.08);
+}
+
+.neon-kpi-purple {
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(176, 38, 255, 0.44) 0%, rgba(217, 70, 239, 0.16) 45%, transparent 72%),
+    linear-gradient(135deg, #09031A 0%, #1F0847 38%, #04030D 72%, #290B54 100%) !important;
+  border: 1.8px solid #C864FF !important;
+  animation: neonBaseFlow 5.5s ease-in-out infinite, neonTubePulsePurple 3.6s ease-in-out infinite !important;
+}
+
+.neon-kpi-flame {
+  background-image:
+    radial-gradient(circle at 80% 20%, rgba(255, 0, 127, 0.42) 0%, rgba(255, 85, 0, 0.22) 45%, transparent 72%),
+    linear-gradient(135deg, #1A030B 0%, #3E0818 38%, #0A0308 72%, #421108 100%) !important;
+  border: 1.8px solid #FF4D6D !important;
+  animation: neonBaseFlow 5.5s ease-in-out infinite, neonTubePulseFlame 3.6s ease-in-out infinite !important;
+}
+
+.neon-kpi-gold {
+  background-image:
+    radial-gradient(circle at 25% 80%, rgba(255, 230, 0, 0.35) 0%, rgba(255, 136, 0, 0.2) 45%, transparent 72%),
+    linear-gradient(135deg, #171002 0%, #382504 38%, #0A0702 72%, #331F04 100%) !important;
+  border: 1.8px solid #FFE600 !important;
+  animation: neonBaseFlow 5.5s ease-in-out infinite, neonTubePulseGold 3.6s ease-in-out infinite !important;
+}
+
+.neon-kpi-cyan {
+  background-image:
+    radial-gradient(circle at 80% 78%, rgba(0, 245, 255, 0.42) 0%, rgba(0, 128, 255, 0.2) 45%, transparent 72%),
+    linear-gradient(135deg, #02121F 0%, #052D4A 38%, #020812 72%, #062845 100%) !important;
+  border: 1.8px solid #00F5FF !important;
+  animation: neonBaseFlow 5.5s ease-in-out infinite, neonTubePulseCyan 3.6s ease-in-out infinite !important;
+}
+

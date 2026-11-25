@@ -164,7 +164,6 @@ const AiChatCard = ({ context }) => {
   return (
     <div
       className="neon-card glow-pulse p-5 h-full min-h-[350px] flex flex-col justify-between"
-      style={{ borderColor: "rgba(139, 92, 246, 0.22)" }}
     >
       {/* Top section: robot on the LEFT, heading + suggestions + button on RIGHT */}
       <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] items-center sm:items-start gap-4">

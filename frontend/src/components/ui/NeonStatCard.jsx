@@ -15,8 +15,14 @@ const NeonStatCard = ({
 
   return (
     <div
-      className="neon-card p-4 flex items-center gap-4"
-      style={{ animationDelay: `${index * 0.7}s` }}
+      className="admin-kpi-glow p-4 flex items-center gap-4"
+      style={{
+        animationDelay: `${index * 0.9}s`,
+        "--kpi-glow": color,
+        "--kpi-border-dim": `${color}dd`,
+        "--kpi-shadow": `${color}aa`,
+        "--kpi-inset": `${color}44`,
+      }}
     >
       {/* Metallic Icon Container with Specular Highlight Overlay */}
       <div

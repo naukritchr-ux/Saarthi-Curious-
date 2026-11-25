@@ -267,6 +267,28 @@ const UserDetailModal = ({ user, onClose, onSelectUser }) => {
                       </button>
                     ))}
                   </div>
+                ) : (user.role === "Franchise Developer" || user.role_id === 6) &&
+                  user.children?.length ? (
+                  <div className="space-y-3">
+                    {user.children.map((child) => (
+                      <button
+                        key={child.id}
+                        type="button"
+                        onClick={() => onSelectUser(child)}
+                        className="w-full rounded-2xl border border-[#E6DDF3] bg-[#FAF8FD] p-4 text-left shadow-sm shadow-black/5 transition hover:border-[#693C83] hover:bg-white"
+                      >
+                        <p className="text-sm font-semibold text-[#1E1B4B]">
+                          {child.name}
+                        </p>
+                        <p className="mt-1 text-xs text-[#4F4679]">
+                          {child.role} • {child.location}
+                        </p>
+                        <p className="mt-2 text-xs text-[#693C83]">
+                          Open nested member detail.
+                        </p>
+                      </button>
+                    ))}
+                  </div>
                 ) : (
                   <div className="rounded-2xl border border-dashed border-[#D9CFE8] bg-[#FAF8FD] p-5 text-sm text-[#4F4679]">
                     This role currently has no nested members in the

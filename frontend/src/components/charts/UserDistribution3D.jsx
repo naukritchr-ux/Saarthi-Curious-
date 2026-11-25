@@ -79,11 +79,9 @@ export default function UserDistribution3D({ data = [] }) {
 
   return (
     <div
-      className="rounded-[22px] p-6"
+      className="rounded-[22px] p-6 admin-panel-border"
       style={{
-        background: "rgba(15,15,24,0.72)",
-        border: "1px solid rgba(139,92,246,0.14)",
-        boxShadow: "0 20px 40px -18px rgba(0,0,0,0.7)",
+        background: "rgba(15,15,24,0.78)",
         minHeight: 320,
         display: "flex",
         flexDirection: "column",

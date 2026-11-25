@@ -12,8 +12,9 @@ const UserMobileCards = ({ users, onAction, canEditUser = true }) => {
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#ECE5F2] text-sm font-bold text-[#693C83]">
-                {user.name
+                {(user.name || "User")
                   .split(" ")
+                  .filter(Boolean)
                   .map((part) => part[0])
                   .join("")}
               </div>
