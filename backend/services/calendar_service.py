@@ -180,6 +180,24 @@ class CalendarService:
                         ).mappings().first()
                         if r:
                             row = dict(r)
+                        elif str(admin_id).isdigit():
+                            ug = conn.execute(
+                                text(
+                                    "SELECT refresh_token FROM user_google_tokens "
+                                    "WHERE user_id = :uid AND refresh_token IS NOT NULL "
+                                    "AND refresh_token != 'pending_auth' AND refresh_token != '' "
+                                    "ORDER BY updated_at DESC, id DESC LIMIT 1"
+                                ),
+                                {"uid": int(admin_id)},
+                            ).mappings().first()
+                            if ug:
+                                row = {
+                                    "admin_id": str(admin_id),
+                                    "access_token": None,
+                                    "refresh_token": ug["refresh_token"],
+                                    "token_uri": "https://oauth2.googleapis.com/token",
+                                    "scopes": "https://www.googleapis.com/auth/calendar",
+                                }
                 except Exception:
                     pass
         if not row:
@@ -187,13 +205,18 @@ class CalendarService:
         if not row:
             return None
 
+        token_scopes = (
+            row.get("scopes").split()
+            if isinstance(row.get("scopes"), str) and row.get("scopes").strip()
+            else SCOPES
+        )
         creds = Credentials(
             token=row.get("access_token"),
             refresh_token=row.get("refresh_token"),
             token_uri=row.get("token_uri", "https://oauth2.googleapis.com/token"),
             client_id=cfg["web"]["client_id"],
             client_secret=cfg["web"]["client_secret"],
-            scopes=SCOPES,
+            scopes=token_scopes,
         )
         if creds.expired and creds.refresh_token:
             try:

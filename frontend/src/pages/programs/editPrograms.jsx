@@ -231,23 +231,34 @@ const EditPrograms = () => {
                 Update program information, media, and security settings.
               </p>
             </div>
-            <button
-              onClick={handleSubmit}
-              disabled={saving || isUploading}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white rounded-2xl font-black hover:from-emerald-500 hover:to-emerald-400 disabled:opacity-50 transition-all shadow-[0_4px_16px_rgba(16,185,129,0.4)] border border-emerald-400/40 cursor-pointer text-sm"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save size={18} />
-                  Save Changes
-                </>
-              )}
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => navigate(`/programs/${id}`)}
+                className="flex items-center gap-2 px-5 py-3 bg-indigo-500/20 hover:bg-indigo-500/35 text-indigo-200 rounded-2xl font-bold transition-all border border-indigo-400/50 cursor-pointer text-sm"
+              >
+                <FileQuestion size={16} />
+                <span>Edit Modules & Quizzes</span>
+              </button>
+
+              <button
+                onClick={handleSubmit}
+                disabled={saving || isUploading}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white rounded-2xl font-black hover:from-emerald-500 hover:to-emerald-400 disabled:opacity-50 transition-all shadow-[0_4px_16px_rgba(16,185,129,0.4)] border border-emerald-400/40 cursor-pointer text-sm"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save size={18} />
+                    Save Changes
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 

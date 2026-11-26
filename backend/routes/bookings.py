@@ -530,6 +530,53 @@ def get_calendar(
     except Exception as e:
         print(f"Error fetching calendar events in /calendar: {e}")
 
+    # 4b. FETCH SPRINT 3 COACHING MEETINGS (PostgreSQL coaching_meetings)
+    try:
+        from datetime import timezone as dt_timezone
+        from sqlalchemy import text
+        ist_tz = dt_timezone(timedelta(hours=5, minutes=30))
+        cm_rows = db.execute(
+            text(
+                "SELECT id, attendee_name, attendee_email, start_time, end_time, agenda, meet_link, calendar_event_id, delivery_mode "
+                "FROM coaching_meetings "
+                "WHERE admin_id = :aid AND start_time >= :sd AND start_time <= :ed "
+                "ORDER BY start_time ASC"
+            ),
+            {
+                "aid": str(admin_id),
+                "sd": datetime.combine(start_date, time(0, 0)),
+                "ed": datetime.combine(end_date, time(23, 59, 59)),
+            },
+        ).mappings().all()
+        for cm in cm_rows:
+            cid = cm.get("calendar_event_id")
+            if cid and str(cid) in google_events_map:
+                google_events_map.pop(str(cid), None)
+            s_dt = cm["start_time"]
+            e_dt = cm["end_time"]
+            if hasattr(s_dt, "astimezone") and s_dt.tzinfo is not None:
+                s_dt = s_dt.astimezone(ist_tz)
+            if hasattr(e_dt, "astimezone") and e_dt.tzinfo is not None:
+                e_dt = e_dt.astimezone(ist_tz)
+            unified_events.append({
+                "id": f"coach_{cm['id']}",
+                "title": f"Coaching: {cm['attendee_name']}",
+                "start": s_dt.isoformat() if hasattr(s_dt, "isoformat") else str(s_dt),
+                "end": e_dt.isoformat() if hasattr(e_dt, "isoformat") else str(e_dt),
+                "backgroundColor": "#7c3aed",
+                "source": "google_calendar" if cid else "saarthi",
+                "extendedProps": {
+                    "type": "meeting",
+                    "google_event_id": cid,
+                    "guests": cm.get("attendee_email") or "",
+                    "meeting_link": cm.get("meet_link"),
+                    "description": cm.get("agenda") or "",
+                    "time": f"{s_dt.strftime('%I:%M %p')} – {e_dt.strftime('%I:%M %p')}".replace(" 0", " ") if hasattr(s_dt, "strftime") else "",
+                },
+            })
+    except Exception as e:
+        print(f"Error fetching coaching_meetings in /calendar: {e}")
+
     # 5. ADD ANY REMAINING DIRECT GOOGLE CALENDAR EVENTS
     for gid, g_event in google_events_map.items():
         g_start = str(g_event.get("start", ""))

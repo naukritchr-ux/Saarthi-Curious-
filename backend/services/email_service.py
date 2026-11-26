@@ -108,25 +108,46 @@ def send_email(
         last_err = None
 
     # 2. Standard SMTP (Gmail / Zoho / Outlook)
-    smtp_host = os.getenv("SMTP_HOST", "").strip()
-    smtp_user = os.getenv("SMTP_USER", "").strip()
-    smtp_pass = os.getenv("SMTP_PASS", "").strip()
-    smtp_port = int(os.getenv("SMTP_PORT", "587"))
+    smtp_host = (os.getenv("SMTP_HOST") or ("smtp.gmail.com" if os.getenv("GMAIL_APP_PASSWORD") else "")).strip()
+    smtp_user = (
+        os.getenv("SMTP_USER")
+        or os.getenv("SMTP_USERNAME")
+        or os.getenv("GMAIL_SENDER_EMAIL")
+        or os.getenv("GMAIL_USER")
+        or os.getenv("GMAIL_FROM_EMAIL")
+        or ""
+    ).strip()
+    smtp_pass = (
+        os.getenv("SMTP_PASS")
+        or os.getenv("SMTP_PASSWORD")
+        or os.getenv("MAIL_PASSWORD")
+        or os.getenv("GMAIL_APP_PASSWORD")
+        or ""
+    ).replace(" ", "").strip()
+    try:
+        smtp_port = int(os.getenv("SMTP_PORT") or "587")
+    except ValueError:
+        smtp_port = 587
 
     if smtp_host and smtp_user and smtp_pass:
         try:
             msg = MIMEMultipart("alternative")
             msg["Subject"] = subject
-            msg["From"] = smtp_user
+            msg["From"] = f"Saarthi Curious <{smtp_user}>"
             msg["To"] = to_email
             msg.attach(MIMEText(text_body, "plain", "utf-8"))
             msg.attach(MIMEText(final_html, "html", "utf-8"))
 
-            with smtplib.SMTP(smtp_host, smtp_port, timeout=10) as server:
-                server.starttls()
-                server.login(smtp_user, smtp_pass)
-                server.sendmail(smtp_user, [to_email], msg.as_string())
-            return {"delivered": True, "provider": "smtp"}
+            if smtp_port == 465:
+                with smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=15) as server:
+                    server.login(smtp_user, smtp_pass)
+                    server.sendmail(smtp_user, [to_email], msg.as_string())
+            else:
+                with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
+                    server.starttls()
+                    server.login(smtp_user, smtp_pass)
+                    server.sendmail(smtp_user, [to_email], msg.as_string())
+            return {"delivered": True, "provider": "smtp", "sender": smtp_user}
         except Exception as exc:
             last_err = str(exc)
 

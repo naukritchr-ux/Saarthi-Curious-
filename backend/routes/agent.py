@@ -37,6 +37,7 @@ def _resolve_verified_admin(db: Session, user_id: int) -> tuple[str, str]:
 
 class CommandRequest(BaseModel):
     prompt: str
+    tab_scope: Optional[str] = None
     force_backup: bool = False
 
 
@@ -58,6 +59,7 @@ async def run_agent_command(
         db=db,
         actor_id=actor_id,
         actor_role=actor_role,
+        tab_scope=req.tab_scope,
         force_backup=req.force_backup,
     )
 

@@ -26,6 +26,7 @@ export default function ModuleAiGeneratorBar({
   const [notes, setNotes] = useState("");
   const [pdfFile, setPdfFile] = useState(null);
   const [questionCount, setQuestionCount] = useState(5);
+  const [applyMode, setApplyMode] = useState("append"); // "append" | "new" | "replace"
   const [loading, setLoading] = useState(false);
   const [statusInfo, setStatusInfo] = useState(null);
   const [recapPreview, setRecapPreview] = useState([]);
@@ -61,10 +62,11 @@ export default function ModuleAiGeneratorBar({
       const kit = res.data?.kit;
       if (kit) {
         setRecapPreview(kit.recap_bullets || []);
-        onApplyKit(kit);
+        onApplyKit({ ...kit, applyMode });
         setStatusInfo({
           engine: kit.engine || "saarthi_ai",
           count: kit.questions?.length || 0,
+          mode: applyMode,
         });
       }
     } catch {
@@ -98,10 +100,11 @@ export default function ModuleAiGeneratorBar({
         engine: "local_backup",
       };
       setRecapPreview(fallbackKit.recap_bullets);
-      onApplyKit(fallbackKit);
+      onApplyKit({ ...fallbackKit, applyMode });
       setStatusInfo({
         engine: "local_backup",
         count: fallbackKit.questions.length,
+        mode: applyMode,
       });
     } finally {
       setLoading(false);
@@ -109,48 +112,70 @@ export default function ModuleAiGeneratorBar({
   };
 
   return (
-    <section className="digi-live-border-indigo rounded-3xl p-5 sm:p-6 space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
+    <section className="digi-live-border-indigo rounded-2xl p-4 sm:p-5 space-y-3.5">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/15 pb-3">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-indigo-500/25 border border-indigo-400/60 flex items-center justify-center text-indigo-200">
+          <div className="w-8 h-8 rounded-lg bg-indigo-500/25 border border-indigo-300/60 flex items-center justify-center text-indigo-100">
             <Sparkles className="w-4 h-4" />
           </div>
           <div>
-            <span className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-200 block">
-              ONE-CLICK GENERATIVE COURSE KIT (AI + BACKUP ENGINE)
+            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-200 block">
+              Generative Course Kit • AI + Backup Engine
             </span>
-            <h3 className="text-sm sm:text-base font-black text-white">
+            <h3 className="text-sm font-bold text-white">
               Auto-Build Description, Recap Notes &amp; Quiz Questions
             </h3>
           </div>
         </div>
 
-        {statusInfo && (
-          <span className="px-3 py-1 rounded-full text-[10.5px] font-black inline-flex items-center gap-1.5 bg-emerald-500/20 text-emerald-200 border border-emerald-400/50">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>
-              Generated {statusInfo.count} Qs via{" "}
-              {statusInfo.engine === "saarthi_ai" ? "Saarthi AI" : "Backup Engine"}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex items-center gap-1 p-1 rounded-lg bg-slate-900/65 border border-indigo-300/35">
+            {[
+              { id: "new", label: "Save as New Quiz" },
+              { id: "append", label: "Append Questions" },
+              { id: "replace", label: "Replace Current" },
+            ].map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => setApplyMode(m.id)}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer transition ${
+                  applyMode === m.id
+                    ? "bg-indigo-500 text-white shadow-sm"
+                    : "text-slate-300 hover:text-white"
+                }`}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+
+          {statusInfo && (
+            <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold inline-flex items-center gap-1 bg-emerald-500/20 text-emerald-100 border border-emerald-400/50">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>
+                {statusInfo.count} Qs ({statusInfo.engine === "saarthi_ai" ? "Saarthi AI" : "Backup"})
+              </span>
             </span>
-          </span>
-        )}
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-        <div className="lg:col-span-7 space-y-2">
-          <label className="text-[10.5px] font-extrabold uppercase tracking-wider text-cyan-200 block">
-            Paste Study Notes, Transcript, or Key Points (Optional)
+        <div className="lg:col-span-7 space-y-1.5">
+          <label className="text-[11px] font-semibold uppercase tracking-wider text-amber-200/90 block">
+            Study Notes, Transcript, or Key Points (Optional)
           </label>
           <textarea
             rows={3}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Paste lecture notes or leave blank to auto-extract from your YouTube link or uploaded PDF..."
-            className="digi-input w-full rounded-xl px-3.5 py-2.5 text-xs font-medium leading-relaxed resize-none"
+            className="digi-input w-full rounded-xl px-3.5 py-2 text-xs font-medium leading-relaxed resize-none"
           />
         </div>
 
-        <div className="lg:col-span-5 space-y-3">
+        <div className="lg:col-span-5 space-y-2.5">
           <input
             ref={fileRef}
             type="file"
@@ -159,13 +184,13 @@ export default function ModuleAiGeneratorBar({
             className="hidden"
           />
 
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="p-2.5 rounded-xl bg-gradient-to-br from-[#14204D] to-[#0C1536] border-2 border-cyan-400/65 hover:border-cyan-300 hover:shadow-[0_0_18px_rgba(34,211,238,0.28)] text-xs font-bold text-cyan-100 inline-flex items-center justify-center gap-1.5 cursor-pointer transition truncate"
+              className="digi-btn-outline px-3 py-2 rounded-xl text-xs font-semibold inline-flex items-center justify-center gap-1.5 cursor-pointer truncate"
             >
-              <Upload className="w-3.5 h-3.5 shrink-0" />
+              <Upload className="w-3.5 h-3.5 shrink-0 text-cyan-300" />
               <span className="truncate">
                 {pdfFile ? pdfFile.name : "Attach PDF"}
               </span>
@@ -174,11 +199,11 @@ export default function ModuleAiGeneratorBar({
             <select
               value={questionCount}
               onChange={(e) => setQuestionCount(Number(e.target.value))}
-              className="digi-input rounded-xl px-3 py-2.5 text-xs font-black cursor-pointer"
+              className="digi-input rounded-xl px-3 py-2 text-xs font-semibold cursor-pointer"
             >
-              <option value={3} className="bg-[#070D1F]">3 Questions</option>
-              <option value={5} className="bg-[#070D1F]">5 Questions</option>
-              <option value={8} className="bg-[#070D1F]">8 Questions</option>
+              <option value={3} className="bg-[#0F172A]">3 Questions</option>
+              <option value={5} className="bg-[#0F172A]">5 Questions</option>
+              <option value={8} className="bg-[#0F172A]">8 Questions</option>
             </select>
           </div>
 
@@ -189,7 +214,7 @@ export default function ModuleAiGeneratorBar({
                 {youtubeUrl ? "Using Module YouTube Link" : "No YouTube link yet"}
               </span>
             </span>
-            <span className="inline-flex items-center gap-1 text-indigo-300 font-bold shrink-0">
+            <span className="inline-flex items-center gap-1 text-indigo-200 font-semibold shrink-0">
               <Cpu className="w-3 h-3" />
               <span>Auto-Failover</span>
             </span>
@@ -199,16 +224,16 @@ export default function ModuleAiGeneratorBar({
             type="button"
             disabled={loading}
             onClick={handleGenerate}
-            className="digi-btn-cyan w-full py-2.5 rounded-xl text-xs font-black uppercase tracking-wider inline-flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            className="digi-btn-cyan w-full py-2 px-3.5 rounded-xl text-xs font-semibold inline-flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
             {loading ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 <span>Generating Study Kit...</span>
               </>
             ) : (
               <>
-                <Sparkles className="w-4 h-4" />
+                <Sparkles className="w-3.5 h-3.5" />
                 <span>Generate Description &amp; Quiz</span>
               </>
             )}

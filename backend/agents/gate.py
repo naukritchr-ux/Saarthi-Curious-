@@ -483,16 +483,24 @@ class SafetyGate:
                 action_id=action_id,
                 tier=3,
                 tool_name=action["action_type"],
-                target_user_id=payload.get("user_id") or payload.get("target_email"),
+                target_user_id=(
+                    payload.get("user_id")
+                    or payload.get("target_user_id")
+                    or payload.get("target_email")
+                ),
                 actor_id=reviewer_id,
                 engine_source=action.get("engine_source", "ai"),
                 result_summary=result_msg,
             )
+            route_map = {
+                "book_meeting": "/admin/schedule",
+                "assign_personal_quiz": "/programs",
+            }
             self.push_notification(
                 severity="success",
                 title=f"Executed: {action['action_type'].replace('_', ' ').title()}",
                 body=result_msg,
-                route_target="/admin/users",
+                route_target=route_map.get(action["action_type"], "/admin/users"),
             )
             return updated
         except Exception as exc:
@@ -688,6 +696,74 @@ class SafetyGate:
                 else " • ICS fallback ready"
             )
             return f"Booked {booking['slot_label']} with {attendee_name} ({booking['delivery_mode']}{link_note})."
+
+        if action_type == "assign_personal_quiz":
+            import json as _json
+            from sqlalchemy import text
+            from services.email_service import send_email
+
+            target_uid = _parse_int_id(payload.get("target_user_id"))
+            if target_uid is None:
+                raise ValueError("Missing valid target_user_id for personal vault quiz assignment.")
+
+            quiz_id = str(uuid.uuid4())
+            title = payload.get("title") or "Personalized Challenge Quiz"
+            topic = payload.get("topic") or "Mastery Assessment"
+            difficulty = str(payload.get("difficulty") or "hard").lower()
+            questions = payload.get("questions") or []
+            passing_score = int(payload.get("passing_score") or 75)
+            time_limit_mins = int(payload.get("time_limit_mins") or 15)
+            created_by = _parse_int_id(payload.get("created_by"))
+            program_id = _parse_int_id(payload.get("program_id"))
+
+            eng = self._pg_engine()
+            if eng is None:
+                raise RuntimeError("Database engine unavailable for personal_vault_quizzes.")
+            with eng.begin() as conn:
+                conn.execute(
+                    text(
+                        """
+                        INSERT INTO personal_vault_quizzes
+                          (id, target_user_id, created_by, program_id, title, topic, difficulty, questions, passing_score, time_limit_mins, status, action_id)
+                        VALUES
+                          (CAST(:id AS uuid), :target_user_id, :created_by, :program_id, :title, :topic, :difficulty, CAST(:questions AS jsonb), :passing_score, :time_limit_mins, 'assigned', CAST(:action_id AS uuid))
+                        """
+                    ),
+                    {
+                        "id": quiz_id,
+                        "target_user_id": target_uid,
+                        "created_by": created_by,
+                        "program_id": program_id,
+                        "title": title,
+                        "topic": topic,
+                        "difficulty": difficulty,
+                        "questions": _json.dumps(questions),
+                        "passing_score": passing_score,
+                        "time_limit_mins": time_limit_mins,
+                        "action_id": action_id,
+                    },
+                )
+
+            target_name = payload.get("target_name") or f"Learner #{target_uid}"
+            target_email = payload.get("target_email")
+            self.push_notification(
+                user_id=str(target_uid),
+                severity="info",
+                title=f"New Personal Quiz Assigned: {title}",
+                body=f"A {difficulty.upper()} personalized assessment ({len(questions)} questions) is ready in your Personal Program Vault.",
+                route_target="/programs",
+            )
+            if target_email:
+                send_email(
+                    to_email=target_email,
+                    subject=f"New Personal Assessment Ready: {title}",
+                    text_body=(
+                        f"Hi {target_name}, your instructor has assigned a personalized {difficulty.upper()} quiz "
+                        f"('{title}', {len(questions)} questions, passing score {passing_score}%) exclusively in your "
+                        "Programs -> Personal Vault tab."
+                    ),
+                )
+            return f"Assigned {difficulty.upper()} quiz '{title}' ({len(questions)} Qs) exclusively to {target_name}'s Personal Vault."
 
         raise ValueError(f"Unsupported Tier-3 action_type: {action_type}")
 

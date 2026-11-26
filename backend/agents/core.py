@@ -174,6 +174,56 @@ def _build_pydantic_agent() -> Optional[Any]:
         ctx.deps.queued_action_holder["action"] = card
         return {"queued": True, "action_id": card["id"]}
 
+    @agent.tool
+    def queue_personal_quiz(
+        ctx: RunContext[AgentDeps],
+        target_user_id: int,
+        target_name: str,
+        target_email: str,
+        topic: str,
+        difficulty: str = "hard",
+        question_count: int = 5,
+    ) -> Dict[str, Any]:
+        """Tier-3: Generate a personalized quiz (easy/medium/hard) and queue delivery to the student's Personal Program Vault for final admin permission."""
+        from .module_generator import build_deterministic_module_kit
+
+        diff = str(difficulty or "hard").lower().strip()
+        if diff not in ("easy", "medium", "hard"):
+            diff = "hard"
+        kit = build_deterministic_module_kit(
+            module_title=topic,
+            source_text=(
+                f"Design a {diff.upper()} assessment on {topic} tailored personally for {target_name}."
+            ),
+            question_count=max(3, min(8, int(question_count or 5))),
+            difficulty=diff,
+        )
+        title = f"{topic} ({diff.title()} Personal Challenge)"
+        card = ctx.deps.gate.queue_tier3_action(
+            action_type="assign_personal_quiz",
+            summary=f"Send {diff.upper()} personal quiz '{title}' ({len(kit.questions)} Qs) exclusively to {target_name}'s Program Vault.",
+            payload={
+                "target_user_id": int(target_user_id),
+                "target_name": target_name,
+                "target_email": target_email,
+                "created_by": int(ctx.deps.actor_id) if str(ctx.deps.actor_id or "").isdigit() else None,
+                "title": title,
+                "topic": topic,
+                "difficulty": diff,
+                "passing_score": kit.passing_score,
+                "time_limit_mins": 15 if diff == "hard" else 10,
+                "questions": [q.model_dump() for q in kit.questions],
+            },
+            diff_preview={
+                "before": f"{target_name} Personal Vault: No matching {diff} quiz",
+                "after": f"Exclusive {diff.upper()} quiz ({len(kit.questions)} Qs) -> {target_name} (ID #{target_user_id})",
+            },
+            requested_by=ctx.deps.actor_id,
+            engine_source="ai",
+        )
+        ctx.deps.queued_action_holder["action"] = card
+        return {"queued": True, "action_id": card["id"], "title": title}
+
     return agent
 
 
@@ -187,6 +237,7 @@ async def execute_hybrid_command(
     db: Any = None,
     actor_id: Optional[str] = None,
     actor_role: str = "Admin",
+    tab_scope: Optional[str] = None,
     force_backup: bool = False,
 ) -> Dict[str, Any]:
     """
@@ -195,6 +246,12 @@ async def execute_hybrid_command(
     seamlessly falls back to `run_deterministic_command_fallback`.
     """
     gate = SafetyGate(supabase=supabase, db=db)
+
+    from .fallback_workflows import detect_tab_scope_redirect
+
+    scoped_redirect = detect_tab_scope_redirect(prompt=prompt, tab_scope=tab_scope)
+    if scoped_redirect is not None:
+        return scoped_redirect
 
     if not force_backup and _AGENT_INSTANCE is not None:
         holder: Dict[str, Any] = {}
@@ -228,5 +285,6 @@ async def execute_hybrid_command(
         supabase=supabase,
         db=db,
         actor_id=actor_id,
+        tab_scope=tab_scope,
     )
 

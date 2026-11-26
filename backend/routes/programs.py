@@ -11,9 +11,13 @@ from routes.notification_helpers import (
 )
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import StreamingResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
 from pydantic import BaseModel
+from sqlalchemy import text
 from sqlalchemy.orm import Session, joinedload
 
+from auth import ALGORITHM, SECRET_KEY, get_current_user
 from database import get_db, supabase
 from models import (
     ApplicationCheck,
@@ -1618,9 +1622,24 @@ def review_application_check_submission(
         raise HTTPException(status_code=500, detail=f"Failed to review submission: {str(e)}")
 
 
+_opt_prog_bearer = HTTPBearer(auto_error=False)
+
+
 @router.get("/{program_id}")
-def get_program(program_id: int, db: Session = Depends(get_db)):
-    """Eagerly loads a complete program hierarchy map with child arrays nested inside."""
+def get_program(
+    program_id: int,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_opt_prog_bearer),
+    db: Session = Depends(get_db),
+):
+    """Eagerly loads a complete program hierarchy map with child arrays nested inside, plus personal assigned quizzes for the authenticated learner."""
+    current_user_id: Optional[int] = None
+    if credentials and credentials.credentials:
+        try:
+            tok = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+            if tok.get("user_id") is not None:
+                current_user_id = int(tok["user_id"])
+        except JWTError:
+            pass
     program = (
         db.query(Program)
         .options(
@@ -1644,12 +1663,7 @@ def get_program(program_id: int, db: Session = Depends(get_db)):
     if not program:
         raise HTTPException(status_code=404, detail="Program not found")
 
-    return {
-        "id": program.id,
-        "name": program.name,
-        "description": program.description,
-        "status": program.status,
-        "modules": [
+    modules_payload = [
             {
                 "id": m.id,
                 "title": m.title,
@@ -1686,6 +1700,7 @@ def get_program(program_id: int, db: Session = Depends(get_db)):
                         "title": q.title,
                         "description": q.description,
                         "type": q.quiz_type,
+                        "quiz_mode": "standard",
                         "passing_percentage": q.passing_percentage,
                         "content_order": q.content_order,
                         "questions": [
@@ -1704,7 +1719,7 @@ def get_program(program_id: int, db: Session = Depends(get_db)):
                         ],
                     }
                     for q in sorted(
-                        m.quizzes, key=lambda item: item.content_order or 0
+                        m.quizzes, key=lambda item: (item.content_order or 0, item.id)
                     )
                 ],
                 "written_lessons": [
@@ -1781,7 +1796,150 @@ def get_program(program_id: int, db: Session = Depends(get_db)):
             for m in sorted(
                 program.modules, key=lambda module: module.module_order or 0
             )
-        ],
+        ]
+
+    # Merge per-student Hybrid / Personal Vault quizzes cleanly
+    if current_user_id is not None:
+        try:
+            import json as _json
+            from database import engine as _pg_engine
+            with _pg_engine.begin() as _conn:
+                _conn.execute(
+                    text(
+                        "ALTER TABLE personal_vault_quizzes "
+                        "ADD COLUMN IF NOT EXISTS module_id INTEGER, "
+                        "ADD COLUMN IF NOT EXISTS batch_key TEXT"
+                    )
+                )
+
+            viewer_user = db.query(User).filter(User.user_id == int(current_user_id)).first()
+            viewer_is_admin = bool(viewer_user and viewer_user.role_id in (1, 2))
+            module_by_id = {int(m["id"]): m for m in modules_payload if str(m["id"]).isdigit()}
+
+            if viewer_is_admin:
+                admin_rows = db.execute(
+                    text(
+                        "SELECT pv.id, pv.target_user_id, pv.module_id, pv.batch_key, pv.title, pv.topic, "
+                        "       pv.difficulty, pv.questions, pv.passing_score, pv.time_limit_mins, "
+                        "       u.full_name AS target_name, u.email AS target_email "
+                        "FROM personal_vault_quizzes pv "
+                        "JOIN users u ON u.user_id = pv.target_user_id "
+                        "WHERE pv.program_id = :pid OR pv.program_id IS NULL "
+                        "ORDER BY pv.created_at ASC"
+                    ),
+                    {"pid": int(program_id)},
+                ).mappings().all()
+
+                grouped_hybrid = {}
+                for ar in admin_rows:
+                    gkey = str(ar.get("batch_key") or ar["id"])
+                    if gkey not in grouped_hybrid:
+                        raw_qs = ar.get("questions") or []
+                        if isinstance(raw_qs, str):
+                            raw_qs = _json.loads(raw_qs)
+                        grouped_hybrid[gkey] = {
+                            "id": f"hybrid-{gkey}",
+                            "batch_key": gkey,
+                            "vault_quiz_id": str(ar["id"]),
+                            "module_id": ar.get("module_id"),
+                            "title": ar["title"],
+                            "topic": ar.get("topic"),
+                            "difficulty": ar.get("difficulty") or "medium",
+                            "type": "hybrid_candidate",
+                            "quiz_mode": "hybrid",
+                            "passing_percentage": ar.get("passing_score") or 70,
+                            "time_limit_mins": ar.get("time_limit_mins") or 10,
+                            "target_users": [],
+                            "questions": [
+                                {
+                                    "id": q.get("id") or f"vq-{qi + 1}",
+                                    "question": q.get("question", ""),
+                                    "options": q.get("options", []),
+                                    "correctIndex": q.get("correctIndex", 0),
+                                    "explanation": q.get("explanation", ""),
+                                }
+                                for qi, q in enumerate(raw_qs)
+                            ],
+                        }
+                    grouped_hybrid[gkey]["target_users"].append({
+                        "user_id": ar["target_user_id"],
+                        "full_name": ar.get("target_name") or ar.get("target_email"),
+                        "email": ar.get("target_email"),
+                    })
+
+                for h_item in grouped_hybrid.values():
+                    mid = h_item.get("module_id")
+                    if mid is not None and int(mid) in module_by_id:
+                        module_by_id[int(mid)]["quizzes"].append(h_item)
+                    elif modules_payload:
+                        modules_payload[0]["quizzes"].append(h_item)
+            else:
+                vault_rows = db.execute(
+                    text(
+                        "SELECT id, module_id, batch_key, title, topic, difficulty, questions, passing_score, time_limit_mins, best_score "
+                        "FROM personal_vault_quizzes "
+                        "WHERE target_user_id = :uid AND (program_id IS NULL OR program_id = :pid) "
+                        "ORDER BY created_at ASC"
+                    ),
+                    {"uid": int(current_user_id), "pid": int(program_id)},
+                ).mappings().all()
+                unscoped_idx = 0
+                for vr in vault_rows:
+                    raw_qs = vr.get("questions") or []
+                    if isinstance(raw_qs, str):
+                        raw_qs = _json.loads(raw_qs)
+                    diff_label = str(vr.get("difficulty") or "hard").upper()
+                    quiz_obj = {
+                        "id": f"vault-{vr['id']}",
+                        "vault_quiz_id": str(vr["id"]),
+                        "batch_key": vr.get("batch_key"),
+                        "title": vr["title"],
+                        "difficulty": vr.get("difficulty", "hard"),
+                        "type": "personal_vault",
+                        "quiz_mode": "hybrid",
+                        "is_personal": True,
+                        "passing_percentage": vr.get("passing_score", 80),
+                        "time_limit_mins": vr.get("time_limit_mins", 15),
+                        "best_score": vr.get("best_score"),
+                        "questions": [
+                            {
+                                "id": q.get("id") or f"vq-{qi + 1}",
+                                "question": q.get("question", ""),
+                                "options": q.get("options", []),
+                            }
+                            for qi, q in enumerate(raw_qs)
+                        ],
+                    }
+                    mid = vr.get("module_id")
+                    if mid is not None and int(mid) in module_by_id:
+                        module_by_id[int(mid)]["quizzes"].append(quiz_obj)
+                    else:
+                        modules_payload.append({
+                            "id": f"vault-{vr['id']}",
+                            "title": vr["title"],
+                            "description": f"Personal {diff_label} Assessment assigned exclusively to you ({vr.get('topic') or program.name}).",
+                            "module_order": 900 + unscoped_idx,
+                            "is_personal": True,
+                            "difficulty": vr.get("difficulty", "hard"),
+                            "vault_quiz_id": str(vr["id"]),
+                            "best_score": vr.get("best_score"),
+                            "videos": [],
+                            "quizzes": [quiz_obj],
+                            "written_lessons": [],
+                            "assignments": [],
+                            "surveys": [],
+                            "curos": 25,
+                        })
+                        unscoped_idx += 1
+        except Exception as ve:
+            print(f"[get_program vault merge notice] {ve}")
+
+    return {
+        "id": program.id,
+        "name": program.name,
+        "description": program.description,
+        "status": program.status,
+        "modules": modules_payload,
         "curos": program.curos or 0,
         "total_module_curos": sum(m.curos or 0 for m in program.modules),
     }
@@ -2549,6 +2707,326 @@ def update_quiz(
         raise HTTPException(
             status_code=500, detail=f"Failed to update quiz: {str(e)}"
         )
+
+
+@router.patch("/{program_id}/modules/{module_id}")
+def patch_program_module_studio(
+    program_id: int,
+    module_id: int,
+    payload: dict,
+    current_user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Persists Module Content Studio & Interactive Quiz Builder updates from ProgramDetail.jsx.
+    Enforces backend RBAC (Master Admin = 1, Admin = 2 only).
+    """
+    user = db.query(User).filter(User.user_id == current_user_id).first()
+    if not user or user.role_id not in (1, 2):
+        raise HTTPException(
+            status_code=403,
+            detail="Only Master Admin or Admin can edit modules and quizzes.",
+        )
+
+    module = (
+        db.query(Module)
+        .filter(Module.id == module_id, Module.program_id == program_id)
+        .first()
+    )
+    if not module:
+        raise HTTPException(status_code=404, detail="Module not found in program.")
+
+    try:
+        if "title" in payload and str(payload.get("title") or "").strip():
+            module.title = str(payload["title"]).strip()
+        if "description" in payload and payload.get("description") is not None:
+            module.description = str(payload["description"])
+
+        # Update or create primary Video when provided
+        video_data = payload.get("video")
+        if isinstance(video_data, dict):
+            primary_video = (
+                db.query(Video)
+                .filter(Video.module_id == module.id)
+                .order_by(Video.content_order.asc().nullslast(), Video.id.asc())
+                .first()
+            )
+            vid_url = str(video_data.get("url") or "").strip()
+            vid_title = str(video_data.get("title") or module.title or "Lesson Video").strip()
+            vid_explanation = video_data.get("explanation")
+
+            if primary_video:
+                if vid_title:
+                    primary_video.title = vid_title
+                if vid_url and not vid_url.startswith("blob:"):
+                    primary_video.youtube_url = vid_url
+                if vid_explanation is not None:
+                    primary_video.explanation_text = str(vid_explanation)
+            elif vid_url and not vid_url.startswith("blob:"):
+                db.add(
+                    Video(
+                        module_id=module.id,
+                        title=vid_title,
+                        youtube_url=vid_url,
+                        explanation_text=str(vid_explanation or ""),
+                        content_order=1,
+                    )
+                )
+
+        # Update or create primary Quiz and replace QuizQuestion rows
+        updated_quiz_id = None
+        updated_q_count = 0
+        quiz_data = payload.get("quiz")
+        if isinstance(quiz_data, dict):
+            target_quiz = None
+            raw_qid = quiz_data.get("id")
+            if raw_qid is not None:
+                try:
+                    qid_int = int(raw_qid)
+                    target_quiz = (
+                        db.query(Quiz)
+                        .filter(Quiz.id == qid_int, Quiz.module_id == module.id)
+                        .first()
+                    )
+                except (TypeError, ValueError):
+                    target_quiz = None
+
+            if not target_quiz:
+                target_quiz = (
+                    db.query(Quiz)
+                    .filter(Quiz.module_id == module.id)
+                    .order_by(Quiz.content_order.asc().nullslast(), Quiz.id.asc())
+                    .first()
+                )
+
+            raw_passing = (
+                quiz_data.get("passingScore")
+                if quiz_data.get("passingScore") is not None
+                else quiz_data.get("passing_percentage")
+            )
+            passing_pct = (
+                max(1, min(100, int(raw_passing)))
+                if raw_passing is not None
+                else (target_quiz.passing_percentage if target_quiz else 70)
+            )
+            quiz_title = str(
+                quiz_data.get("title")
+                or (target_quiz.title if target_quiz else f"{module.title} Assessment")
+            ).strip()
+
+            if target_quiz:
+                target_quiz.title = quiz_title
+                target_quiz.passing_percentage = passing_pct
+            else:
+                target_quiz = Quiz(
+                    module_id=module.id,
+                    title=quiz_title,
+                    quiz_type="Module",
+                    unlock_type="Immediate",
+                    passing_percentage=passing_pct,
+                    content_order=1,
+                )
+                db.add(target_quiz)
+                db.flush()
+
+            updated_quiz_id = target_quiz.id
+
+            if isinstance(quiz_data.get("questions"), list):
+                updated_q_count = _replace_standard_quiz_questions(
+                    db, target_quiz.id, quiz_data["questions"]
+                )
+
+        db.commit()
+        return {
+            "status": "updated",
+            "program_id": program_id,
+            "module_id": module.id,
+            "quiz_id": updated_quiz_id,
+            "question_count": updated_q_count,
+        }
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500, detail=f"Failed to update module & quiz: {str(e)}"
+        )
+
+
+def _replace_standard_quiz_questions(db: Session, target_quiz_id: int, raw_questions: list) -> int:
+    """Normalizes question/option JSON and replaces QuizQuestion rows for target_quiz_id."""
+    db.query(QuizQuestion).filter(
+        QuizQuestion.quiz_id == target_quiz_id
+    ).delete(synchronize_session=False)
+
+    inserted = 0
+    for q_idx, q_item in enumerate(raw_questions):
+        if not isinstance(q_item, dict):
+            continue
+        q_text = str(
+            q_item.get("question")
+            or q_item.get("question_text")
+            or f"Question {q_idx + 1}"
+        ).strip()
+        raw_opts = q_item.get("options") or ["Option A", "Option B", "Option C", "Option D"]
+        c_idx_raw = (
+            q_item.get("correctIndex")
+            if q_item.get("correctIndex") is not None
+            else q_item.get("correct_index")
+        )
+
+        normalized_opts = []
+        detected_correct = None
+        for opt_idx, opt in enumerate(raw_opts):
+            if isinstance(opt, dict):
+                opt_text = str(opt.get("text") or "").strip()
+                is_corr = bool(opt.get("isCorrect") or opt.get("is_correct"))
+                if is_corr and detected_correct is None:
+                    detected_correct = opt_idx
+            else:
+                opt_text = str(opt).strip()
+            normalized_opts.append(opt_text)
+
+        if not normalized_opts:
+            normalized_opts = ["Option A", "Option B"]
+
+        if c_idx_raw is not None:
+            correct_idx = int(c_idx_raw)
+        elif detected_correct is not None:
+            correct_idx = detected_correct
+        else:
+            correct_idx = 0
+
+        if correct_idx < 0 or correct_idx >= len(normalized_opts):
+            correct_idx = 0
+
+        db_options = [
+            {"text": text_val, "isCorrect": (opt_i == correct_idx)}
+            for opt_i, text_val in enumerate(normalized_opts)
+        ]
+
+        db.add(
+            QuizQuestion(
+                quiz_id=target_quiz_id,
+                question=q_text,
+                options=db_options,
+                explanation=str(q_item.get("explanation") or "").strip(),
+                marks=int(q_item.get("marks") or 1),
+                question_order=q_idx + 1,
+            )
+        )
+        inserted += 1
+    return inserted
+
+
+@router.post("/{program_id}/modules/{module_id}/quizzes/studio")
+def create_studio_module_quiz(
+    program_id: int,
+    module_id: int,
+    payload: dict,
+    current_user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Creates a brand-new standard Quiz inside a module while preserving all prior quizzes."""
+    user = db.query(User).filter(User.user_id == current_user_id).first()
+    if not user or user.role_id not in (1, 2):
+        raise HTTPException(
+            status_code=403,
+            detail="Only Master Admin or Admin can create new module quizzes.",
+        )
+
+    module = (
+        db.query(Module)
+        .filter(Module.id == module_id, Module.program_id == program_id)
+        .first()
+    )
+    if not module:
+        raise HTTPException(status_code=404, detail="Module not found in program.")
+
+    title = str(payload.get("title") or "").strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="Quiz title is required.")
+
+    raw_passing = (
+        payload.get("passingScore")
+        if payload.get("passingScore") is not None
+        else payload.get("passing_percentage", 70)
+    )
+    passing_pct = max(1, min(100, int(raw_passing)))
+    existing_count = db.query(Quiz).filter(Quiz.module_id == module.id).count()
+
+    try:
+        new_quiz = Quiz(
+            module_id=module.id,
+            title=title,
+            description=str(payload.get("description") or "").strip() or None,
+            quiz_type=str(payload.get("quiz_type") or "MCQ"),
+            unlock_type="Immediate",
+            passing_percentage=passing_pct,
+            content_order=existing_count + 1,
+        )
+        db.add(new_quiz)
+        db.flush()
+
+        q_count = _replace_standard_quiz_questions(
+            db, new_quiz.id, payload.get("questions") or []
+        )
+        db.commit()
+        return {
+            "status": "created",
+            "program_id": program_id,
+            "module_id": module.id,
+            "quiz_id": new_quiz.id,
+            "title": new_quiz.title,
+            "question_count": q_count,
+        }
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500, detail=f"Failed to create module quiz: {str(e)}"
+        )
+
+
+@router.delete("/{program_id}/modules/{module_id}/quizzes/{quiz_id}")
+def delete_studio_module_quiz(
+    program_id: int,
+    module_id: int,
+    quiz_id: int,
+    current_user_id: int = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Deletes a specific standard Quiz from a module (Admin/Master Admin only)."""
+    user = db.query(User).filter(User.user_id == current_user_id).first()
+    if not user or user.role_id not in (1, 2):
+        raise HTTPException(
+            status_code=403,
+            detail="Only Master Admin or Admin can delete module quizzes.",
+        )
+
+    quiz = (
+        db.query(Quiz)
+        .join(Module, Quiz.module_id == Module.id)
+        .filter(
+            Quiz.id == quiz_id,
+            Quiz.module_id == module_id,
+            Module.program_id == program_id,
+        )
+        .first()
+    )
+    if not quiz:
+        raise HTTPException(status_code=404, detail="Quiz not found in module.")
+
+    try:
+        db.delete(quiz)
+        db.commit()
+        return {"status": "deleted", "quiz_id": quiz_id}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to delete quiz: {str(e)}")
 
 
 @router.delete("/quizzes/{quiz_id}")

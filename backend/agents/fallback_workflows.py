@@ -304,6 +304,85 @@ def run_daily_automated_workflows(
 # ============================================================================
 # 4. DETERMINISTIC COMMAND BACKUP ROUTER (ACTIVATES IF AI FAILS / TIMES OUT)
 # ============================================================================
+def detect_tab_scope_redirect(
+    *, prompt: str, tab_scope: Optional[str] = None
+) -> Optional[Dict[str, Any]]:
+    scope = (tab_scope or "").lower().strip()
+    if not scope or scope in ("global", "command", "hub"):
+        return None
+    low = (prompt or "").lower()
+
+    is_quiz = any(k in low for k in ("quiz", "vault", "assessment", "mcq"))
+    is_cal = any(k in low for k in ("book", "meeting", "schedule", "calendar", "focus window", "reschedule"))
+    is_nudge = any(k in low for k in ("nudge", "notification", "remind", "dormant", "inactive"))
+    is_iam = any(k in low for k in ("approve user", "role", "rbac", "permission"))
+
+    redirect = None
+    if scope == "calendar" and not is_cal:
+        if is_quiz:
+            redirect = ("/programs", "Open Programs & Personal Vault →", "Programs & Quizzes")
+        elif is_nudge:
+            redirect = ("/reports", "Open Reports & Nudges →", "Notifications & Retention")
+        elif is_iam:
+            redirect = ("/admin/users", "Open User Access Control →", "IAM & Roles")
+    elif scope == "programs" and not is_quiz and "program" not in low and "module" not in low:
+        if is_cal:
+            redirect = ("/admin/schedule", "Open Calendar Scheduler AI →", "Calendar & Scheduling")
+        elif is_nudge:
+            redirect = ("/reports", "Open Reports & Nudges →", "Notifications & Retention")
+        elif is_iam:
+            redirect = ("/admin/users", "Open User Access Control →", "IAM & Roles")
+    elif scope == "notifications" and not is_nudge and "script" not in low and "email" not in low:
+        if is_cal:
+            redirect = ("/admin/schedule", "Open Calendar Scheduler AI →", "Calendar & Scheduling")
+        elif is_quiz:
+            redirect = ("/programs", "Open Programs & Personal Vault →", "Programs & Quizzes")
+
+    if not redirect:
+        return None
+    route, label, domain = redirect
+    return {
+        "answer": f"This assistant is scoped to the **{scope.title()}** tab. For **{domain}**, please switch to that dedicated workspace.",
+        "engine": "deterministic_backup",
+        "out_of_scope": True,
+        "queued_action": None,
+        "ui_action": {"route": route, "redirect_label": label},
+    }
+
+
+def _find_student_for_vault(db: Any, prompt: str) -> Optional[Dict[str, Any]]:
+    try:
+        from database import SessionLocal
+        from models import User
+
+        session = db or SessionLocal()
+        try:
+            users = session.query(User).filter(User.is_active == True).all()  # noqa: E712
+            low = (prompt or "").lower()
+            ordered = sorted(users, key=lambda u: (0 if (u.role_id or 5) >= 3 else 1, u.user_id))
+            email_m = re.search(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", prompt or "")
+            if email_m:
+                em = email_m.group(0).lower()
+                for u in ordered:
+                    if (u.email or "").lower() == em:
+                        return {"user_id": u.user_id, "name": u.full_name, "email": u.email}
+            for u in ordered:
+                fn = (u.full_name or "").strip().lower()
+                if fn and fn in low:
+                    return {"user_id": u.user_id, "name": u.full_name, "email": u.email}
+            words = [w for w in re.split(r"\s+", low) if len(w) >= 3 and w not in {"give", "manual", "hard", "easy", "medium", "quiz", "personal", "vault", "for", "send", "create", "generate", "student"}]
+            for w in words:
+                for u in ordered:
+                    if w in (u.full_name or "").lower() or (u.email or "").lower().startswith(w):
+                        return {"user_id": u.user_id, "name": u.full_name, "email": u.email}
+        finally:
+            if not db:
+                session.close()
+    except Exception:
+        pass
+    return None
+
+
 def run_deterministic_command_fallback(
     *,
     prompt: str,
@@ -311,10 +390,77 @@ def run_deterministic_command_fallback(
     supabase: Any = None,
     db: Any = None,
     actor_id: Optional[str] = None,
+    tab_scope: Optional[str] = None,
 ) -> Dict[str, Any]:
+    scoped = detect_tab_scope_redirect(prompt=prompt, tab_scope=tab_scope)
+    if scoped is not None:
+        return scoped
+
     q = prompt.strip()
     low = q.lower()
     snap = fetch_live_snapshot(supabase=supabase, db=db)
+
+    # Intent 0: Assign Personal Vault Quiz (Tier 3 Approval)
+    if any(k in low for k in ("quiz", "vault", "assessment")) and any(
+        k in low for k in ("give", "assign", "send", "create", "generate", "manual", "hard", "easy", "medium")
+    ):
+        from .module_generator import build_deterministic_module_kit
+
+        target = _find_student_for_vault(db, q)
+        if not target:
+            return {
+                "answer": "Please specify the student's name or email (e.g. *'Give a manual hard quiz for Anuj'*).",
+                "engine": "deterministic_backup",
+                "queued_action": None,
+                "ui_action": {"route": "/programs"},
+            }
+        diff = "hard" if any(w in low for w in ("hard", "tough", "difficult", "advanced")) else (
+            "easy" if "easy" in low else "medium"
+        )
+        topic_m = re.search(
+            r"(?:on|about|topic)\s+([a-zA-Z0-9\s\-&]{3,45}?)(?:\s+(?:for|to)\s+|$)",
+            q,
+            re.IGNORECASE,
+        )
+        topic = topic_m.group(1).strip().title() if topic_m else "Client Relationships & Mastery"
+        kit = build_deterministic_module_kit(
+            module_title=topic,
+            source_text=f"Design a {diff.upper()} assessment on {topic} tailored personally for {target['name']}.",
+            question_count=5 if diff == "hard" else 4,
+            difficulty=diff,
+        )
+        title = f"{topic} ({diff.title()} Personal Challenge)"
+        card = gate.queue_tier3_action(
+            action_type="assign_personal_quiz",
+            summary=f"Send {diff.upper()} personal quiz '{title}' ({len(kit.questions)} Qs) exclusively to {target['name']}'s Program Vault.",
+            payload={
+                "target_user_id": int(target["user_id"]),
+                "target_name": target["name"],
+                "target_email": target.get("email"),
+                "created_by": int(actor_id) if str(actor_id or "").isdigit() else None,
+                "title": title,
+                "topic": topic,
+                "difficulty": diff,
+                "passing_score": kit.passing_score,
+                "time_limit_mins": 15 if diff == "hard" else 10,
+                "questions": [qq.model_dump() for qq in kit.questions],
+            },
+            diff_preview={
+                "before": f"{target['name']} Personal Vault: Pending",
+                "after": f"Exclusive {diff.upper()} quiz ({len(kit.questions)} Qs) -> {target['name']} (ID #{target['user_id']})",
+            },
+            requested_by=actor_id,
+            engine_source="deterministic_backup",
+        )
+        return {
+            "answer": (
+                f"Generated a {diff.upper()} quiz '{title}' ({len(kit.questions)} Qs) for {target['name']}. "
+                "Approve in the Action Inbox to deliver it exclusively to their Personal Program Vault."
+            ),
+            "engine": "deterministic_backup",
+            "queued_action": card,
+            "ui_action": {"open_approval_drawer": True, "route": "/programs"},
+        }
 
     # Intent 1: Book Meeting / Calendar (Tier 3 Approval)
     if any(k in low for k in ("book", "meeting", "schedule", "calendar", "call")):

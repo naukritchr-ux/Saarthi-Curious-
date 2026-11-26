@@ -871,20 +871,29 @@ export default function ProgramsManagement({
                     <span className="pointer-events-none absolute top-2.5 right-2.5 w-3.5 h-3.5 border-t-2 border-r-2 border-[#F6DC93]/75 rounded-tr-md z-20" />
 
                     {/* Cover Thumbnail */}
-                    <div className="relative h-44 w-full overflow-hidden bg-[#131829]">
+                    <div className="relative aspect-[16/9] w-full overflow-hidden bg-[#0E1324] flex items-center justify-center">
                       {prog.thumbnail ? (
-                        <img
-                          src={prog.thumbnail}
-                          alt={prog.title}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
+                        <>
+                          <img
+                            src={prog.thumbnail}
+                            alt=""
+                            aria-hidden="true"
+                            className="absolute inset-0 w-full h-full object-cover blur-xl opacity-45 scale-110 pointer-events-none"
+                          />
+                          <img
+                            src={prog.thumbnail}
+                            alt={prog.title}
+                            className="relative z-[1] w-full h-full object-contain object-center transition-transform duration-500 group-hover:scale-[1.03]"
+                          />
+                        </>
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#1C223B] via-[#131729] to-[#261A10]">
                           <BookOpen className="w-12 h-12 text-[#ECC978]/65" />
                         </div>
                       )}
 
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#0B0F1A] via-[#0B0F1A]/25 to-black/20" />
+                      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-4 z-[2] bg-gradient-to-t from-[#0B0F1A] to-transparent" />
+                      <div className="pointer-events-none absolute inset-0 z-[2] shadow-[inset_0_0_20px_rgba(11,15,26,0.35)]" />
 
                       {/* Status Seal Badge */}
                       <div className="absolute top-4 left-4 z-10">

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -82,6 +83,7 @@ const getLoggedInUserId = () => {
 };
 
 export default function SaarthiDashboard({ adminId = null }) {
+  const navigate = useNavigate();
   const calendarRef = useRef(null);
   const chatBottomRef = useRef(null);
   const dataPanelRef = useRef(null);
@@ -94,7 +96,19 @@ export default function SaarthiDashboard({ adminId = null }) {
   // Navigation & Active States
   const [activeSidebarTab, setActiveSidebarTab] = useState("calendar");
   const [currentView, setCurrentView] = useState("timeGridWeek");
-  const [dateRangeText, setDateRangeText] = useState("18 – 24 October 2026");
+  const [dateRangeText, setDateRangeText] = useState(() => {
+    const now = new Date();
+    const start = new Date(now);
+    start.setDate(now.getDate() - now.getDay());
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    const sMonth = start.toLocaleString("default", { month: "long" });
+    const eMonth = end.toLocaleString("default", { month: "long" });
+    return sMonth === eMonth
+      ? `${start.getDate()} – ${end.getDate()} ${sMonth} ${start.getFullYear()}`
+      : `${start.getDate()} ${sMonth} – ${end.getDate()} ${eMonth} ${end.getFullYear()}`;
+  });
+  const [miniCalDate, setMiniCalDate] = useState(() => new Date());
   const [selectedMiniDay, setSelectedMiniDay] = useState(() => new Date().getDate());
 
   // Search & Filter State
@@ -1356,11 +1370,16 @@ export default function SaarthiDashboard({ adminId = null }) {
     setIsAiTyping(true);
 
     try {
-      const res = await axios.post(`${BACKEND_URL}/ai/scheduler-chat`, {
-        message: text,
-        admin_id: effectiveAdminId,
-        confirm_proposal: false
-      });
+      const tok = localStorage.getItem("access_token") || localStorage.getItem("token");
+      const res = await axios.post(
+        `${BACKEND_URL}/ai/scheduler-chat`,
+        {
+          message: text,
+          admin_id: effectiveAdminId,
+          confirm_proposal: false,
+        },
+        tok ? { headers: { Authorization: `Bearer ${tok}` } } : undefined
+      );
 
       const data = res.data;
       const aiReply = {
@@ -1368,7 +1387,10 @@ export default function SaarthiDashboard({ adminId = null }) {
         sender: "ai",
         text: data.reply || "I've analyzed your schedule request.",
         proposal: data.proposal || null,
-        needs_consent: Boolean(data.needs_consent)
+        needs_consent: Boolean(data.needs_consent),
+        out_of_scope: Boolean(data.out_of_scope),
+        redirect_to: data.redirect_to || null,
+        redirect_label: data.redirect_label || null,
       };
 
       setChatMessages(prev => [...prev, aiReply]);
@@ -1394,12 +1416,17 @@ export default function SaarthiDashboard({ adminId = null }) {
 
     setIsAiTyping(true);
     try {
-      const res = await axios.post(`${BACKEND_URL}/ai/scheduler-chat`, {
-        message: "confirm",
-        admin_id: effectiveAdminId,
-        confirm_proposal: true,
-        proposed_meeting: proposal
-      });
+      const tok = localStorage.getItem("access_token") || localStorage.getItem("token");
+      const res = await axios.post(
+        `${BACKEND_URL}/ai/scheduler-chat`,
+        {
+          message: "confirm",
+          admin_id: effectiveAdminId,
+          confirm_proposal: true,
+          proposed_meeting: proposal,
+        },
+        tok ? { headers: { Authorization: `Bearer ${tok}` } } : undefined
+      );
 
       setChatMessages(prev =>
         prev.map(m =>
@@ -1480,20 +1507,20 @@ export default function SaarthiDashboard({ adminId = null }) {
 
   // Mini Calendar Navigation
   const handleMiniPrev = () => {
-    handlePrev();
+    setMiniCalDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
   };
 
   const handleMiniNext = () => {
-    handleNext();
+    setMiniCalDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
   };
 
   const handleMiniDayClick = (dayNum) => {
     setSelectedMiniDay(dayNum);
+    const target = new Date(miniCalDate.getFullYear(), miniCalDate.getMonth(), dayNum);
     if (calendarRef.current) {
-      const now = new Date();
-      calendarRef.current.getApi().gotoDate(new Date(now.getFullYear(), now.getMonth(), dayNum));
+      calendarRef.current.getApi().gotoDate(target);
       updateDateText();
-      const mStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      const mStr = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}`;
       fetchCalendarEvents(mStr);
     }
   };
@@ -1505,6 +1532,7 @@ export default function SaarthiDashboard({ adminId = null }) {
       api.prev();
       updateDateText();
       const curDate = api.getDate();
+      setMiniCalDate(new Date(curDate.getFullYear(), curDate.getMonth(), 1));
       const mStr = `${curDate.getFullYear()}-${String(curDate.getMonth() + 1).padStart(2, "0")}`;
       fetchCalendarEvents(mStr);
     }
@@ -1515,6 +1543,7 @@ export default function SaarthiDashboard({ adminId = null }) {
       api.next();
       updateDateText();
       const curDate = api.getDate();
+      setMiniCalDate(new Date(curDate.getFullYear(), curDate.getMonth(), 1));
       const mStr = `${curDate.getFullYear()}-${String(curDate.getMonth() + 1).padStart(2, "0")}`;
       fetchCalendarEvents(mStr);
     }
@@ -1523,7 +1552,9 @@ export default function SaarthiDashboard({ adminId = null }) {
     if (calendarRef.current) {
       const api = calendarRef.current.getApi();
       api.today();
-      setSelectedMiniDay(new Date().getDate());
+      const now = new Date();
+      setMiniCalDate(now);
+      setSelectedMiniDay(now.getDate());
       updateDateText();
       const curDate = api.getDate();
       const mStr = `${curDate.getFullYear()}-${String(curDate.getMonth() + 1).padStart(2, "0")}`;
@@ -1780,16 +1811,18 @@ export default function SaarthiDashboard({ adminId = null }) {
           </button>
         </div>
 
-        {/* Mini Calendar October 2026 (Arrows & Day Cells Interactive) */}
+        {/* Dynamic Mini Calendar */}
         <div className="mini-cal-card">
           <div className="mini-cal-top">
-            <span>October 2026</span>
+            <span>
+              {miniCalDate.toLocaleString("default", { month: "long", year: "numeric" })}
+            </span>
             <div className="mini-cal-arrows">
               <button
                 type="button"
                 className="mini-cal-nav-btn"
                 onClick={handleMiniPrev}
-                title="Previous"
+                title="Previous Month"
               >
                 <ChevronLeft size={13} />
               </button>
@@ -1797,7 +1830,7 @@ export default function SaarthiDashboard({ adminId = null }) {
                 type="button"
                 className="mini-cal-nav-btn"
                 onClick={handleMiniNext}
-                title="Next"
+                title="Next Month"
               >
                 <ChevronRight size={13} />
               </button>
@@ -1807,15 +1840,33 @@ export default function SaarthiDashboard({ adminId = null }) {
             <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
           </div>
           <div className="mini-cal-grid-body">
-            {[28, 29, 30, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 1].map((d, i) => (
-              <div
-                key={i}
-                className={`mini-day-cell ${d === selectedMiniDay && i > 15 ? "active" : ""} ${i < 3 || i > 33 ? "muted" : ""}`}
-                onClick={() => handleMiniDayClick(d)}
-              >
-                {d}
-              </div>
-            ))}
+            {(() => {
+              const yr = miniCalDate.getFullYear();
+              const mo = miniCalDate.getMonth();
+              const firstDow = new Date(yr, mo, 1).getDay();
+              const daysInMo = new Date(yr, mo + 1, 0).getDate();
+              const prevMoDays = new Date(yr, mo, 0).getDate();
+              const cells = [];
+              for (let i = firstDow - 1; i >= 0; i--) {
+                cells.push({ day: prevMoDays - i, current: false });
+              }
+              for (let d = 1; d <= daysInMo; d++) {
+                cells.push({ day: d, current: true });
+              }
+              const trailing = (7 - (cells.length % 7)) % 7;
+              for (let d = 1; d <= trailing; d++) {
+                cells.push({ day: d, current: false });
+              }
+              return cells.map((cell, i) => (
+                <div
+                  key={i}
+                  className={`mini-day-cell ${cell.current && cell.day === selectedMiniDay ? "active" : ""} ${!cell.current ? "muted" : ""}`}
+                  onClick={() => cell.current && handleMiniDayClick(cell.day)}
+                >
+                  {cell.day}
+                </div>
+              ));
+            })()}
           </div>
         </div>
 
@@ -2032,6 +2083,7 @@ export default function SaarthiDashboard({ adminId = null }) {
                 eventResize={handleEventResize}
                 eventClick={handleEventClick}
                 select={handleSelect}
+                datesSet={() => updateDateText()}
                 eventContent={renderEventContent}
                 height="100%"
                 slotMinTime="00:00:00"
@@ -2710,14 +2762,32 @@ export default function SaarthiDashboard({ adminId = null }) {
                 <div className={`chat-bubble ${msg.sender === "user" ? "user-bubble" : "ai-bubble"}`}>
                   <p className="bubble-text">{msg.text}</p>
 
+                  {msg.out_of_scope && msg.redirect_to && (
+                    <button
+                      type="button"
+                      onClick={() => navigate(msg.redirect_to)}
+                      className="btn-proposal-confirm mt-2"
+                    >
+                      <ArrowRight size={13} /> {msg.redirect_label || "Open Workspace"}
+                    </button>
+                  )}
+
                   {/* Proposal Consent Card */}
                   {msg.proposal && (
                     <div className="proposal-card">
-                      <div className="proposal-badge">Meeting Proposal</div>
+                      <div className="proposal-badge">Meeting Proposal • Final Permission</div>
                       <div className="proposal-detail-row">
                         <span className="proposal-label">Event:</span>
                         <strong className="proposal-val">{msg.proposal.title}</strong>
                       </div>
+                      {msg.proposal.attendee_name && (
+                        <div className="proposal-detail-row">
+                          <span className="proposal-label">Attendee:</span>
+                          <span className="proposal-val">
+                            {msg.proposal.attendee_name}{msg.proposal.attendee_email ? ` (${msg.proposal.attendee_email})` : ""}
+                          </span>
+                        </div>
+                      )}
                       <div className="proposal-detail-row">
                         <span className="proposal-label">Date:</span>
                         <span className="proposal-val">{msg.proposal.date}</span>
@@ -2912,7 +2982,15 @@ export default function SaarthiDashboard({ adminId = null }) {
                 {isExpandedLogs ? "Show less ←" : `View logs (${activityLogsList.length}) →`}
               </button>
             </div>
-            <div className="ai-date-label">Today · Sat, 17 Oct 2026</div>
+            <div className="ai-date-label">
+              Today ·{" "}
+              {new Date().toLocaleDateString("en-US", {
+                weekday: "short",
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}
+            </div>
 
             <div className="ai-upcoming-list">
               {(isExpandedLogs ? activityLogsList : activityLogsList.slice(0, 4)).map((item, idx) => (

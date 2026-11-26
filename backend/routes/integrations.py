@@ -53,7 +53,11 @@ def google_calendar_status(
             "resend"
             if os.getenv("RESEND_API_KEY")
             else "smtp"
-            if os.getenv("SMTP_HOST")
+            if (
+                os.getenv("SMTP_PASS")
+                or os.getenv("GMAIL_APP_PASSWORD")
+                or os.getenv("SMTP_HOST")
+            )
             else "sandbox_fallback"
         ),
     }

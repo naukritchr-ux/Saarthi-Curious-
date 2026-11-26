@@ -48,6 +48,7 @@ from routes.analytics import router as analytics_router
 from routes.agent import router as agent_router
 from routes.module_ai import router as module_ai_router
 from routes.integrations import router as integrations_router
+from routes.vault import router as vault_router
 from database import supabase as _supabase_client
 from scheduler import start_daily_scheduler
 
@@ -132,6 +133,7 @@ app.include_router(analytics_router, prefix="/api")
 app.include_router(agent_router)
 app.include_router(module_ai_router)
 app.include_router(integrations_router)
+app.include_router(vault_router)
 
 # ============================
 # DEBUG - Print all routes (fixed)

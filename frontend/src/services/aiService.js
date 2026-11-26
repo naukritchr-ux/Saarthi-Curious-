@@ -10,19 +10,38 @@ export const AI_CHAT_PATH = "/ai/chat";
 export const sendAiMessage = async (messages, context = {}) => {
   try {
     const res = await api.post(AI_CHAT_PATH, { messages, context });
-    const d = res.data;
+    const d = res.data || {};
     const reply =
       d?.reply ||
       d?.response ||
       d?.message ||
       d?.content ||
       (typeof d === "string" ? d : null);
-    if (reply) return { text: reply, source: "ai" };
+    if (reply) {
+      return {
+        text: reply,
+        source: "ai",
+        needs_consent: Boolean(d.needs_consent),
+        action_id: d.action_id || null,
+        queued_action: d.queued_action || null,
+        out_of_scope: Boolean(d.out_of_scope),
+        redirect_to: d.redirect_to || null,
+        redirect_label: d.redirect_label || null,
+      };
+    }
     throw new Error("Empty AI response");
   } catch (err) {
     console.warn("[AI] backend unavailable:", err?.message);
     return { text: fallbackReply(messages, context), source: "fallback" };
   }
+};
+
+export const confirmAiWorkflow = async (actionId, approve = true) => {
+  const res = await api.post(AI_CHAT_PATH, {
+    messages: [],
+    ...(approve ? { confirm_action_id: actionId } : { reject_action_id: actionId }),
+  });
+  return res.data;
 };
 
 /**

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Send, Sparkles, X, MessageSquare, RotateCw } from "lucide-react";
-import { sendAiMessage } from "../../services/aiService";
+import { useNavigate } from "react-router-dom";
+import { Send, Sparkles, X, MessageSquare, RotateCw, Check, ArrowRight } from "lucide-react";
+import { sendAiMessage, confirmAiWorkflow } from "../../services/aiService";
 import RobotHero, { ROBOT_ASSETS } from "./RobotHero";
 import { getInitialGreeting, getRandomMessage } from "./robotMessages";
 
@@ -25,6 +26,7 @@ const SUGGESTIONS = [
 const AUTO_MESSAGE_INTERVAL_MS = 30000; // 30 seconds
 
 const AiChatCard = ({ context }) => {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -97,11 +99,11 @@ const AiChatCard = ({ context }) => {
   }, [messages, open]);
 
   /* Typewriter streaming effect while robot changes expressions */
-  const speak = (text) => {
+  const speak = (text, meta = {}) => {
     setMood("happy");
     setGesture("talking1");
     setTalking(true);
-    setMessages((m) => [...m, { role: "ai", text: "", streaming: true }]);
+    setMessages((m) => [...m, { role: "ai", text: "", streaming: true, ...meta }]);
     let i = 0;
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
@@ -112,6 +114,7 @@ const AiChatCard = ({ context }) => {
           role: "ai",
           text: text.slice(0, i),
           streaming: i < text.length,
+          ...meta,
         };
         return c;
       });
@@ -136,7 +139,7 @@ const AiChatCard = ({ context }) => {
     setTalking(false);
 
     try {
-      const { text } = await sendAiMessage(
+      const resp = await sendAiMessage(
         [
           ...messages.map((m) => ({
             role: m.role === "ai" ? "assistant" : "user",
@@ -149,7 +152,13 @@ const AiChatCard = ({ context }) => {
 
       setMood("listening");
       listeningTimeoutRef.current = setTimeout(() => {
-        speak(text);
+        speak(resp.text, {
+          needs_consent: resp.needs_consent,
+          action_id: resp.action_id,
+          out_of_scope: resp.out_of_scope,
+          redirect_to: resp.redirect_to,
+          redirect_label: resp.redirect_label,
+        });
       }, 250);
     } catch (err) {
       console.error("AI chat error:", err);
@@ -271,8 +280,54 @@ const AiChatCard = ({ context }) => {
                     : "bg-purple-500/15 text-purple-100 border border-purple-500/30 mr-6"
                 }`}
               >
-                {m.text}
-                {m.streaming && <span className="animate-pulse">▍</span>}
+                <div className="space-y-2">
+                  <div>
+                    {m.text}
+                    {m.streaming && <span className="animate-pulse">▍</span>}
+                  </div>
+                  {!m.streaming && m.out_of_scope && m.redirect_to && (
+                    <button
+                      type="button"
+                      onClick={() => navigate(m.redirect_to)}
+                      className="px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-black text-[11px] inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>{m.redirect_label || "Open Workspace"}</span>
+                      <ArrowRight size={11} />
+                    </button>
+                  )}
+                  {!m.streaming && m.needs_consent && m.action_id && !m.resolved && (
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const d = await confirmAiWorkflow(m.action_id, true);
+                          setMessages((prev) =>
+                            prev.map((item, idx) =>
+                              idx === i ? { ...item, resolved: "approved", text: d?.reply || item.text } : item
+                            )
+                          );
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-emerald-400 text-slate-950 font-black text-[11px] inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <Check size={11} /> Approve &amp; Execute
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await confirmAiWorkflow(m.action_id, false);
+                          setMessages((prev) =>
+                            prev.map((item, idx) =>
+                              idx === i ? { ...item, resolved: "cancelled" } : item
+                            )
+                          );
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-white/10 text-slate-200 font-bold text-[11px] cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>

@@ -179,6 +179,7 @@ def build_deterministic_module_kit(
     module_title: str,
     source_text: str,
     question_count: int = 5,
+    difficulty: str = "medium",
 ) -> GeneratedModuleKit:
     """
     Runs whenever Groq/PydanticAI is unavailable, times out, or fails validation.
@@ -227,7 +228,11 @@ def build_deterministic_module_kit(
         sent = sentences[idx] if idx < len(sentences) else None
 
         if sent and len(sent) >= 45:
-            q_text = f"Based on the {clean_title} material, which statement accurately reflects {kw}?"
+            q_text = (
+                f"[Challenge Case] In an executive {clean_title} scenario involving {kw}, which approach resolves root-cause risk without compromising {alt1.lower()}?"
+                if str(difficulty).lower() == "hard"
+                else f"Based on the {clean_title} material, which statement accurately reflects {kw}?"
+            )
             correct_opt = sent[:120].rstrip(".,;:") + ("..." if len(sent) > 120 else "")
             options = [
                 f"Skip {kw} entirely until final certification.",
@@ -238,9 +243,13 @@ def build_deterministic_module_kit(
             correct_idx = 1
             explanation = f"Source takeaway: {sent[:180]}"
         else:
-            q_text = f"What is the primary operational goal of applying {kw} in {clean_title}?"
+            q_text = (
+                f"[Advanced Assessment] When troubleshooting a stalled {clean_title} deployment around {kw}, what is the strongest high-leverage intervention?"
+                if str(difficulty).lower() == "hard"
+                else f"What is the primary operational goal of applying {kw} in {clean_title}?"
+            )
             options = [
-                f"Drive consistent, measurable outcomes through structured {kw.lower()} practices.",
+                f"Drive consistent, measurable outcomes through structured {kw.lower()} practices and milestone verification.",
                 f"Avoid documenting progress or reviewing {alt1.lower()} metrics.",
                 f"Bypass {alt2.lower()} checkpoints during active delivery.",
                 "Defer all follow-up actions until the end of the quarter.",
@@ -261,13 +270,14 @@ def build_deterministic_module_kit(
             )
         )
 
-    est_mins = max(6, min(25, 4 + target_n * 2))
+    est_mins = max(6, min(30, (6 if str(difficulty).lower() == "hard" else 4) + target_n * 2))
+    passing = 80 if str(difficulty).lower() == "hard" else (60 if str(difficulty).lower() == "easy" else 70)
     return GeneratedModuleKit(
         title=clean_title,
         description=description,
         estimated_duration=f"{est_mins} Mins",
         recap_bullets=recap_bullets,
-        passing_score=70,
+        passing_score=passing,
         questions=questions,
         engine="deterministic_backup",
     )
@@ -307,6 +317,7 @@ async def generate_module_kit(
     raw_notes: str = "",
     pdf_bytes: Optional[bytes] = None,
     question_count: int = 5,
+    difficulty: str = "medium",
     force_backup: bool = False,
 ) -> Dict[str, Any]:
     text_blocks: List[str] = []
@@ -330,9 +341,19 @@ async def generate_module_kit(
 
     combined_text = "\n\n".join(text_blocks)[:10000]
 
+    diff_norm = str(difficulty or "medium").lower().strip()
+    if diff_norm not in ("easy", "medium", "hard"):
+        diff_norm = "medium"
+
     if not force_backup and _KIT_AGENT is not None:
+        diff_instruction = (
+            "Generate HARD scenario-based, multi-step analytical MCQs with subtle distractors and passing_score=80."
+            if diff_norm == "hard"
+            else "Generate balanced enterprise assessment MCQs with passing_score=70."
+        )
         prompt = (
             f"Module Title: {module_title}\n"
+            f"Difficulty Level: {diff_norm.upper()} ({diff_instruction})\n"
             f"Requested Question Count: {question_count}\n"
             f"Source Material:\n{combined_text or 'Use enterprise best practices for this module title.'}"
         )
@@ -351,6 +372,7 @@ async def generate_module_kit(
         module_title=module_title,
         source_text=combined_text,
         question_count=question_count,
+        difficulty=diff_norm,
     )
     return {
         "kit": backup_kit.model_dump(),

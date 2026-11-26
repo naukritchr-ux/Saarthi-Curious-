@@ -1,12 +1,20 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
 from sqlalchemy.orm import Session
-from database import get_db
+from database import get_db, supabase as supabase_client
 from models import User, AdminSchedule, Booking, Task, CalendarEvent
-from datetime import date, timedelta, datetime, time
+from auth import ALGORITHM, SECRET_KEY
+from agents.gate import SafetyGate
+from services.calendar_service import CalendarService
+from services.email_service import send_meeting_invite_email
+from datetime import date, timedelta, datetime, time, timezone
 import os
 import json
+import re
 
 router = APIRouter(prefix="/ai", tags=["AI Assistant"])
+_opt_bearer = HTTPBearer(auto_error=False)
 
 
 _AI_INSIGHTS_CACHE = {}
@@ -183,29 +191,105 @@ class AIChatRequest(BaseModel):
     proposed_meeting: dict = None
 
 
+def _detect_calendar_out_of_scope(msg: str) -> Optional[dict]:
+    low = (msg or "").lower()
+    has_cal_word = any(
+        w in low
+        for w in (
+            "schedule",
+            "meeting",
+            "book",
+            "calendar",
+            "slot",
+            "focus",
+            "agenda",
+            "reschedule",
+            "call",
+            "appointment",
+            "today",
+            "tomorrow",
+            "monday",
+            "tuesday",
+            "wednesday",
+            "thursday",
+            "friday",
+            "saturday",
+            "sunday",
+        )
+    )
+    if has_cal_word:
+        return None
+    if any(w in low for w in ("quiz", "vault", "mcq", "module kit", "syllabus", "program")):
+        return {
+            "redirect_to": "/programs",
+            "redirect_label": "Open Programs & Personal Vault →",
+            "domain": "Programs & Quizzes",
+        }
+    if any(w in low for w in ("nudge", "notification", "dormant", "inactive", "attrition")):
+        return {
+            "redirect_to": "/reports",
+            "redirect_label": "Open Reports & Nudges Co-Pilot →",
+            "domain": "Retention & Notifications",
+        }
+    if any(w in low for w in ("approve user", "role", "rbac", "permission", "certificate", "curo", "reward")):
+        return {
+            "redirect_to": "/admin/users",
+            "redirect_label": "Open User & Access Control →",
+            "domain": "IAM & Administration",
+        }
+    return None
+
+
 @router.post("/chat")
 @router.post("/scheduler-chat")
-def ai_chat(payload: AIChatRequest, db: Session = Depends(get_db)):
+def ai_chat(
+    payload: AIChatRequest,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_opt_bearer),
+    db: Session = Depends(get_db),
+):
     """
-    Intelligent scheduling assistant that parses scheduling requests,
-    answers questions about agenda, and creates meetings with user consent.
+    Tab-scoped Scheduling & Calendar Assistant:
+    - Enforces Calendar domain boundary (redirects off-domain requests cleanly).
+    - Parses meetings including weekday names (Mon-Sun), duration (hours/mins), and target student lookup.
+    - Asks for final user permission before creating CalendarEvent + Google Meet + invite email.
     """
     msg = payload.message.strip()
     admin_id = payload.admin_id
+    if credentials and credentials.credentials:
+        try:
+            tok_data = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+            if tok_data.get("user_id") is not None:
+                admin_id = int(tok_data["user_id"])
+        except JWTError:
+            raise HTTPException(status_code=401, detail="Invalid or expired token")
+
     if not admin_id:
         return {
             "reply": "Please log in to your account first so I can access your schedule.",
-            "success": False
+            "success": False,
         }
-    today = date.today()
 
-    # 1. User is confirming a proposed meeting
+    actor = db.query(User).filter(User.user_id == admin_id).first()
+    if not actor:
+        raise HTTPException(status_code=401, detail="Authenticated user not found.")
+
+    today = date.today()
+    ist = timezone(timedelta(hours=5, minutes=30))
+
+    # 1. User is confirming a proposed meeting (Final Permission Granted)
     if payload.confirm_proposal and payload.proposed_meeting:
+        if actor.role_id not in (1, 2):
+            raise HTTPException(
+                status_code=403,
+                detail="Admin or Master Admin privileges required to confirm and send external meeting invites.",
+            )
         prop = payload.proposed_meeting
         m_title = prop.get("title", "Scheduled Meeting")
         m_date_str = prop.get("date", today.isoformat())
         m_start_str = prop.get("start", "14:00")
         m_end_str = prop.get("end", "15:00")
+        attendee_name = prop.get("attendee_name") or prop.get("title") or "Learner"
+        attendee_email = prop.get("attendee_email") or ""
 
         try:
             m_date = date.fromisoformat(m_date_str)
@@ -221,6 +305,19 @@ def ai_chat(payload: AIChatRequest, db: Session = Depends(get_db)):
             st_time = time(14, 0)
             et_time = time(15, 0)
 
+        start_dt_ist = datetime.combine(m_date, st_time, tzinfo=ist)
+        end_dt_ist = datetime.combine(m_date, et_time, tzinfo=ist)
+
+        cal_service = CalendarService(supabase_client)
+        booking = cal_service.create_meeting_event(
+            admin_id=str(admin_id),
+            attendee_name=attendee_name,
+            attendee_email=attendee_email,
+            start_iso=start_dt_ist.isoformat(),
+            end_iso=end_dt_ist.isoformat(),
+            agenda=prop.get("agenda") or f"{m_title} scheduled via Saarthi Calendar AI",
+        )
+
         new_ev = CalendarEvent(
             admin_id=admin_id,
             title=m_title,
@@ -228,60 +325,60 @@ def ai_chat(payload: AIChatRequest, db: Session = Depends(get_db)):
             start_time=st_time,
             end_time=et_time,
             event_type="meeting",
-            description="Created by Saarthi AI Scheduler Assistant",
+            google_event_id=booking.get("calendar_event_id"),
+            description=prop.get("agenda") or "Created by Saarthi AI Scheduler Assistant",
         )
         db.add(new_ev)
         db.commit()
         db.refresh(new_ev)
 
-        # Reverse Sync: Create on Google Calendar if token exists (only for this admin)
-        google_synced = False
-        try:
-            from models import UserGoogleToken
-            from services.google_calendar import create_google_calendar_event
-            tokens = (
-                db.query(UserGoogleToken)
-                .filter(
-                    UserGoogleToken.user_id == admin_id,
-                    UserGoogleToken.refresh_token.isnot(None),
-                    UserGoogleToken.refresh_token != "pending_auth",
-                    UserGoogleToken.refresh_token != "",
-                )
-                .all()
+        email_status = None
+        if attendee_email:
+            email_status = send_meeting_invite_email(
+                to_email=attendee_email,
+                attendee_name=attendee_name,
+                slot_label=booking.get("slot_label") or f"{m_date.strftime('%a, %d %b')} • {m_start_str}–{m_end_str}",
+                agenda=prop.get("agenda") or m_title,
+                meet_link=booking.get("meet_link"),
             )
 
-            for tok in tokens:
-                if tok and tok.refresh_token and tok.refresh_token != "pending_auth":
-                    start_dt = f"{m_date.isoformat()}T{st_time.isoformat()}"
-                    end_dt = f"{m_date.isoformat()}T{et_time.isoformat()}"
-                    attendees = []
-                    admin_user = db.query(User).filter(User.user_id == admin_id).first()
-                    if admin_user and admin_user.email:
-                        attendees.append(admin_user.email)
-                    if tok.google_email and tok.google_email not in attendees:
-                        attendees.append(tok.google_email)
+        gate = SafetyGate(supabase=supabase_client, db=db)
+        gate.log_audit(
+            tier=3,
+            tool_name="calendar_assistant_book_meeting",
+            target_user_id=attendee_email or attendee_name,
+            actor_id=str(admin_id),
+            engine_source="scheduler_ai",
+            result_summary=f"Booked {m_title} on {m_date.isoformat()} {m_start_str}-{m_end_str} ({booking.get('delivery_mode')})",
+        )
 
-                    create_google_calendar_event(
-                        refresh_token=tok.refresh_token,
-                        summary=m_title,
-                        description="Created by Saarthi AI Scheduler Assistant",
-                        start_time=start_dt,
-                        end_time=end_dt,
-                        attendees=attendees,
-                    )
-                    google_synced = True
-        except Exception as ge:
-            print(f"[AI Chat] Google Calendar sync warning: {ge}")
-
-        sync_text = " and synced with your Google Calendar" if google_synced else ""
+        meet_note = f" | Google Meet: {booking['meet_link']}" if booking.get("meet_link") else ""
+        email_note = f" | Invite sent to {attendee_email}" if email_status and email_status.get("delivered") else ""
         return {
-            "reply": f"✅ Confirmed! I have scheduled **'{m_title}'** on **{m_date.strftime('%A, %d %b %Y')}** from **{m_start_str} to {m_end_str}**{sync_text}. Your calendar is now updated.",
+            "reply": (
+                f"✅ Confirmed! Scheduled **'{m_title}'** on **{m_date.strftime('%A, %d %b %Y')}** "
+                f"from **{m_start_str} to {m_end_str}**{meet_note}{email_note}."
+            ),
             "action": "meeting_created",
-            "event_id": new_ev.id
+            "event_id": new_ev.id,
+            "meet_link": booking.get("meet_link"),
+            "delivery_mode": booking.get("delivery_mode"),
         }
 
-    # 2. Check if user is asking to schedule/book/timetable
-    import re
+    # 2. Enforce Tab Scope (refuse & redirect off-domain requests cleanly)
+    out_of_scope = _detect_calendar_out_of_scope(msg)
+    if out_of_scope:
+        return {
+            "out_of_scope": True,
+            "redirect_to": out_of_scope["redirect_to"],
+            "redirect_label": out_of_scope["redirect_label"],
+            "reply": (
+                f"I am your **Calendar & Scheduling AI** and can only execute calendar workflows here. "
+                f"For **{out_of_scope['domain']}**, please use that dedicated workspace below."
+            ),
+        }
+
+    # 3. Check if user is asking to schedule/book/timetable
     lower_msg = msg.lower()
     is_schedule_intent = any(w in lower_msg for w in [
         "schedule", "book", "set meeting", "set a meeting", "create meeting", "plan a meeting",
@@ -289,68 +386,110 @@ def ai_chat(payload: AIChatRequest, db: Session = Depends(get_db)):
     ])
 
     if is_schedule_intent:
-        # Extract title
-        extracted_title = "Team Meeting"
+        # Extract explicit email if provided
+        email_m = re.search(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", msg)
+        attendee_email = email_m.group(0).strip() if email_m else ""
+        if attendee_email.lower().endswith("@gmamil.com"):
+            attendee_email = attendee_email[:-10] + "@gmail.com"
+
+        # Lookup attendee in Users DB
+        attendee_name = ""
+        all_users = db.query(User).filter(User.is_active == True).all()  # noqa: E712
+        ordered_users = sorted(all_users, key=lambda u: (0 if (u.role_id or 5) >= 3 else 1, -len(u.full_name or "")))
+        for u in ordered_users:
+            fn = (u.full_name or "").strip().lower()
+            if fn and fn in lower_msg:
+                attendee_name = u.full_name
+                if not attendee_email:
+                    attendee_email = u.email or ""
+                break
+        if not attendee_name and attendee_email:
+            matched_u = db.query(User).filter(User.email.ilike(attendee_email)).first()
+            attendee_name = matched_u.full_name if matched_u else attendee_email.split("@")[0]
+
+        extracted_title = f"Coaching: {attendee_name}" if attendee_name else "Team Meeting"
         if "focus" in lower_msg:
             extracted_title = "Protected Focus Block"
         elif "timetable" in lower_msg or "time table" in lower_msg:
             extracted_title = "Timetable Session"
-        else:
+        elif not attendee_name:
             cleaned = re.sub(
                 r"^(?:please\s+|can\s+you\s+|ai\s+|help\s+me\s+)?(?:schedule|book|set\s+up|set|create|plan|add)\s+(?:a\s+|an\s+)?(?:meeting\s+|call\s+|session\s+|event\s+)?(?:with\s+|for\s+)?",
                 "",
                 msg,
                 flags=re.IGNORECASE
             ).strip()
-            cleaned = re.split(r"\s+(?:at|on|tomorrow|today|from|between|\d{1,2}(?::\d{2})?\s*(?:am|pm))\b", cleaned, flags=re.IGNORECASE)[0].strip()
+            cleaned = re.split(r"\s+(?:at|on|tomorrow|today|from|between|for|\d{1,2}(?::\d{2})?\s*(?:am|pm))\b", cleaned, flags=re.IGNORECASE)[0].strip()
             if cleaned and len(cleaned) >= 2:
                 extracted_title = cleaned.title()
 
-        # Extract date
+        # Extract date (supports today, tomorrow, and all 7 weekdays Mon-Sun)
         target_date = today
+        weekdays = {
+            "monday": 0, "tuesday": 1, "wednesday": 2, "thursday": 3,
+            "friday": 4, "saturday": 5, "sunday": 6,
+        }
         if "tomorrow" in lower_msg:
             target_date = today + timedelta(days=1)
-        elif "friday" in lower_msg:
-            target_date = today + timedelta(days=(4 - today.weekday()) % 7 or 7)
-        elif "monday" in lower_msg:
-            target_date = today + timedelta(days=(0 - today.weekday()) % 7 or 7)
-        elif "tuesday" in lower_msg:
-            target_date = today + timedelta(days=(1 - today.weekday()) % 7 or 7)
-        elif "wednesday" in lower_msg:
-            target_date = today + timedelta(days=(2 - today.weekday()) % 7 or 7)
-        elif "thursday" in lower_msg:
-            target_date = today + timedelta(days=(3 - today.weekday()) % 7 or 7)
+        else:
+            for wd_name, wd_num in weekdays.items():
+                if wd_name in lower_msg:
+                    delta = (wd_num - today.weekday()) % 7
+                    if delta == 0:
+                        delta = 7
+                    target_date = today + timedelta(days=delta)
+                    break
 
-        # Extract time
-        time_match = re.search(r"(\d{1,2})(?::(\d{2}))?\s*(am|pm)?", lower_msg)
+        # Extract start time (e.g. "10 am", "10:30 am", "14:00")
+        time_match = re.search(r"\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b", lower_msg)
+        if not time_match:
+            time_match = re.search(r"\b(?:at|from)\s+(\d{1,2})(?::(\d{2}))?\b", lower_msg)
         start_hour = 14
         start_min = 0
         if time_match:
             h = int(time_match.group(1))
             m = int(time_match.group(2) or 0)
-            ampm = time_match.group(3)
+            ampm = time_match.group(3) if len(time_match.groups()) >= 3 else None
             if ampm == "pm" and h < 12:
                 h += 12
             elif ampm == "am" and h == 12:
                 h = 0
-            start_hour = h
-            start_min = m
+            start_hour = max(0, min(23, h))
+            start_min = max(0, min(59, m))
 
-        end_hour = min(23, start_hour + 1)
-        start_fmt = f"{start_hour:02d}:{start_min:02d}"
-        end_fmt = f"{end_hour:02d}:{start_min:02d}"
+        # Extract duration (e.g. "for 2 hours", "for 90 mins", "30 minutes")
+        dur_mins = 60
+        hr_m = re.search(r"(\d+(?:\.\d+)?)\s*(?:hour|hours|hr|hrs)\b", lower_msg)
+        min_m = re.search(r"(\d+)\s*(?:minute|minutes|min|mins)\b", lower_msg)
+        if hr_m:
+            dur_mins = max(15, int(float(hr_m.group(1)) * 60))
+        elif min_m:
+            dur_mins = max(15, int(min_m.group(1)))
+
+        start_dt_obj = datetime.combine(target_date, time(start_hour, start_min))
+        end_dt_obj = start_dt_obj + timedelta(minutes=dur_mins)
+        start_fmt = start_dt_obj.strftime("%H:%M")
+        end_fmt = end_dt_obj.strftime("%H:%M")
 
         proposal = {
             "title": extracted_title,
             "date": target_date.isoformat(),
             "start": start_fmt,
-            "end": end_fmt
+            "end": end_fmt,
+            "attendee_name": attendee_name or "Learner",
+            "attendee_email": attendee_email,
+            "agenda": f"{dur_mins}-min session: {extracted_title}",
         }
 
+        att_txt = f" for **{attendee_name}** ({attendee_email})" if attendee_name and attendee_email else (f" for **{attendee_name}**" if attendee_name else "")
         return {
-            "reply": f"I can schedule **'{extracted_title}'** on **{target_date.strftime('%A, %d %B')}** from **{start_fmt} to {end_fmt}**.\n\nWould you like me to confirm and book this slot on your calendar?",
+            "reply": (
+                f"I prepared **'{extracted_title}'**{att_txt} on **{target_date.strftime('%A, %d %B %Y')}** "
+                f"from **{start_fmt} to {end_fmt}** ({dur_mins} mins).\n\n"
+                "Please grant final permission below to book on Google Calendar and send the invite."
+            ),
             "proposal": proposal,
-            "needs_consent": True
+            "needs_consent": True,
         }
 
     # 3. Check for agenda questions
